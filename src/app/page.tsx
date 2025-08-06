@@ -9,11 +9,12 @@ import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-lis
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
+import Link from 'next/link';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -155,6 +156,12 @@ export default function Home() {
           <p className="text-muted-foreground">Gere QR codes para os funcionários ou escaneie para registrar o ponto.</p>
         </div>
         <div className="flex gap-2">
+            <Link href="/visitantes">
+              <Button variant="outline">
+                <Users className="mr-2 h-4 w-4" />
+                Visitantes
+              </Button>
+            </Link>
             <QRGenerator onAddEmployee={handleAddEmployee}/>
             <ThemeToggle />
         </div>
