@@ -27,6 +27,9 @@ const visitorFormSchema = z.object({
     required_error: "Selecione a portaria.",
   }),
   createdAt: z.string().optional(),
+  entryTime: z.string().optional(),
+  exitTime: z.string().optional(),
+  status: z.enum(['registered', 'inside', 'exited']).optional(),
 });
 
 export type VisitorFormData = z.infer<typeof visitorFormSchema>;
@@ -54,7 +57,12 @@ export default function VisitantesPage() {
     setIsClient(true);
     const storedVisitors = localStorage.getItem('qr-attendance-visitors');
     if (storedVisitors) {
-      setVisitors(JSON.parse(storedVisitors));
+        try {
+            setVisitors(JSON.parse(storedVisitors));
+        } catch (error) {
+            console.error("Falha ao analisar os visitantes do localStorage", error);
+            localStorage.removeItem('qr-attendance-visitors');
+        }
     }
   }, []);
 
@@ -69,6 +77,7 @@ export default function VisitantesPage() {
       ...data,
       id: `visitor_${new Date().getTime()}`,
       createdAt: new Date().toISOString(),
+      status: 'registered',
     };
     setVisitors(prev => [newVisitor, ...prev]);
     toast({
@@ -83,6 +92,30 @@ export default function VisitantesPage() {
     toast({
       title: "Visitante Removido",
       description: "O registro do visitante foi removido da lista.",
+    });
+  };
+
+  const handleVisitorEntry = (visitorId: string) => {
+    setVisitors(prev => prev.map(v => 
+        v.id === visitorId 
+        ? { ...v, status: 'inside', entryTime: new Date().toISOString() } 
+        : v
+    ));
+    toast({
+      title: "Entrada Registrada!",
+      description: `A entrada do visitante foi registrada com sucesso.`,
+    });
+  };
+
+  const handleVisitorExit = (visitorId: string) => {
+    setVisitors(prev => prev.map(v => 
+        v.id === visitorId 
+        ? { ...v, status: 'exited', exitTime: new Date().toISOString() } 
+        : v
+    ));
+     toast({
+      title: "Saída Registrada!",
+      description: `A saída do visitante foi registrada com sucesso.`,
     });
   };
 
@@ -242,7 +275,12 @@ export default function VisitantesPage() {
         </Card>
 
         <div className="lg:col-span-2">
-          <VisitorList visitors={visitors} onDelete={handleDeleteVisitor} />
+          <VisitorList 
+            visitors={visitors} 
+            onDelete={handleDeleteVisitor}
+            onEnter={handleVisitorEntry}
+            onExit={handleVisitorExit}
+          />
         </div>
       </div>
     </main>

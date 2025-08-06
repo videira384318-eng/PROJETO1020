@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search } from 'lucide-react';
+import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -23,31 +23,49 @@ import { Badge } from './ui/badge';
 interface VisitorListProps {
   visitors: VisitorFormData[];
   onDelete: (visitorId: string) => void;
+  onEnter: (visitorId: string) => void;
+  onExit: (visitorId: string) => void;
 }
 
-export function VisitorList({ visitors, onDelete }: VisitorListProps) {
+export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorListProps) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const sortedVisitors = useMemo(() => {
+    return [...visitors].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }, [visitors]);
 
   const filteredVisitors = useMemo(() => {
     if (!searchTerm) {
-      return visitors;
+      return sortedVisitors;
     }
-    return visitors.filter(visitor =>
+    return sortedVisitors.filter(visitor =>
       visitor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.rg.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (visitor.placa && visitor.placa.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [visitors, searchTerm]);
+  }, [sortedVisitors, searchTerm]);
+  
+  const getStatusBadge = (status: VisitorFormData['status']) => {
+    switch (status) {
+      case 'inside':
+        return <Badge variant="success">Dentro</Badge>;
+      case 'exited':
+        return <Badge variant="destructive">Saiu</Badge>;
+      case 'registered':
+      default:
+        return <Badge variant="outline">Registrado</Badge>;
+    }
+  }
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <CardTitle className="font-headline">Visitantes Registrados</CardTitle>
-                <CardDescription>Visualize e gerencie os visitantes cadastrados.</CardDescription>
+                <CardTitle className="font-headline">Histórico de Visitantes</CardTitle>
+                <CardDescription>Visualize e gerencie os visitantes e seus registros.</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -79,13 +97,11 @@ export function VisitorList({ visitors, onDelete }: VisitorListProps) {
                 <TableHeader>
                     <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>RG</TableHead>
                     <TableHead>Empresa</TableHead>
-                    <TableHead>Placa</TableHead>
                     <TableHead>Responsável</TableHead>
-                    <TableHead>Portaria</TableHead>
-                    <TableHead>Data de Entrada</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Entrada</TableHead>
+                    <TableHead>Saída</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -93,16 +109,22 @@ export function VisitorList({ visitors, onDelete }: VisitorListProps) {
                     {filteredVisitors.map((visitor) => (
                     <TableRow key={visitor.id}>
                         <TableCell className="font-medium">{visitor.nome}</TableCell>
-                        <TableCell>{visitor.cpf}</TableCell>
-                        <TableCell>{visitor.rg}</TableCell>
                         <TableCell>{visitor.empresa}</TableCell>
-                        <TableCell>{visitor.placa || "N/A"}</TableCell>
                         <TableCell>{visitor.responsavel}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="uppercase">{visitor.portaria}</Badge>
-                        </TableCell>
-                        <TableCell>{visitor.createdAt ? new Date(visitor.createdAt).toLocaleString() : 'N/A'}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>{getStatusBadge(visitor.status)}</TableCell>
+                        <TableCell className="text-muted-foreground">{visitor.entryTime ? new Date(visitor.entryTime).toLocaleString('pt-BR') : '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">{visitor.exitTime ? new Date(visitor.exitTime).toLocaleString('pt-BR') : '—'}</TableCell>
+                        <TableCell className="text-right space-x-1">
+                           {visitor.status === 'registered' && (
+                             <Button variant="outline" size="sm" onClick={() => onEnter(visitor.id!)}>
+                                <LogIn className="h-4 w-4 mr-1" /> Entrada
+                             </Button>
+                           )}
+                           {visitor.status === 'inside' && (
+                             <Button variant="outline" size="sm" onClick={() => onExit(visitor.id!)}>
+                                <LogOut className="h-4 w-4 mr-1" /> Saída
+                             </Button>
+                           )}
                            <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon">
