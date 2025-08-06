@@ -28,9 +28,9 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
 
     const config = { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [] };
     
-    // Garante que o scanner seja inicializado apenas uma vez
     if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
+        const scanner = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
+        scannerRef.current = scanner;
     }
     const html5QrCode = scannerRef.current;
     
@@ -51,7 +51,7 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
     }
 
     return () => {
-      if (html5QrCode && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+      if (html5QrCode && html5QrCode.isScanning) {
         html5QrCode.stop().catch(err => {
           console.error("Falha ao parar o leitor na limpeza.", err);
         });
@@ -73,12 +73,7 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
         </Button>
       </CardHeader>
       <CardContent>
-        <div id={QR_SCANNER_ELEMENT_ID} className="w-full rounded-md [&>div]:rounded-md [&>video]:rounded-md [&>div>span]:hidden [&>div>button]:hidden" />
-        {!isScanning && (
-          <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-[305px] -mt-[305px] rounded-md bg-muted/50">
-            <p>Clique no ícone da câmera para iniciar a leitura.</p>
-          </div>
-        )}
+        <div id={QR_SCANNER_ELEMENT_ID} className="w-full rounded-md [&>div]:rounded-md [&>video]:rounded-md [&>div>span]:hidden [&>div>button]:hidden"></div>
       </CardContent>
     </Card>
   );
