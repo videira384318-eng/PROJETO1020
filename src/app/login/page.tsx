@@ -11,11 +11,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { LogIn, KeyRound, User } from 'lucide-react';
+import { LogIn, KeyRound, AtSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const loginSchema = z.object({
-  username: z.string().min(1, "O nome de usuário é obrigatório."),
+  email: z.string().email("O e-mail é inválido.").min(1, "O e-mail é obrigatório."),
   password: z.string().min(1, "A senha é obrigatória."),
 });
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
+      email: '',
       password: '',
     },
   });
@@ -38,14 +38,14 @@ export default function LoginPage() {
   const handleLogin = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const success = await login(data.username, data.password);
+      const success = await login(data.email, data.password);
       if (success) {
         router.push('/');
       } else {
         toast({
             variant: "destructive",
             title: "Falha no Login",
-            description: "Usuário ou senha inválidos.",
+            description: "E-mail ou senha inválidos.",
         });
       }
     } catch (error) {
@@ -75,14 +75,14 @@ export default function LoginPage() {
             <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="username"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Usuário</FormLabel>
+                    <FormLabel>E-mail</FormLabel>
                     <FormControl>
                         <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="ex: adm" {...field} className="pl-9" />
+                            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input type="email" placeholder="ex: adm@empresa.com" {...field} className="pl-9" />
                         </div>
                     </FormControl>
                     <FormMessage />

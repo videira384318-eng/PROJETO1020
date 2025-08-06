@@ -1,8 +1,9 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/contexts/auth-context';
+import { AuthProvider, AuthGuard } from '@/contexts/auth-context';
 
 export const metadata: Metadata = {
   title: 'Controle de Ponto QR',
@@ -29,7 +30,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <AuthGuard>
+                {children}
+            </AuthGuard>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

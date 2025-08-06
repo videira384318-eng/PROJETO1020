@@ -2,59 +2,71 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import { verifyUser } from '@/services/userService';
+import { useRouter, usePathname } from 'next/navigation';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type User as FirebaseUser } from "firebase/auth";
+import { app } from '@/lib/firebase';
+import { getUserRole } from '@/services/userService';
+import { Loader2 } from 'lucide-react';
 
 export type Role = 'adm' | 'rh' | 'portaria';
 
 interface AuthContextType {
-  isAuthenticated: boolean;
+  user: FirebaseUser | null;
   role: Role | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const auth = getAuth(app);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const sessionRole = sessionStorage.getItem('userRole') as Role | null;
-    if (sessionRole) {
-      setRole(sessionRole);
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+        const userRole = await getUserRole(user.uid);
+        setRole(userRole);
+        // Redirect from login page if already logged in
+        if (pathname === '/login') {
+            router.push('/');
+        }
+      } else {
+        setUser(null);
+        setRole(null);
+        if (pathname !== '/login') {
+           router.push('/login');
+        }
+      }
+      setLoading(false);
+    });
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    const userRole = await verifyUser(username, password);
-    if (userRole) {
-      setRole(userRole);
-      setIsAuthenticated(true);
-      sessionStorage.setItem('userRole', userRole);
+    return () => unsubscribe();
+  }, [router, pathname]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       return true;
+    } catch (error) {
+      console.error("Firebase Login Error:", error);
+      return false;
     }
-    return false;
   };
 
-  const logout = () => {
-    setRole(null);
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('userRole');
+  const logout = async () => {
+    await signOut(auth);
     router.push('/login');
   };
 
-  const value = { isAuthenticated, role, login, logout };
-  
-  // While checking for session, you can return a loader
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
+  const value = { user, role, loading, login, logout };
 
   return (
     <AuthContext.Provider value={value}>
@@ -71,26 +83,39 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Component to protect routes
+
 export const AuthGuard = ({ children }: { children: ReactNode }) => {
-    const { isAuthenticated, role } = useAuth();
+    const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
+    
+    // Early exit on server
+    if (typeof window === 'undefined') {
+        return null;
+    }
 
-    useEffect(() => {
-        if (isClient && !isAuthenticated) {
-            router.push('/login');
-        }
-    }, [isAuthenticated, isClient, router]);
+    if (loading || !isClient) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            </div>
+        );
+    }
 
-    if (!isClient || !isAuthenticated) {
-        return null; // Or return a loading spinner
+    if (!user && pathname !== '/login') {
+        router.push('/login');
+        return null;
+    }
+    
+    if (user && pathname === '/login') {
+        router.push('/');
+        return null;
     }
 
     return <>{children}</>;
 };
-

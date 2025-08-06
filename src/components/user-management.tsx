@@ -37,7 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2, UserPlus, Users, KeyRound, UserCog } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, UserPlus, Users, KeyRound, AtSign } from 'lucide-react';
 import type { User } from '@/services/userService';
 import type { Role } from '@/contexts/auth-context';
 
@@ -50,14 +50,13 @@ interface UserManagementProps {
 
 const userFormSchema = z.object({
   id: z.string().optional(),
-  username: z.string().min(3, "O nome de usuário deve ter pelo menos 3 caracteres."),
+  email: z.string().email("O e-mail é inválido."),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   role: z.enum(['rh', 'portaria'], { required_error: "O perfil é obrigatório." }),
 });
 
 const editUserFormSchema = z.object({
-    username: z.string().min(3, "O nome de usuário deve ter pelo menos 3 caracteres.").optional(),
-    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").or(z.literal('')).optional(),
+    email: z.string().email("O e-mail é inválido.").optional(),
     role: z.enum(['rh', 'portaria'], { required_error: "O perfil é obrigatório." }).optional(),
 })
 
@@ -74,7 +73,7 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
-      username: '',
+      email: '',
       password: '',
       role: 'portaria',
     },
@@ -85,7 +84,7 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
   });
 
   const handleAddNewUser = (data: UserFormData) => {
-    onAddUser({ username: data.username, password: data.password, role: data.role as Role });
+    onAddUser({ email: data.email, password: data.password, role: data.role as Role });
     form.reset();
     setIsNewUserDialogOpen(false);
   };
@@ -93,9 +92,8 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
   const handleEditUser = (user: User) => {
     setEditingUser(user);
     editForm.reset({
-        username: user.username,
+        email: user.email,
         role: user.role,
-        password: ''
     });
     setIsEditDialogOpen(true);
   }
@@ -104,11 +102,8 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
     if (!editingUser) return;
     
     const updateData: Partial<User> = {};
-    if (data.username && data.username !== editingUser.username) {
-        updateData.username = data.username;
-    }
-    if (data.password) { // Only update password if a new one is entered
-        updateData.password = data.password;
+    if (data.email && data.email !== editingUser.email) {
+        updateData.email = data.email;
     }
     if (data.role && data.role !== editingUser.role) {
         updateData.role = data.role as Role;
@@ -145,14 +140,14 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
               <form onSubmit={form.handleSubmit(handleAddNewUser)} className="space-y-4">
                  <FormField
                     control={form.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Nome de Usuário</FormLabel>
+                        <FormLabel>E-mail do Usuário</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <UserCog className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="ex: joao.silva" {...field} className="pl-9"/>
+                            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input type="email" placeholder="ex: joao@empresa.com" {...field} className="pl-9"/>
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -210,7 +205,7 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Nome de Usuário</TableHead>
+                        <TableHead>E-mail do Usuário</TableHead>
                         <TableHead>Perfil</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -225,7 +220,7 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
                     )}
                     {users.map((user) => (
                         <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.username}</TableCell>
+                            <TableCell className="font-medium">{user.email}</TableCell>
                             <TableCell className="uppercase">{user.role}</TableCell>
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)}>
@@ -243,7 +238,7 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário <span className="font-bold">{user.username}</span>.
+                                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário <span className="font-bold">{user.email}</span>.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -261,37 +256,21 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Editar Usuário: {editingUser?.username}</DialogTitle>
-              <DialogDescription>Altere as informações do usuário abaixo.</DialogDescription>
+              <DialogTitle>Editar Usuário: {editingUser?.email}</DialogTitle>
+              <DialogDescription>Altere as informações do usuário abaixo. A senha não pode ser alterada aqui.</DialogDescription>
             </DialogHeader>
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(handleUpdateSubmit)} className="space-y-4">
                  <FormField
                     control={editForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Nome de Usuário</FormLabel>
+                        <FormLabel>E-mail do Usuário</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <UserCog className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="ex: joao.silva" {...field} className="pl-9"/>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                 <FormField
-                    control={editForm.control}
-                    name="password"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Nova Senha (Opcional)</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                             <Input type="password" placeholder="Deixe em branco para não alterar" {...field} className="pl-9" />
+                            <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input type="email" {...field} className="pl-9"/>
                           </div>
                         </FormControl>
                         <FormMessage />

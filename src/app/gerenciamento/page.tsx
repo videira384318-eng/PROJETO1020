@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -10,12 +9,12 @@ import { AppHeader } from '@/components/app-header';
 import { UserManagement } from '@/components/user-management';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldOff } from 'lucide-react';
 
 
 function GerenciamentoPageContent() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
@@ -35,23 +34,26 @@ function GerenciamentoPageContent() {
 
     const unsubscribe = getUsers((allUsers) => {
         // Filter out the current adm user from the list to prevent self-modification
-        const filteredUsers = allUsers.filter(u => u.username.toLowerCase() !== 'adm');
+        const filteredUsers = allUsers.filter(u => u.id !== user?.uid);
         setUsers(filteredUsers);
     });
 
     return () => unsubscribe();
-  }, [role, router, toast]);
+  }, [role, router, toast, user]);
   
-  const handleAddUser = async (user: Omit<User, 'id'>) => {
+  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
     try {
-        await addUser(user);
+        await addUser(newUser);
         toast({
             title: "Usuário Adicionado!",
-            description: `O usuário ${user.username} foi criado com sucesso.`
+            description: `O usuário ${newUser.email} foi criado com sucesso.`
         });
-    } catch(e) {
+    } catch(e: any) {
         console.error("Erro ao adicionar usuário: ", e);
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível adicionar o usuário.' });
+        const description = e.message.includes('auth/email-already-in-use')
+          ? 'Este e-mail já está em uso.'
+          : 'Não foi possível adicionar o usuário.';
+        toast({ variant: 'destructive', title: 'Erro', description });
     }
   };
 
@@ -128,4 +130,3 @@ export default function GerenciamentoPage() {
         </AuthGuard>
     )
 }
-
