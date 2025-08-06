@@ -18,7 +18,7 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    if (isScanning && !scannerRef.current?.isScanning()) {
+    if (isScanning && !scannerRef.current?.isScanning) {
       const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
         onScan(decodedText);
       };
@@ -40,14 +40,14 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
         setIsScanning(false);
       });
 
-    } else if (!isScanning && scannerRef.current && scannerRef.current.isScanning()) {
+    } else if (!isScanning && scannerRef.current && scannerRef.current.isScanning) {
       scannerRef.current.stop().catch(err => {
         console.error("Failed to stop scanner.", err);
       });
     }
 
     return () => {
-      if (scannerRef.current && scannerRef.current.isScanning()) {
+      if (scannerRef.current && scannerRef.current.isScanning) {
         scannerRef.current.stop().catch(err => {
           console.error("Failed to stop scanner on cleanup.", err);
         });
