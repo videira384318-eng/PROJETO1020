@@ -34,22 +34,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(user);
         const userRole = await getUserRole(user.uid);
         setRole(userRole);
-        // Redirect from login page if already logged in
-        if (pathname === '/login') {
-            router.push('/');
-        }
       } else {
         setUser(null);
         setRole(null);
-        if (pathname !== '/login') {
-           router.push('/login');
-        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [router, pathname]);
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      if (user && pathname === '/login') {
+        router.push('/');
+      } else if (!user && pathname !== '/login') {
+        router.push('/login');
+      }
+    }
+  }, [user, loading, pathname, router]);
+
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -86,20 +90,9 @@ export const useAuth = (): AuthContextType => {
 
 export const AuthGuard = ({ children }: { children: ReactNode }) => {
     const { user, loading } = useAuth();
-    const router = useRouter();
     const pathname = usePathname();
-    const [isClient, setIsClient] = useState(false);
 
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-    
-    // Early exit on server
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    if (loading || !isClient) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -108,12 +101,10 @@ export const AuthGuard = ({ children }: { children: ReactNode }) => {
     }
 
     if (!user && pathname !== '/login') {
-        router.push('/login');
         return null;
     }
     
     if (user && pathname === '/login') {
-        router.push('/');
         return null;
     }
 
