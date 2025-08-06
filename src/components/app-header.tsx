@@ -1,9 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, Users, Truck, UserCog } from "lucide-react";
+import { Home, Users, Truck, UserCog, Settings } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth, type Role } from "@/contexts/auth-context";
 import {
@@ -19,7 +20,7 @@ import {
 interface AppHeaderProps {
     title: string;
     description: string;
-    activePage: 'employees' | 'visitors' | 'vehicles';
+    activePage: 'employees' | 'visitors' | 'vehicles' | 'management';
     children?: React.ReactNode;
 }
 
@@ -79,6 +80,23 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+            {role === 'adm' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant={activePage === 'management' ? 'default' : 'outline'} size="icon">
+                      <Link href="/gerenciamento">
+                        <Settings className="h-5 w-5" />
+                        <span className="sr-only">Página de Gerenciamento</span>
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Gerenciamento</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
