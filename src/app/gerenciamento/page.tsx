@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import type { User } from '@/services/userService';
 import { getUsers, addUser, updateUser, deleteUser } from '@/services/userService';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth, AuthGuard } from '@/contexts/auth-context';
 import { AppHeader } from '@/components/app-header';
 import { UserManagement } from '@/components/user-management';
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ShieldOff } from 'lucide-react';
 
 
-export default function GerenciamentoPage() {
+function GerenciamentoPageContent() {
   const { role } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -118,3 +119,13 @@ export default function GerenciamentoPage() {
     </main>
   );
 }
+
+
+export default function GerenciamentoPage() {
+    return (
+        <AuthGuard>
+            <GerenciamentoPageContent />
+        </AuthGuard>
+    )
+}
+

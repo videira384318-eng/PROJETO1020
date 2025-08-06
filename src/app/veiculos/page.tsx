@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -27,7 +28,7 @@ import {
     getVehicleLog,
     updateVehicle
 } from '@/services/vehicleService';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth, AuthGuard } from '@/contexts/auth-context';
 
 
 const vehicleFormSchema = z.object({
@@ -47,7 +48,7 @@ export interface VehicleLogEntry extends VehicleFormData {
     type: 'entry' | 'exit';
 }
 
-export default function VeiculosPage() {
+function VeiculosPageContent() {
   const { role } = useAuth();
   const [vehicles, setVehicles] = useState<VehicleFormData[]>([]);
   const [vehicleLog, setVehicleLog] = useState<VehicleLogEntry[]>([]);
@@ -374,4 +375,12 @@ export default function VeiculosPage() {
 
     </main>
   );
+}
+
+export default function VeiculosPage() {
+    return (
+        <AuthGuard>
+            <VeiculosPageContent />
+        </AuthGuard>
+    )
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,9 +16,9 @@ import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
 import { addScan, deleteScan, getScans } from '@/services/scanService';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth, AuthGuard } from '@/contexts/auth-context';
 
-export default function Home() {
+function HomePageContent() {
   const { role } = useAuth();
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
@@ -296,4 +297,12 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+export default function Home() {
+    return (
+        <AuthGuard>
+            <HomePageContent />
+        </AuthGuard>
+    )
 }

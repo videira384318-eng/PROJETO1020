@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,7 +25,7 @@ import {
     deleteVisitorLog,
     getVisitors
 } from '@/services/visitorService';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth, AuthGuard } from '@/contexts/auth-context';
 
 
 const visitorFormSchema = z.object({
@@ -49,7 +50,7 @@ const visitorFormSchema = z.object({
 
 export type VisitorFormData = z.infer<typeof visitorFormSchema>;
 
-export default function VisitantesPage() {
+function VisitantesPageContent() {
   const { role } = useAuth();
   const [visitors, setVisitors] = useState<VisitorFormData[]>([]);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
@@ -465,4 +466,13 @@ export default function VisitantesPage() {
       />
     </main>
   );
+}
+
+
+export default function VisitantesPage() {
+    return (
+        <AuthGuard>
+            <VisitantesPageContent />
+        </AuthGuard>
+    )
 }

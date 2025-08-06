@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { db } from '@/lib/firebase';
@@ -10,7 +11,11 @@ import {
     updateDoc,
     query,
     onSnapshot,
-    Unsubscribe
+    Unsubscribe,
+    where,
+    getDocs,
+    getDoc,
+    setDoc
 } from 'firebase/firestore';
 import type { Role } from '@/contexts/auth-context';
 
@@ -27,7 +32,48 @@ const USERS_COLLECTION = 'users';
 // Note: In a real-world application, password handling would involve hashing.
 // Here we store it as plain text for simplicity of the simulation.
 
+const createAdmUserIfNeeded = async () => {
+    const admUserRef = doc(db, USERS_COLLECTION, "adm_user"); // Use a fixed ID for the admin user
+    const admUserSnap = await getDoc(admUserRef);
+
+    if (!admUserSnap.exists()) {
+        console.log("Creating default administrator user...");
+        await setDoc(admUserRef, {
+            username: "adm",
+            password: "admin123", // Default password - CHANGE THIS IN A REAL APP
+            role: "adm"
+        });
+    }
+};
+
+// Call this once when the service is loaded
+createAdmUserIfNeeded();
+
+export const verifyUser = async (username: string, password: string): Promise<Role | null> => {
+    const q = query(collection(db, USERS_COLLECTION), where("username", "==", username));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+        return null; // User not found
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data() as User;
+
+    if (userData.password === password) {
+        return userData.role;
+    }
+
+    return null; // Password incorrect
+}
+
 export const addUser = async (userData: Omit<User, 'id'>): Promise<string> => {
+    // Check if username already exists
+    const q = query(collection(db, USERS_COLLECTION), where("username", "==", userData.username));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        throw new Error("Username already exists.");
+    }
     const docRef = await addDoc(collection(db, USERS_COLLECTION), userData);
     return docRef.id;
 };
