@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
-import { Html5Qrcode, Html5QrcodeError, Html5QrcodeResult, Html5QrcodeScannerState } from 'html5-qrcode';
-import { Camera, CameraOff } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode, type Html5QrcodeError, type Html5QrcodeResult, Html5QrcodeScannerState } from 'html5-qrcode';
+import { Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const QR_SCANNER_ELEMENT_ID = "qr-reader";
 
@@ -16,52 +18,77 @@ interface QRScannerProps {
 
 export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const { toast } = useToast();
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
-      onScan(decodedText);
-    };
-
-    const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
-      // Este callback é chamado frequentemente, então não registramos para evitar spam no console.
-    };
-
-    const config = { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [] };
-    
-    if (!scannerRef.current) {
-        const scanner = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
-        scannerRef.current = scanner;
+    if (typeof window !== 'undefined') {
+        scannerRef.current = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
     }
+  }, []);
+
+  const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
+    onScan(decodedText);
+  };
+
+  const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
+    // This callback is called frequently, so we don't log to avoid console spam.
+  };
+
+  const startScanner = async () => {
     const html5QrCode = scannerRef.current;
+    if (!html5QrCode) return;
     
-    if (isScanning && html5QrCode.getState() !== Html5QrcodeScannerState.SCANNING) {
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess,
-        onScanFailure
-      ).catch(err => {
+    if (html5QrCode.getState() !== Html5QrcodeScannerState.SCANNING) {
+      try {
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [] };
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onScanSuccess,
+          onScanFailure
+        );
+        setHasPermission(true);
+        setIsScanning(true);
+      } catch (err) {
         console.error("Falha ao iniciar o leitor de QR.", err);
+        setHasPermission(false);
         setIsScanning(false);
-      });
-    } else if (!isScanning && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
-      html5QrCode.stop().catch(err => {
-        console.error("Falha ao parar o leitor.", err);
-      });
-    }
-
-    return () => {
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().catch(err => {
-          console.error("Falha ao parar o leitor na limpeza.", err);
-        });
+        toast({
+            variant: "destructive",
+            title: "Acesso à Câmera Negado",
+            description: "Por favor, habilite a permissão da câmera nas configurações do seu navegador.",
+        })
       }
-    };
-  }, [isScanning, onScan, setIsScanning]);
+    }
+  };
+
+  const stopScanner = async () => {
+      const html5QrCode = scannerRef.current;
+      if (html5QrCode && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+          try {
+              await html5QrCode.stop();
+          } catch(err) {
+              console.error("Falha ao parar o leitor.", err);
+          }
+      }
+      setIsScanning(false);
+  }
 
   const toggleScan = () => {
-    setIsScanning(!isScanning);
+    if (isScanning) {
+        stopScanner();
+    } else {
+        startScanner();
+    }
   };
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+        stopScanner();
+    };
+  }, []);
 
   return (
     <Card className="w-full">
@@ -74,6 +101,15 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
       </CardHeader>
       <CardContent>
         <div id={QR_SCANNER_ELEMENT_ID} className="w-full rounded-md [&>div]:rounded-md [&>video]:rounded-md [&>div>span]:hidden [&>div>button]:hidden"></div>
+        {hasPermission === false && !isScanning && (
+             <Alert variant="destructive">
+              <CameraOff className="h-4 w-4" />
+              <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
+              <AlertDescription>
+                Permita o acesso à câmera para usar esta funcionalidade.
+              </AlertDescription>
+            </Alert>
+        )}
       </CardContent>
     </Card>
   );
