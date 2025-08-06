@@ -17,6 +17,7 @@ import { AppHeader } from '@/components/app-header';
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -92,13 +93,45 @@ export default function Home() {
   };
   
   const handleAddEmployee = (employeeData: QrFormData) => {
-    setEmployees(prev => [...prev, employeeData]);
+    const newEmployee: QrFormData = {
+      ...employeeData,
+      id: `employee_${new Date().getTime()}`,
+    };
+    setEmployees(prev => [...prev, newEmployee]);
   }
   
   const handleClearEmployees = () => {
     setEmployees([]);
+    setSelectedEmployees([]);
     localStorage.removeItem('qr-attendance-employees');
   }
+
+  const handleDeleteSelectedEmployees = () => {
+    const employeeIdsToDelete = new Set(selectedEmployees);
+    setEmployees(prev => prev.filter(emp => !employeeIdsToDelete.has(emp.id!)));
+    setSelectedEmployees([]);
+    toast({
+        title: "Funcionários Removidos",
+        description: `Os ${employeeIdsToDelete.size} funcionário(s) selecionado(s) foram removidos.`,
+    });
+  };
+
+  const handleToggleEmployeeSelection = (employeeId: string) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+      ? prev.filter(id => id !== employeeId)
+      : [...prev, employeeId]
+    )
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedEmployees.length === employees.length) {
+      setSelectedEmployees([]);
+    } else {
+      setSelectedEmployees(employees.map(e => e.id!));
+    }
+  };
+
 
   const handleDeleteScan = (scanId: string) => {
     setScans(prevScans => prevScans.filter(scan => scan.scanId !== scanId));
@@ -138,6 +171,9 @@ export default function Home() {
       };
     });
   }, [employees, scans]);
+  
+  const numSelected = selectedEmployees.length;
+  const numTotal = employees.length;
 
 
   if (!isClient) {
@@ -165,7 +201,17 @@ export default function Home() {
                 <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
             <TabsContent value="employees">
-                <EmployeeList employees={employeesWithStatus} onClear={handleClearEmployees} onEmployeeClick={handleEmployeeClick} />
+                <EmployeeList 
+                  employees={employeesWithStatus} 
+                  onClear={handleClearEmployees} 
+                  onEmployeeClick={handleEmployeeClick}
+                  selectedEmployees={selectedEmployees}
+                  numSelected={numSelected}
+                  numTotal={numTotal}
+                  onToggleSelection={handleToggleEmployeeSelection}
+                  onToggleSelectAll={handleToggleSelectAll}
+                  onDeleteSelected={handleDeleteSelectedEmployees}
+                />
             </TabsContent>
             <TabsContent value="qrcodes">
                 <QrCodeList employees={employees} onClear={handleClearEmployees}/>

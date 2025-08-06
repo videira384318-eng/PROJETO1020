@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 
 
 const qrFormSchema = z.object({
+  id: z.string().optional(),
   nome: z.string().min(1, "O nome é obrigatório."),
   setor: z.string().min(1, "O setor é obrigatório."),
   placa: z.string().optional(),

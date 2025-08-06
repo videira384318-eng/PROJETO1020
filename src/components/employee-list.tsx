@@ -9,6 +9,18 @@ import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from './ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export interface EmployeeWithStatus extends QrFormData {
   status: 'entry' | 'exit';
@@ -18,9 +30,25 @@ interface EmployeeListProps {
   employees: EmployeeWithStatus[];
   onClear: () => void;
   onEmployeeClick: (employee: QrFormData) => void;
+  selectedEmployees: string[];
+  numSelected: number;
+  numTotal: number;
+  onToggleSelection: (employeeId: string) => void;
+  onToggleSelectAll: () => void;
+  onDeleteSelected: () => void;
 }
 
-export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeListProps) {
+export function EmployeeList({ 
+  employees, 
+  onClear, 
+  onEmployeeClick,
+  selectedEmployees,
+  numSelected,
+  numTotal,
+  onToggleSelection,
+  onToggleSelectAll,
+  onDeleteSelected
+ }: EmployeeListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
 
@@ -50,6 +78,10 @@ export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeLi
         setAppliedSearchTerm(searchTerm);
     }
   }
+  
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   const handleClear = () => {
     onClear();
@@ -66,6 +98,28 @@ export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeLi
                 <CardDescription>Visualize, gerencie e registre o ponto dos funcionários.</CardDescription>
             </div>
              <div className="flex items-center gap-2 w-full md:w-auto">
+                {numSelected > 0 && (
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir ({numSelected})
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} funcionário(s) selecionado(s).
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={onDeleteSelected}>Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              )}
                 <div className="relative w-full md:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -76,10 +130,28 @@ export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeLi
                         onKeyDown={handleKeyDown}
                     />
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleClear} disabled={employees.length === 0}>
-                    <Trash2 className="h-5 w-5" />
-                    <span className="sr-only">Limpar Lista de Funcionários</span>
-                </Button>
+                {employees.length > 0 && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" disabled={employees.length === 0}>
+                                <Trash2 className="h-5 w-5" />
+                                <span className="sr-only">Limpar Lista de Funcionários</span>
+                            </Button>
+                        </AlertDialogTrigger>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Limpar toda a lista?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Essa ação não pode ser desfeita. Todos os funcionários serão removidos.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleClear}>Limpar Tudo</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
             </div>
         </div>
       </CardHeader>
@@ -101,6 +173,13 @@ export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeLi
             <Table>
                 <TableHeader>
                     <TableRow>
+                    <TableHead className="w-[40px]">
+                        <Checkbox 
+                           checked={numTotal > 0 && numSelected === numTotal}
+                           indeterminate={numSelected > 0 && numSelected < numTotal}
+                           onCheckedChange={onToggleSelectAll}
+                        />
+                    </TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Placa</TableHead>
@@ -109,8 +188,20 @@ export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeLi
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredEmployees.map((employee, index) => (
-                    <TableRow key={index} onClick={() => onEmployeeClick(employee)} className="cursor-pointer">
+                    {filteredEmployees.map((employee) => (
+                    <TableRow 
+                        key={employee.id} 
+                        data-state={selectedEmployees.includes(employee.id!) ? 'selected' : ''}
+                        onClick={() => onEmployeeClick(employee)} 
+                        className="cursor-pointer"
+                    >
+                         <TableCell onClick={stopPropagation}>
+                            <Checkbox
+                                checked={selectedEmployees.includes(employee.id!)}
+                                onCheckedChange={() => onToggleSelection(employee.id!)}
+                                aria-label={`Selecionar ${employee.nome}`}
+                            />
+                        </TableCell>
                         <TableCell className="font-medium">{employee.nome}</TableCell>
                         <TableCell>{employee.setor}</TableCell>
                         <TableCell>{employee.placa || 'N/A'}</TableCell>
