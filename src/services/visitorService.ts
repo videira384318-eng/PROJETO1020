@@ -1,76 +1,60 @@
 "use client";
 
-import { db } from '@/lib/firebase';
-import { 
-    collection, 
-    addDoc, 
-    doc, 
-    updateDoc, 
-    query, 
-    where, 
-    getDocs,
-    writeBatch,
-    onSnapshot,
-    Unsubscribe,
-    orderBy
-} from 'firebase/firestore';
 import type { VisitorFormData } from '@/app/visitantes/page';
 
-const VISITORS_COLLECTION = 'visitors';
+const VISITORS_COLLECTION = 'visitors_local';
 
-export const addVisitor = async (visitorData: VisitorFormData): Promise<string> => {
-  const docRef = await addDoc(collection(db, VISITORS_COLLECTION), visitorData);
-  return docRef.id;
+// Helper function to get visitors from localStorage
+const getStoredVisitors = (): VisitorFormData[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(VISITORS_COLLECTION);
+    return stored ? JSON.parse(stored) : [];
 };
 
-export const updateVisitor = async (visitorId: string, visitorData: Partial<VisitorFormData>): Promise<void> => {
-    const docRef = doc(db, VISITORS_COLLECTION, visitorId);
-    await updateDoc(docRef, visitorData);
-}
+// Helper function to save visitors to localStorage
+const setStoredVisitors = (visitors: VisitorFormData[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(VISITORS_COLLECTION, JSON.stringify(visitors));
+};
 
-export const deleteVisitorByPersonId = async (personId: string): Promise<void> => {
-    const q = query(collection(db, VISITORS_COLLECTION), where('personId', '==', personId));
-    const querySnapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    querySnapshot.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
-}
+export const addVisitor = (visitorData: VisitorFormData): string => {
+  const visitors = getStoredVisitors();
+  const newVisitor: VisitorFormData = {
+    ...visitorData,
+    id: `visitor_${new Date().getTime()}_${Math.random()}`
+  };
+  const updatedVisitors = [...visitors, newVisitor];
+  setStoredVisitors(updatedVisitors);
+  return newVisitor.id!;
+};
 
-export const deleteVisitorsByPersonIds = async (personIds: string[]): Promise<void> => {
+export const updateVisitor = (visitorId: string, visitorData: Partial<VisitorFormData>): void => {
+    const visitors = getStoredVisitors();
+    const updatedVisitors = visitors.map(v => 
+        v.id === visitorId ? { ...v, ...visitorData } : v
+    );
+    setStoredVisitors(updatedVisitors);
+};
+
+export const deleteVisitorByPersonId = (personId: string): void => {
+    const visitors = getStoredVisitors();
+    const updatedVisitors = visitors.filter(v => v.personId !== personId);
+    setStoredVisitors(updatedVisitors);
+};
+
+export const deleteVisitorsByPersonIds = (personIds: string[]): void => {
     if (personIds.length === 0) return;
-    const batch = writeBatch(db);
-    // Firestore 'in' query can take up to 30 elements
-    const chunks = [];
-    for (let i = 0; i < personIds.length; i += 30) {
-        chunks.push(personIds.slice(i, i + 30));
-    }
-    for (const chunk of chunks) {
-        const q = query(collection(db, VISITORS_COLLECTION), where('personId', 'in', chunk));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-    }
-    await batch.commit();
-}
+    const visitors = getStoredVisitors();
+    const updatedVisitors = visitors.filter(v => !personIds.includes(v.personId!));
+    setStoredVisitors(updatedVisitors);
+};
 
-export const deleteVisitorLog = async (visitId: string): Promise<void> => {
-    await deleteDoc(doc(db, VISITORS_COLLECTION, visitId));
-}
+export const deleteVisitorLog = (visitId: string): void => {
+    const visitors = getStoredVisitors();
+    const updatedVisitors = visitors.filter(v => v.id !== visitId);
+    setStoredVisitors(updatedVisitors);
+};
 
-export const getVisitors = (callback: (visitors: VisitorFormData[]) => void): Unsubscribe => {
-    const q = query(collection(db, VISITORS_COLLECTION), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const visitors: VisitorFormData[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            // Ensure createdAt is a string
-            const createdAt = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt) : new Date().toISOString();
-            visitors.push({ id: doc.id, ...data, createdAt } as VisitorFormData);
-        });
-        callback(visitors);
-    });
-    return unsubscribe;
+export const getVisitors = (): VisitorFormData[] => {
+    return getStoredVisitors();
 };

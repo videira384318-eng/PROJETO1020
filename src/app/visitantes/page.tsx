@@ -70,13 +70,16 @@ export default function VisitantesPage() {
     },
   });
 
+  const refreshData = () => {
+    setVisitors(getVisitors());
+  }
+
   useEffect(() => {
     setIsClient(true);
-    const unsubscribe = getVisitors(setVisitors);
-    return () => unsubscribe();
+    refreshData();
   }, []);
 
-  const handleAddVisitor = async (data: VisitorFormData) => {
+  const handleAddVisitor = (data: VisitorFormData) => {
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
     const newVisitor: VisitorFormData = {
       ...data,
@@ -86,7 +89,8 @@ export default function VisitantesPage() {
       status: 'inside',
     };
     try {
-        await addVisitor(newVisitor);
+        addVisitor(newVisitor);
+        refreshData();
         toast({
           title: "Visitante Cadastrado e Entrada Registrada!",
           description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
@@ -102,10 +106,11 @@ export default function VisitantesPage() {
     }
   };
   
-  const handleDeleteSelectedVisitors = async () => {
+  const handleDeleteSelectedVisitors = () => {
     try {
-        await deleteVisitorsByPersonIds(selectedVisitors);
+        deleteVisitorsByPersonIds(selectedVisitors);
         setSelectedVisitors([]);
+        refreshData();
         toast({
             title: "Visitantes Removidos",
             description: `Os ${selectedVisitors.length} visitante(s) selecionado(s) foram removidos.`,
@@ -136,10 +141,11 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleDeleteVisitor = async (personId: string) => {
+  const handleDeleteVisitor = (personId: string) => {
     try {
-        await deleteVisitorByPersonId(personId);
+        deleteVisitorByPersonId(personId);
         setSelectedVisitors(prev => prev.filter(id => id !== personId));
+        refreshData();
         toast({
           title: "Visitante Removido",
           description: "O visitante e todo o seu histórico foram removidos.",
@@ -154,20 +160,21 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleReEntrySubmit = async (data: ReEntryFormData) => {
+  const handleReEntrySubmit = (data: ReEntryFormData) => {
     if (!reEntryVisitor) return;
 
     const newVisit: VisitorFormData = {
         ...reEntryVisitor, // Spread base data from the last visit
         ...data, // Spread new data from the form
-        id: undefined, // Let firestore create new id
+        id: undefined, // Let local storage create new id
         status: 'inside',
         entryTime: new Date().toISOString(),
         exitTime: undefined, // Clear exit time for the new visit
         createdAt: new Date().toISOString(),
     };
     try {
-        await addVisitor(newVisit);
+        addVisitor(newVisit);
+        refreshData();
         toast({
             title: "Nova Entrada Registrada!",
             description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
@@ -183,12 +190,13 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleVisitorExit = async (visitorId: string) => {
+  const handleVisitorExit = (visitorId: string) => {
     try {
-        await updateVisitor(visitorId, {
+        updateVisitor(visitorId, {
             status: 'exited',
             exitTime: new Date().toISOString()
         });
+        refreshData();
         toast({
           title: "Saída Registrada!",
           description: `A saída do visitante foi registrada com sucesso.`,
@@ -211,9 +219,10 @@ export default function VisitantesPage() {
     }
   }
 
-  const handleDeleteVisitorLog = async (visitId: string) => {
+  const handleDeleteVisitorLog = (visitId: string) => {
     try {
-        await deleteVisitorLog(visitId);
+        deleteVisitorLog(visitId);
+        refreshData();
         toast({
           title: "Registro de Histórico Removido",
           description: "A visita foi removida do histórico.",

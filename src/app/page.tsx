@@ -26,19 +26,19 @@ export default function Home() {
   const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
 
+  const refreshData = () => {
+    const allEmployees = getEmployees();
+    const allScans = getScans();
+    setEmployees(allEmployees);
+    setScans(allScans);
+  };
+
   useEffect(() => {
     setIsClient(true);
-    
-    const unsubscribeEmployees = getEmployees(setEmployees);
-    const unsubscribeScans = getScans(setScans);
-    
-    return () => {
-        unsubscribeEmployees();
-        unsubscribeScans();
-    }
+    refreshData();
   }, []);
 
-  const handleScan = async (decodedText: string) => {
+  const handleScan = (decodedText: string) => {
     try {
       const { nome, setor, placa, ramal } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
@@ -47,7 +47,8 @@ export default function Home() {
         throw new Error('Dados do QR code incompletos.');
       }
       
-      const lastScanForEmployee = scans.filter(scan => scan.employeeId === employeeId).sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
+      const allScans = getScans();
+      const lastScanForEmployee = allScans.filter(scan => scan.employeeId === employeeId).sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
@@ -59,7 +60,8 @@ export default function Home() {
         ramal: ramal || 'N/A'
       };
 
-      await addScan(newScan);
+      addScan(newScan);
+      refreshData();
 
       toast({
         title: "Escaneamento Concluído!",
@@ -77,9 +79,10 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
+  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
     try {
-        await addEmployee(employeeData);
+        addEmployee(employeeData);
+        refreshData();
         toast({
             title: "Funcionário Adicionado!",
             description: `${employeeData.nome} foi adicionado(a) à lista.`
@@ -94,10 +97,11 @@ export default function Home() {
     }
   }
   
-  const handleClearEmployees = async () => {
+  const handleClearEmployees = () => {
     try {
-        await clearEmployees();
+        clearEmployees();
         setSelectedEmployees([]);
+        refreshData();
         toast({
             title: "Lista Limpa",
             description: "Todos os funcionários foram removidos.",
@@ -112,14 +116,15 @@ export default function Home() {
     }
   }
 
-  const handleDeleteSelectedEmployees = async () => {
+  const handleDeleteSelectedEmployees = () => {
     try {
-        await deleteEmployees(selectedEmployees);
+        deleteEmployees(selectedEmployees);
         toast({
             title: "Funcionários Removidos",
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) foram removidos.`,
         });
         setSelectedEmployees([]);
+        refreshData();
     } catch (error) {
         console.error("Erro ao excluir funcionários:", error);
         toast({
@@ -147,9 +152,10 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = async (scanId: string) => {
+  const handleDeleteScan = (scanId: string) => {
     try {
-        await deleteScan(scanId);
+        deleteScan(scanId);
+        refreshData();
         toast({
             title: "Registro Excluído",
             description: "O registro de ponto foi removido do histórico.",

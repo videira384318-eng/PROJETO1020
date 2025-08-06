@@ -1,43 +1,43 @@
 "use client";
 
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, writeBatch, query, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import type { QrFormData } from '@/components/qr-generator';
 
-const EMPLOYEES_COLLECTION = 'employees';
+const EMPLOYEES_COLLECTION = 'employees_local';
 
-export const addEmployee = async (employeeData: Omit<QrFormData, 'id'>): Promise<string> => {
-  const docRef = await addDoc(collection(db, EMPLOYEES_COLLECTION), employeeData);
-  return docRef.id;
+// Helper function to get employees from localStorage
+const getStoredEmployees = (): QrFormData[] => {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(EMPLOYEES_COLLECTION);
+  return stored ? JSON.parse(stored) : [];
 };
 
-export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
-    const batch = writeBatch(db);
-    employeeIds.forEach(id => {
-        const docRef = doc(db, EMPLOYEES_COLLECTION, id);
-        batch.delete(docRef);
-    });
-    await batch.commit();
+// Helper function to save employees to localStorage
+const setStoredEmployees = (employees: QrFormData[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(EMPLOYEES_COLLECTION, JSON.stringify(employees));
 };
 
-export const clearEmployees = async (): Promise<void> => {
-    const q = query(collection(db, EMPLOYEES_COLLECTION));
-    const querySnapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    querySnapshot.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
+export const addEmployee = (employeeData: Omit<QrFormData, 'id'>): string => {
+  const employees = getStoredEmployees();
+  const newEmployee: QrFormData = {
+    ...employeeData,
+    id: `emp_${new Date().getTime()}_${Math.random()}`
+  };
+  const updatedEmployees = [...employees, newEmployee];
+  setStoredEmployees(updatedEmployees);
+  return newEmployee.id!;
+};
+
+export const deleteEmployees = (employeeIds: string[]): void => {
+    let employees = getStoredEmployees();
+    const updatedEmployees = employees.filter(emp => !employeeIds.includes(emp.id!));
+    setStoredEmployees(updatedEmployees);
+};
+
+export const clearEmployees = (): void => {
+    setStoredEmployees([]);
 }
 
-export const getEmployees = (callback: (employees: QrFormData[]) => void): Unsubscribe => {
-    const q = query(collection(db, EMPLOYEES_COLLECTION));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const employees: QrFormData[] = [];
-        querySnapshot.forEach((doc) => {
-            employees.push({ id: doc.id, ...doc.data() } as QrFormData);
-        });
-        callback(employees);
-    });
-    return unsubscribe;
+export const getEmployees = (): QrFormData[] => {
+    return getStoredEmployees();
 };
