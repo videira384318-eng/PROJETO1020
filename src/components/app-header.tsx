@@ -20,39 +20,41 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
         <h1 className="text-4xl font-bold font-headline text-primary">{title}</h1>
         <p className="text-muted-foreground">{description}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button asChild variant={activePage === 'employees' ? "default" : "outline"} size="icon">
-                        <Link href="/">
-                            <Home className="h-5 w-5" />
-                            <span className="sr-only">Página de Funcionários</span>
-                        </Link>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Funcionários</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-             <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button asChild variant={activePage === 'visitors' ? "default" : "outline"} size="icon">
-                         <Link href="/visitantes">
-                            <Users className="h-5 w-5" />
-                            <span className="sr-only">Página de Visitantes</span>
-                        </Link>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Visitantes</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+      <div className="flex flex-col items-start md:items-end gap-2">
+        <div className="flex items-center gap-2">
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button asChild variant={activePage === 'employees' ? "default" : "outline"} size="icon">
+                            <Link href="/">
+                                <Home className="h-5 w-5" />
+                                <span className="sr-only">Página de Funcionários</span>
+                            </Link>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Funcionários</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button asChild variant={activePage === 'visitors' ? "default" : "outline"} size="icon">
+                             <Link href="/visitantes">
+                                <Users className="h-5 w-5" />
+                                <span className="sr-only">Página de Visitantes</span>
+                            </Link>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Visitantes</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <ThemeToggle />
+        </div>
         {children}
-        <ThemeToggle />
       </div>
     </div>
   );
