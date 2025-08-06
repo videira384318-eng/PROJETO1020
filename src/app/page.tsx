@@ -9,6 +9,8 @@ import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-lis
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -19,6 +21,7 @@ export default function Home() {
   const [isScanning, setIsScanning] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -173,17 +176,28 @@ export default function Home() {
             </TabsContent>
             <TabsContent value="history">
                 <div className="flex flex-col lg:flex-row gap-8">
-                    <div className="flex-shrink-0">
-                         <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={setSelectedDate}
-                            className="rounded-md border"
-                            initialFocus
-                        />
-                    </div>
+                    {showCalendar && (
+                        <div className="flex-shrink-0">
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => {
+                                    setSelectedDate(date);
+                                    setShowCalendar(false);
+                                }}
+                                className="rounded-md border"
+                                initialFocus
+                            />
+                        </div>
+                    )}
                     <div className="flex-grow w-full">
-                        <AttendanceLog scans={sortedScansForLog} employees={employees} onDelete={handleDeleteScan}/>
+                        <AttendanceLog 
+                            scans={sortedScansForLog} 
+                            employees={employees} 
+                            onDelete={handleDeleteScan}
+                            onToggleCalendar={() => setShowCalendar(prev => !prev)}
+                            isCalendarOpen={showCalendar}
+                        />
                     </div>
                 </div>
             </TabsContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, LogOut, Trash2 } from 'lucide-react';
+import { LogIn, LogOut, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +23,15 @@ interface AttendanceLogProps {
   scans: AttendanceScan[];
   employees: QrFormData[];
   onDelete: (scanId: string) => void;
+  onToggleCalendar: () => void;
+  isCalendarOpen: boolean;
 }
 
 function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function AttendanceLog({ scans, employees, onDelete }: AttendanceLogProps) {
+export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, isCalendarOpen }: AttendanceLogProps) {
   
   const getEmployeeDetails = (employeeId: string) => {
     const employee = employees.find(emp => `${emp.nome} (${emp.setor})` === employeeId);
@@ -47,6 +49,10 @@ export function AttendanceLog({ scans, employees, onDelete }: AttendanceLogProps
                 <CardTitle className="font-headline">Histórico</CardTitle>
                 <CardDescription>Um registro em tempo real de todos os escaneamentos.</CardDescription>
             </div>
+            <Button onClick={onToggleCalendar} variant="outline" size="icon">
+                <CalendarIcon className="h-4 w-4" />
+                <span className="sr-only">{isCalendarOpen ? 'Fechar Calendário' : 'Abrir Calendário'}</span>
+            </Button>
         </div>
       </CardHeader>
       <CardContent>
