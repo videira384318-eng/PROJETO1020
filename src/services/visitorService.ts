@@ -1,58 +1,46 @@
 "use client";
 
 import type { VisitorFormData } from '@/app/visitantes/page';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc } from 'firebase/firestore';
 
-const VISITORS_KEY = 'visitors_storage';
-
-const getStoredVisitors = (): VisitorFormData[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(VISITORS_KEY);
-    return stored ? JSON.parse(stored) : [];
-};
-
-const setStoredVisitors = (visitors: VisitorFormData[]) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(VISITORS_KEY, JSON.stringify(visitors));
-};
+const VISITORS_COLLECTION = 'visitors';
 
 export const addVisitor = async (visitorData: Omit<VisitorFormData, 'id'>): Promise<string> => {
-    const visitors = getStoredVisitors();
-    const newVisitor: VisitorFormData = {
-        id: `vis_${new Date().getTime()}_${Math.random().toString(36).substring(2, 9)}`,
-        ...visitorData,
-    };
-    const updatedVisitors = [...visitors, newVisitor];
-    setStoredVisitors(updatedVisitors);
-    return newVisitor.id!;
+    const docRef = await addDoc(collection(db, VISITORS_COLLECTION), visitorData);
+    return docRef.id;
 };
 
 export const updateVisitor = async (visitorId: string, visitorData: Partial<VisitorFormData>): Promise<void> => {
-    const visitors = getStoredVisitors();
-    const updatedVisitors = visitors.map(v => 
-        v.id === visitorId ? { ...v, ...visitorData } : v
-    );
-    setStoredVisitors(updatedVisitors);
+    const visitorRef = doc(db, VISITORS_COLLECTION, visitorId);
+    await updateDoc(visitorRef, visitorData);
 };
 
 export const getVisitors = async (): Promise<VisitorFormData[]> => {
-    return getStoredVisitors();
+    const q = query(collection(db, VISITORS_COLLECTION));
+    const querySnapshot = await getDocs(q);
+    const visitors: VisitorFormData[] = [];
+    querySnapshot.forEach((doc) => {
+        visitors.push({ id: doc.id, ...doc.data() } as VisitorFormData);
+    });
+    return visitors;
 };
 
 export const deleteVisitorByPersonId = async (personId: string): Promise<void> => {
-    let visitors = getStoredVisitors();
-    visitors = visitors.filter(v => v.personId !== personId);
-    setStoredVisitors(visitors);
+    const q = query(collection(db, VISITORS_COLLECTION), where('personId', '==', personId));
+    const querySnapshot = await getDocs(q);
+    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
 };
 
 export const deleteVisitorsByPersonIds = async (personIds: string[]): Promise<void> => {
     if (personIds.length === 0) return;
-    let visitors = getStoredVisitors();
-    visitors = visitors.filter(v => !personIds.includes(v.personId!));
-    setStoredVisitors(visitors);
+    const q = query(collection(db, VISITORS_COLLECTION), where('personId', 'in', personIds));
+    const querySnapshot = await getDocs(q);
+    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
 };
 
 export const deleteVisitorLog = async (visitId: string): Promise<void> => {
-    let visitors = getStoredVisitors();
-    visitors = visitors.filter(v => v.id !== visitId);
-    setStoredVisitors(visitors);
+    await deleteDoc(doc(db, VISITORS_COLLECTION, visitId));
 };

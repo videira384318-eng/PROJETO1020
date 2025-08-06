@@ -1,43 +1,35 @@
 "use client";
 
 import type { QrFormData } from '@/components/qr-generator';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where } from 'firebase/firestore';
 
-const EMPLOYEES_KEY = 'employees_storage';
-
-const getStoredEmployees = (): QrFormData[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(EMPLOYEES_KEY);
-    return stored ? JSON.parse(stored) : [];
-};
-
-const setStoredEmployees = (employees: QrFormData[]) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
-};
+const EMPLOYEES_COLLECTION = 'employees';
 
 export const addEmployee = async (employeeData: Omit<QrFormData, 'id'>): Promise<string> => {
-    const employees = getStoredEmployees();
-    const newEmployee: QrFormData = {
-        id: `emp_${new Date().getTime()}_${Math.random().toString(36).substring(2, 9)}`,
-        ...employeeData,
-    };
-    const updatedEmployees = [...employees, newEmployee];
-    setStoredEmployees(updatedEmployees);
-    return newEmployee.id!;
+    const docRef = await addDoc(collection(db, EMPLOYEES_COLLECTION), employeeData);
+    return docRef.id;
 };
 
 export const getEmployees = async (): Promise<QrFormData[]> => {
-    return getStoredEmployees();
+    const q = query(collection(db, EMPLOYEES_COLLECTION));
+    const querySnapshot = await getDocs(q);
+    const employees: QrFormData[] = [];
+    querySnapshot.forEach((doc) => {
+        employees.push({ id: doc.id, ...doc.data() } as QrFormData);
+    });
+    return employees;
 };
 
 export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
     if (employeeIds.length === 0) return;
-    let employees = getStoredEmployees();
-    employees = employees.filter(emp => !employeeIds.includes(emp.id!));
-    setStoredEmployees(employees);
+    const deletePromises = employeeIds.map(id => deleteDoc(doc(db, EMPLOYEES_COLLECTION, id)));
+    await Promise.all(deletePromises);
 };
 
 export const clearEmployees = async (): Promise<void> => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(EMPLOYEES_KEY);
+    const q = query(collection(db, EMPLOYEES_COLLECTION));
+    const querySnapshot = await getDocs(q);
+    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
 };
