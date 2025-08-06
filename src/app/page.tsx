@@ -94,15 +94,19 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-8">
-          <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
-          <AttendanceLog scans={scans} />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+        <div className="lg:col-span-3 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
+              <div className="space-y-8">
+                <AnomalyDetector scans={scans} />
+              </div>
+            </div>
         </div>
-        <div className="lg:col-span-1">
-          <div className="sticky top-8 space-y-8">
-            <AnomalyDetector scans={scans} />
-          </div>
+        <div className="lg:col-span-2">
+            <div className="sticky top-8 space-y-8">
+                 <AttendanceLog scans={scans} />
+            </div>
         </div>
       </div>
     </main>
