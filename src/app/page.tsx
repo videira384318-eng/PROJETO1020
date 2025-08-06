@@ -9,12 +9,13 @@ import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-lis
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar as CalendarIcon, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
 import Link from 'next/link';
+import { AnomalyDetector } from '@/components/anomaly-detector';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -153,13 +154,13 @@ export default function Home() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-bold font-headline text-primary">Controle de Ponto QR</h1>
-          <p className="text-muted-foreground">Gere QR codes para os funcionários ou escaneie para registrar o ponto.</p>
+          <p className="text-muted-foreground">Gerencie o ponto dos funcionários e detecte anomalias.</p>
         </div>
         <div className="flex gap-2">
             <Link href="/visitantes">
               <Button variant="outline">
                 <Users className="mr-2 h-4 w-4" />
-                Visitantes
+                Página de Visitantes
               </Button>
             </Link>
             <QRGenerator onAddEmployee={handleAddEmployee}/>
@@ -168,7 +169,10 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
+        <div className="flex flex-col gap-8">
+            <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
+            <AnomalyDetector scans={scans} />
+        </div>
         <Tabs defaultValue="employees" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="employees">Funcionários</TabsTrigger>

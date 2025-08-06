@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Home, PlusCircle } from 'lucide-react';
+import { Home, PlusCircle, Users } from 'lucide-react';
 import { VisitorList } from '@/components/visitor-list';
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
@@ -86,18 +87,21 @@ export default function VisitantesPage() {
           <h1 className="text-4xl font-bold font-headline text-primary">Cadastro de Visitantes</h1>
           <p className="text-muted-foreground">Registre e gerencie a entrada de visitantes.</p>
         </div>
-        <Link href="/">
-          <Button variant="outline">
-            <Home className="mr-2 h-4 w-4" />
-            Voltar para Controle de Ponto
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+            <Link href="/">
+              <Button variant="outline">
+                <Home className="mr-2 h-4 w-4" />
+                Página de Funcionários
+              </Button>
+            </Link>
+            <ThemeToggle />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="font-headline">Novo Visitante</CardTitle>
+            <CardTitle className="font-headline flex items-center gap-2"><Users className="h-6 w-6"/> Novo Visitante</CardTitle>
             <CardDescription>Preencha os dados abaixo para registrar.</CardDescription>
           </CardHeader>
           <CardContent>
