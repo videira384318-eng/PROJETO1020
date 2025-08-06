@@ -23,18 +23,19 @@ interface EmployeeWithQr extends QrFormData {
 export function EmployeeList({ employees, onQrClick, onClear }: EmployeeListProps) {
   const [employeeWithQrs, setEmployeeWithQrs] = useState<EmployeeWithQr[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
 
   const filteredEmployees = useMemo(() => {
-    if (!searchTerm) {
+    if (!appliedSearchTerm) {
       return employees;
     }
     return employees.filter(employee =>
-      employee.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.setor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (employee.placa && employee.placa.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (employee.ramal && employee.ramal.toLowerCase().includes(searchTerm.toLowerCase()))
+      employee.nome.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
+      employee.setor.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
+      (employee.placa && employee.placa.toLowerCase().includes(appliedSearchTerm.toLowerCase())) ||
+      (employee.ramal && employee.ramal.toLowerCase().includes(appliedSearchTerm.toLowerCase()))
     );
-  }, [employees, searchTerm]);
+  }, [employees, appliedSearchTerm]);
 
   useEffect(() => {
     const generateQRs = async () => {
@@ -62,12 +63,24 @@ export function EmployeeList({ employees, onQrClick, onClear }: EmployeeListProp
   }, [filteredEmployees]);
   
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
+    const newSearchTerm = event.target.value;
+    setSearchTerm(newSearchTerm);
+    if (newSearchTerm === '') {
+        setAppliedSearchTerm('');
+    }
   };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        setAppliedSearchTerm(searchTerm);
+    }
+  }
 
   const handleClear = () => {
     onClear();
     setSearchTerm('');
+    setAppliedSearchTerm('');
   }
 
   return (
@@ -82,10 +95,11 @@ export function EmployeeList({ employees, onQrClick, onClear }: EmployeeListProp
                 <div className="relative w-full md:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder="Pesquisar..." 
+                        placeholder="Pesquisar e pressionar Enter" 
                         className="pl-9"
                         value={searchTerm}
                         onChange={handleSearchChange}
+                        onKeyDown={handleKeyDown}
                     />
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleClear} disabled={employees.length === 0}>
@@ -102,7 +116,7 @@ export function EmployeeList({ employees, onQrClick, onClear }: EmployeeListProp
             <p className="font-semibold">Nenhum funcionário adicionado</p>
             <p className="text-sm">Adicione funcionários para vê-los aqui.</p>
           </div>
-        ) : employeeWithQrs.length === 0 && searchTerm ? (
+        ) : employeeWithQrs.length === 0 && appliedSearchTerm ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
                 <Search className="h-10 w-10 mb-4" />
                 <p className="font-semibold">Nenhum resultado encontrado</p>
