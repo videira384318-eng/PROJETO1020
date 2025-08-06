@@ -102,6 +102,10 @@ export function VisitorList({
     }
   }
 
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -123,7 +127,7 @@ export function VisitorList({
                         <AlertDialogHeader>
                         <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} visitante(s) selecionado(s).
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} visitante(s) selecionado(s) e todos os seus registros.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -166,7 +170,7 @@ export function VisitorList({
                     <TableRow>
                     <TableHead className="w-[40px]">
                         <Checkbox 
-                           checked={numSelected === numTotal && numTotal > 0}
+                           checked={numTotal > 0 && numSelected === numTotal}
                            indeterminate={numSelected > 0 && numSelected < numTotal}
                            onCheckedChange={onToggleSelectAll}
                         />
@@ -188,59 +192,37 @@ export function VisitorList({
                         <TableRow 
                             key={visitor.id}
                             data-state={selectedVisitors.includes(visitor.personId!) ? 'selected' : ''}
+                            onClick={() => onVisitorClick(visitor)}
+                            className="cursor-pointer"
                         >
-                            <TableCell>
+                            <TableCell onClick={stopPropagation}>
                                 <Checkbox
                                     checked={selectedVisitors.includes(visitor.personId!)}
                                     onCheckedChange={() => onToggleSelection(visitor.personId!)}
-                                    onClick={(e) => e.stopPropagation()}
                                 />
                             </TableCell>
-                            <TableCell 
-                                className="font-medium cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.nome}</TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.rg}</TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.cpf}</TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.empresa}</TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.placa || 'N/A'}</TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.responsavel}</TableCell>
-                            <TableCell
-                                className="max-w-[150px] truncate cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >
+                            <TableCell className="font-medium">{visitor.nome}</TableCell>
+                            <TableCell>{visitor.rg}</TableCell>
+                            <TableCell>{visitor.cpf}</TableCell>
+                            <TableCell>{visitor.empresa}</TableCell>
+                            <TableCell>{visitor.placa || 'N/A'}</TableCell>
+                            <TableCell>{visitor.responsavel}</TableCell>
+                            <TableCell className="max-w-[150px] truncate">
                                 <span className="block truncate">{visitor.motivo}</span>
                             </TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{visitor.portaria.toUpperCase()}</TableCell>
-                            <TableCell
-                                className="cursor-pointer"
-                                onClick={() => onVisitorClick(visitor)}
-                            >{getStatusBadge(visitor.status)}</TableCell>
-                            <TableCell className="text-right space-x-1 relative">
+                            <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
+                            <TableCell>{getStatusBadge(visitor.status)}</TableCell>
+                            <TableCell className="text-right space-x-1" onClick={stopPropagation}>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div 
-                                          className="absolute inset-0 z-0 cursor-pointer"
-                                          onClick={() => onVisitorClick(visitor)}
-                                        />
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-7 w-7"
+                                            onClick={() => onVisitorClick(visitor)}
+                                        >
+                                           <span className="sr-only">{getActionTooltip(visitor.status)}</span>
+                                        </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p>{getActionTooltip(visitor.status)}</p>
@@ -251,11 +233,8 @@ export function VisitorList({
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
-                                        className="h-7 w-7 relative z-10"
-                                        disabled={visitor.status === 'inside'} 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                        }}
+                                        className="h-7 w-7"
+                                        disabled={visitor.status === 'inside'}
                                     >
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                         <span className="sr-only">Excluir Visitante</span>
@@ -269,11 +248,8 @@ export function VisitorList({
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDelete(visitor.personId!);
-                                      }}>Excluir</AlertDialogAction>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDelete(visitor.personId!)}>Excluir</AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
