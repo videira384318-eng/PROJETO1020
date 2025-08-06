@@ -16,6 +16,7 @@ import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
 import { addScan, deleteScan, getScans } from '@/services/scanService';
+import { AnomalyDetector } from '@/components/anomaly-detector';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -212,60 +213,63 @@ export default function Home() {
         <QRGenerator onAddEmployee={handleAddEmployee} />
       </AppHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        <div className="flex flex-col gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="flex flex-col gap-8 lg:col-span-1">
             <QRScanner onScan={handleScan} />
+            <AnomalyDetector scans={scans} />
         </div>
-        <Tabs defaultValue="employees" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="employees">Funcionários</TabsTrigger>
-                <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
-                <TabsTrigger value="history">Histórico</TabsTrigger>
-            </TabsList>
-            <TabsContent value="employees">
-                <EmployeeList 
-                  employees={employeesWithStatus} 
-                  onClear={handleClearEmployees} 
-                  onEmployeeClick={handleEmployeeClick}
-                  selectedEmployees={selectedEmployees}
-                  numSelected={numSelected}
-                  numTotal={numTotal}
-                  onToggleSelection={handleToggleEmployeeSelection}
-                  onToggleSelectAll={handleToggleSelectAll}
-                  onDeleteSelected={handleDeleteSelectedEmployees}
-                />
-            </TabsContent>
-            <TabsContent value="qrcodes">
-                <QrCodeList employees={employees} onClear={handleClearEmployees} />
-            </TabsContent>
-            <TabsContent value="history">
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {showCalendar && (
-                        <div className="flex-shrink-0">
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(date) => {
-                                    setSelectedDate(date);
-                                    setShowCalendar(false);
-                                }}
-                                className="rounded-md border"
-                                initialFocus
+        <div className="lg:col-span-2">
+            <Tabs defaultValue="employees" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="employees">Funcionários</TabsTrigger>
+                    <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
+                    <TabsTrigger value="history">Histórico</TabsTrigger>
+                </TabsList>
+                <TabsContent value="employees">
+                    <EmployeeList 
+                    employees={employeesWithStatus} 
+                    onClear={handleClearEmployees} 
+                    onEmployeeClick={handleEmployeeClick}
+                    selectedEmployees={selectedEmployees}
+                    numSelected={numSelected}
+                    numTotal={numTotal}
+                    onToggleSelection={handleToggleEmployeeSelection}
+                    onToggleSelectAll={handleToggleSelectAll}
+                    onDeleteSelected={handleDeleteSelectedEmployees}
+                    />
+                </TabsContent>
+                <TabsContent value="qrcodes">
+                    <QrCodeList employees={employees} onClear={handleClearEmployees} />
+                </TabsContent>
+                <TabsContent value="history">
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {showCalendar && (
+                            <div className="flex-shrink-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={(date) => {
+                                        setSelectedDate(date);
+                                        setShowCalendar(false);
+                                    }}
+                                    className="rounded-md border"
+                                    initialFocus
+                                />
+                            </div>
+                        )}
+                        <div className="flex-grow w-full">
+                            <AttendanceLog 
+                                scans={sortedScansForLog} 
+                                employees={employees} 
+                                onDelete={handleDeleteScan}
+                                onToggleCalendar={() => setShowCalendar(prev => !prev)}
+                                isCalendarOpen={showCalendar}
                             />
                         </div>
-                    )}
-                    <div className="flex-grow w-full">
-                        <AttendanceLog 
-                            scans={sortedScansForLog} 
-                            employees={employees} 
-                            onDelete={handleDeleteScan}
-                            onToggleCalendar={() => setShowCalendar(prev => !prev)}
-                            isCalendarOpen={showCalendar}
-                        />
                     </div>
-                </div>
-            </TabsContent>
-        </Tabs>
+                </TabsContent>
+            </Tabs>
+        </div>
       </div>
     </main>
   );
