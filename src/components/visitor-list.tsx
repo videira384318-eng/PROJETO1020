@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { VisitorFormData } from '@/app/visitantes/page';
+import { Badge } from './ui/badge';
 
 interface VisitorListProps {
   visitors: VisitorFormData[];
@@ -33,8 +34,10 @@ export function VisitorList({ visitors, onDelete }: VisitorListProps) {
     }
     return visitors.filter(visitor =>
       visitor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.documento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase())
+      visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.rg.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (visitor.placa && visitor.placa.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [visitors, searchTerm]);
 
@@ -76,8 +79,12 @@ export function VisitorList({ visitors, onDelete }: VisitorListProps) {
                 <TableHeader>
                     <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Documento</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>RG</TableHead>
                     <TableHead>Empresa</TableHead>
+                    <TableHead>Placa</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead>Portaria</TableHead>
                     <TableHead>Data de Entrada</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -86,8 +93,14 @@ export function VisitorList({ visitors, onDelete }: VisitorListProps) {
                     {filteredVisitors.map((visitor) => (
                     <TableRow key={visitor.id}>
                         <TableCell className="font-medium">{visitor.nome}</TableCell>
-                        <TableCell>{visitor.documento}</TableCell>
+                        <TableCell>{visitor.cpf}</TableCell>
+                        <TableCell>{visitor.rg}</TableCell>
                         <TableCell>{visitor.empresa}</TableCell>
+                        <TableCell>{visitor.placa || "N/A"}</TableCell>
+                        <TableCell>{visitor.responsavel}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="uppercase">{visitor.portaria}</Badge>
+                        </TableCell>
                         <TableCell>{visitor.createdAt ? new Date(visitor.createdAt).toLocaleString() : 'N/A'}</TableCell>
                         <TableCell className="text-right">
                            <AlertDialog>

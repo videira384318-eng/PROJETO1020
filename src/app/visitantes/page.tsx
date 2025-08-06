@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { PlusCircle, Users } from 'lucide-react';
 import { VisitorList } from '@/components/visitor-list';
 import { useToast } from "@/hooks/use-toast";
@@ -16,9 +17,15 @@ import { AppHeader } from '@/components/app-header';
 const visitorFormSchema = z.object({
   id: z.string().optional(),
   nome: z.string().min(1, "O nome é obrigatório."),
-  documento: z.string().min(1, "O documento é obrigatório."),
+  rg: z.string().min(1, "O RG é obrigatório."),
+  cpf: z.string().min(1, "O CPF é obrigatório."),
   empresa: z.string().min(1, "A empresa é obrigatória."),
+  placa: z.string().optional(),
+  responsavel: z.string().min(1, "O responsável pela visita é obrigatório."),
   motivo: z.string().min(1, "O motivo da visita é obrigatório."),
+  portaria: z.enum(['p1', 'p2'], {
+    required_error: "Selecione a portaria.",
+  }),
   createdAt: z.string().optional(),
 });
 
@@ -33,9 +40,13 @@ export default function VisitantesPage() {
     resolver: zodResolver(visitorFormSchema),
     defaultValues: {
       nome: '',
-      documento: '',
+      rg: '',
+      cpf: '',
       empresa: '',
+      placa: '',
+      responsavel: '',
       motivo: '',
+      portaria: 'p1',
     },
   });
 
@@ -109,14 +120,27 @@ export default function VisitantesPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <FormField
                   control={form.control}
-                  name="documento"
+                  name="rg"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Documento (RG/CPF)</FormLabel>
+                      <FormLabel>RG</FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: 12.345.678-9" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 123.456.789-00" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -135,6 +159,32 @@ export default function VisitantesPage() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="placa"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Placa do Veículo (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: BRA2E19" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="responsavel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Responsável pela Visita</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: João da Silva (TI)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="motivo"
@@ -143,6 +193,40 @@ export default function VisitantesPage() {
                       <FormLabel>Motivo da Visita</FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: Reunião com o setor de Vendas" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="portaria"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Portaria</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex items-center space-x-4"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="p1" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              P1
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="p2" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              P2
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
