@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
+import type { AttendanceScan } from '@/types';
 import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
-import { AnomalyDetector } from '@/components/anomaly-detector';
 import { AppHeader } from '@/components/app-header';
 
 export default function Home() {
@@ -149,7 +148,7 @@ export default function Home() {
     <main className="container mx-auto p-4 md:p-8">
       <AppHeader
         title="Controle de Ponto QR"
-        description="Gerencie o ponto dos funcionários e detecte anomalias."
+        description="Gerencie o ponto dos funcionários."
         activePage="employees"
       >
         <QRGenerator onAddEmployee={handleAddEmployee} />
@@ -158,7 +157,6 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <div className="flex flex-col gap-8">
             <QRScanner onScan={handleScan} />
-            <AnomalyDetector scans={scans} />
         </div>
         <Tabs defaultValue="employees" className="w-full">
             <TabsList className="grid w-full grid-cols-3">

@@ -4,7 +4,7 @@ import { LogIn, LogOut, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
+import type { AttendanceScan } from '@/types';
 import type { QrFormData } from './qr-generator';
 import { Button } from './ui/button';
 import {
