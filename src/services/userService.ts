@@ -12,8 +12,6 @@ import {
     Unsubscribe,
     getDoc,
     setDoc,
-    getDocs,
-    where
 } from 'firebase/firestore';
 import type { Role } from '@/contexts/auth-context';
 import { 
@@ -39,12 +37,17 @@ export const getUserRole = async (uid: string): Promise<Role | null> => {
     if (docSnap.exists()) {
         return (docSnap.data() as User).role;
     } else {
-        // This might be the first login for the manually created admin
-        const adminEmail = "adm@empresa.com";
+        // This handles the case where the admin user is created in the console
+        // but doesn't have a user document in firestore yet.
         const currentUser = auth.currentUser;
-        if (currentUser && currentUser.uid === uid && currentUser.email === adminEmail) {
-            await setDoc(docRef, { email: adminEmail, role: 'adm' });
-            return 'adm';
+        if (currentUser && currentUser.uid === uid && currentUser.email === "adm@empresa.com") {
+            try {
+                await setDoc(docRef, { email: currentUser.email, role: 'adm' });
+                return 'adm';
+            } catch (error) {
+                console.error("Error creating admin user document in Firestore:", error);
+                return null;
+            }
         }
     }
     return null;
@@ -57,6 +60,7 @@ export const addUser = async (userData: Omit<User, 'id'>): Promise<string> => {
     }
     
     // Step 1: Create user in Firebase Authentication
+    // Note: This uses the global auth instance. For more complex apps, you might pass auth around.
     const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
     const { uid } = userCredential.user;
 
@@ -79,11 +83,13 @@ export const updateUser = async (userId: string, userData: Partial<User>): Promi
         updateData.role = userData.role;
     }
     
+    // In this app, we don't allow email updates from the user management screen
+    // as it requires re-authentication and is a more complex flow.
+    // If you need to update email, you'd implement a separate, secure function for it.
+
     if (Object.keys(updateData).length > 0) {
         await updateDoc(docRef, updateData);
     }
-     // Note: Updating email or password in Firebase Auth requires separate, secure flows
-     // and is not handled here for simplicity.
 };
 
 // Function to delete a user from Firestore. Deleting from Auth is a separate, privileged operation.
@@ -91,7 +97,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
     // This only deletes the user's role document from Firestore.
     // It does NOT delete the user from Firebase Authentication.
     // Deleting a user from Auth is a destructive action and should be handled with care,
-    // possibly through a backend function.
+    // possibly through a backend function for security reasons.
     await deleteDoc(doc(db, USERS_COLLECTION, userId));
 };
 
@@ -100,7 +106,7 @@ export const getUsers = (callback: (users: User[]) => void): Unsubscribe => {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const users: User[] = [];
         querySnapshot.forEach((doc) => {
-            // Do not show admin in user management list
+            // Do not show the main admin in the user management list
             if (doc.data().role !== 'adm') { 
                  users.push({ id: doc.id, ...doc.data() } as User);
             }
