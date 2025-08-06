@@ -99,11 +99,18 @@ export default function VisitantesPage() {
   
   const handleDeleteSelectedVisitors = () => {
     const personIdsToDelete = new Set(selectedVisitors);
-    setVisitors(prev => prev.filter(v => !personIdsToDelete.has(v.personId!)));
+    
+    // Instead of filtering the main visitors array, we filter the derived `currentVisitors` list
+    // to find the personIds to remove from the main list.
+    const currentVisitorPersonIds = currentVisitors.map(v => v.personId);
+    const personIdsToActuallyDelete = currentVisitorPersonIds.filter(id => personIdsToDelete.has(id!));
+
+    setVisitors(prev => prev.filter(v => !personIdsToActuallyDelete.includes(v.personId!)));
+    
     setSelectedVisitors([]);
     toast({
         title: "Visitantes Removidos",
-        description: "Os visitantes selecionados foram removidos.",
+        description: `Os ${personIdsToActuallyDelete.length} visitante(s) selecionado(s) foram removidos. O histórico foi mantido.`,
     });
   };
 
@@ -123,13 +130,12 @@ export default function VisitantesPage() {
     }
   };
 
-
   const handleDeleteVisitor = (personId: string) => {
     setVisitors(prev => prev.filter(v => v.personId !== personId));
     setSelectedVisitors(prev => prev.filter(id => id !== personId));
     toast({
       title: "Visitante Removido",
-      description: "O registro do visitante foi removido da lista.",
+      description: "O visitante foi removido da lista. Seu histórico foi mantido.",
     });
   };
 
@@ -172,6 +178,14 @@ export default function VisitantesPage() {
         setReEntryVisitor(visitor);
     }
   }
+
+  const handleDeleteVisitorLog = (visitId: string) => {
+    setVisitors(prev => prev.filter(v => v.id !== visitId));
+    toast({
+      title: "Registro de Histórico Removido",
+      description: "A visita foi removida do histórico.",
+    });
+  };
   
   // This list will contain only the latest record for each person, to be shown in the "current" list.
   const currentVisitors = useMemo(() => {
@@ -369,6 +383,7 @@ export default function VisitantesPage() {
                  <TabsContent value="history">
                     <VisitorHistory
                         visitors={visitors}
+                        onDelete={handleDeleteVisitorLog}
                     />
                 </TabsContent>
             </Tabs>

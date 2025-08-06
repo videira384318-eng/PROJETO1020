@@ -3,16 +3,29 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Search, History, Users } from 'lucide-react';
+import { Search, History, Users, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { VisitorFormData } from '@/app/visitantes/page';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface VisitorHistoryProps {
   visitors: VisitorFormData[];
+  onDelete: (visitId: string) => void;
 }
 
-export function VisitorHistory({ visitors }: VisitorHistoryProps) {
+export function VisitorHistory({ visitors, onDelete }: VisitorHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
@@ -95,6 +108,7 @@ export function VisitorHistory({ visitors }: VisitorHistoryProps) {
                         <TableHead>Status</TableHead>
                         <TableHead>Entrada</TableHead>
                         <TableHead>Saída</TableHead>
+                        <TableHead className="text-right">Ação</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -113,6 +127,28 @@ export function VisitorHistory({ visitors }: VisitorHistoryProps) {
                         <TableCell>{getStatusBadge(visitor.status)}</TableCell>
                         <TableCell className="text-muted-foreground">{visitor.entryTime ? new Date(visitor.entryTime).toLocaleString('pt-BR') : '—'}</TableCell>
                         <TableCell className="text-muted-foreground">{visitor.exitTime ? new Date(visitor.exitTime).toLocaleString('pt-BR') : '—'}</TableCell>
+                        <TableCell className="text-right">
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    <span className="sr-only">Excluir Registro do Histórico</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente este registro de visita, mas não o cadastro do visitante.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
                     </TableRow>
                     ))}
                 </TableBody>

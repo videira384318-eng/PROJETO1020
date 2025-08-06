@@ -3,11 +3,22 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Search, History, Truck, LogIn, LogOut, Pencil } from 'lucide-react';
+import { Search, History, Truck, LogIn, LogOut, Pencil, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { VehicleLogEntry } from '@/app/veiculos/page';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -19,13 +30,14 @@ import {
 interface VehicleHistoryProps {
   log: VehicleLogEntry[];
   onEdit: (logEntry: VehicleLogEntry) => void;
+  onDelete: (logId: string) => void;
 }
 
 function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function VehicleHistory({ log, onEdit }: VehicleHistoryProps) {
+export function VehicleHistory({ log, onEdit, onDelete }: VehicleHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedLog = useMemo(() => {
@@ -113,6 +125,26 @@ export function VehicleHistory({ log, onEdit }: VehicleHistoryProps) {
                                         <p>Editar Registro</p>
                                     </TooltipContent>
                                 </Tooltip>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Excluir Registro do Histórico</span>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente este registro de movimentação, mas não o cadastro do veículo.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDelete(entry.logId)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                             </TableCell>
                         </TableRow>
                         ))}

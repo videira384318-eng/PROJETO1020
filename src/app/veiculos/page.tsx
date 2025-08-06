@@ -100,10 +100,9 @@ export default function VeiculosPage() {
   
   const handleDeleteVehicle = (vehicleId: string) => {
     setVehicles(prev => prev.filter(v => v.id !== vehicleId));
-    setVehicleLog(prev => prev.filter(log => log.id !== vehicleId));
     toast({
       title: "Veículo Removido",
-      description: "O registro do veículo foi removido da lista e do histórico.",
+      description: "O veículo foi removido da lista. Seu histórico foi mantido.",
     });
   };
 
@@ -141,6 +140,14 @@ export default function VeiculosPage() {
   const handleEditLogEntry = (logEntry: VehicleLogEntry) => {
     setEditingLogEntry(logEntry);
   };
+  
+  const handleDeleteVehicleLog = (logId: string) => {
+    setVehicleLog(prev => prev.filter(log => log.logId !== logId));
+     toast({
+      title: "Registro de Histórico Removido",
+      description: "A movimentação foi removida do histórico.",
+    });
+  }
 
   const handleEditLogSubmit = (data: EditLogFormData) => {
     if (!editingLogEntry) return;
@@ -290,6 +297,7 @@ export default function VeiculosPage() {
                     <VehicleHistory
                         log={vehicleLog}
                         onEdit={handleEditLogEntry}
+                        onDelete={handleDeleteVehicleLog}
                     />
                 </TabsContent>
             </Tabs>
