@@ -9,7 +9,7 @@ import { getFirestore } from "firebase/firestore";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "SECRET_API_KEY",
+  apiKey: "PLACEHOLDER_API_KEY",
   authDomain: "fir-studiogpt-test-project.firebaseapp.com",
   projectId: "fir-studiogpt-test-project",
   storageBucket: "fir-studiogpt-test-project.appspot.com",
