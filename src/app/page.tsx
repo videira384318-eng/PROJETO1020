@@ -7,8 +7,8 @@ import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
 import { EmployeeList } from '@/components/employee-list';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -56,7 +56,7 @@ export default function Home() {
         throw new Error('Dados do QR code incompletos.');
       }
       
-      const lastScanForEmployee = scans.find(scan => scan.employeeId === employeeId);
+      const lastScanForEmployee = scans.filter(scan => scan.employeeId === employeeId).sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
@@ -93,7 +93,7 @@ export default function Home() {
     localStorage.removeItem('qr-attendance-employees');
   }
 
-  const clearLogs = () => {
+  const handleClearScans = () => {
     setScans([]);
     localStorage.removeItem('qr-attendance-scans');
   }
@@ -114,11 +114,20 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 items-start">
-        <div className="space-y-8">
-            <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
-            <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
+        <Tabs defaultValue="employees" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="employees">Funcionários</TabsTrigger>
+                <TabsTrigger value="history">Histórico</TabsTrigger>
+            </TabsList>
+            <TabsContent value="employees">
+                <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
+            </TabsContent>
+            <TabsContent value="history">
+                <AttendanceLog scans={scans} onClear={handleClearScans}/>
+            </TabsContent>
+        </Tabs>
       </div>
     </main>
   );
