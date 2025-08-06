@@ -6,6 +6,7 @@ import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
 import { EmployeeList } from '@/components/employee-list';
+import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
@@ -137,12 +138,16 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
         <Tabs defaultValue="employees" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="employees">Funcionários</TabsTrigger>
+                <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
                 <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
             <TabsContent value="employees">
-                <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
+                <EmployeeList employees={employees} onClear={handleClearEmployees}/>
+            </TabsContent>
+            <TabsContent value="qrcodes">
+                <QrCodeList employees={employees} onClear={handleClearEmployees}/>
             </TabsContent>
             <TabsContent value="history">
                 <div className="flex flex-col lg:flex-row gap-8">

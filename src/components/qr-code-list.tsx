@@ -1,23 +1,29 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import QRCode from 'qrcode';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search } from 'lucide-react';
+import { Trash2, Users, Search, Printer } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-
-interface EmployeeListProps {
+interface QrCodeListProps {
   employees: QrFormData[];
   onClear: () => void;
 }
 
-export function EmployeeList({ employees, onClear }: EmployeeListProps) {
+interface EmployeeWithQr extends QrFormData {
+  qrUrl: string;
+}
+
+export function QrCodeList({ employees, onClear }: QrCodeListProps) {
+  const [employeeWithQrs, setEmployeeWithQrs] = useState<EmployeeWithQr[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
+  const printRef = useRef<HTMLDivElement>(null);
 
   const filteredEmployees = useMemo(() => {
     if (!appliedSearchTerm) {
@@ -30,6 +36,31 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
       (employee.ramal && employee.ramal.toLowerCase().includes(appliedSearchTerm.toLowerCase()))
     );
   }, [employees, appliedSearchTerm]);
+
+  useEffect(() => {
+    const generateQRs = async () => {
+      const qrs = await Promise.all(
+        filteredEmployees.map(async (employee) => {
+          const qrUrl = await QRCode.toDataURL(JSON.stringify(employee), {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF',
+            },
+          });
+          return { ...employee, qrUrl };
+        })
+      );
+      setEmployeeWithQrs(qrs);
+    };
+
+    if (filteredEmployees.length > 0) {
+      generateQRs();
+    } else {
+        setEmployeeWithQrs([]);
+    }
+  }, [filteredEmployees]);
   
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = event.target.value;
@@ -51,14 +82,32 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
     setSearchTerm('');
     setAppliedSearchTerm('');
   }
+  
+  const handlePrint = (employee: EmployeeWithQr) => {
+    const printWindow = window.open('', '', 'height=600,width=800');
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>Imprimir QR Code</title>');
+      printWindow.document.write('<style>body { font-family: sans-serif; text-align: center; margin-top: 50px; } img { max-width: 300px; } h1 { font-size: 24px; } p { font-size: 18px; }</style>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(`<h1>${employee.nome}</h1>`);
+      printWindow.document.write(`<p>${employee.setor}</p>`);
+      printWindow.document.write(`<img src="${employee.qrUrl}" alt="QR Code de ${employee.nome}" />`);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+  };
+
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <CardTitle className="font-headline">Lista de Funcionários</CardTitle>
-                <CardDescription>Visualize e gerencie os funcionários cadastrados.</CardDescription>
+                <CardTitle className="font-headline">QR Codes dos Funcionários</CardTitle>
+                <CardDescription>Imprima os QR codes individuais.</CardDescription>
             </div>
              <div className="flex items-center gap-2 w-full md:w-auto">
                 <div className="relative w-full md:w-64">
@@ -83,37 +132,33 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
           <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
             <Users className="h-10 w-10 mb-4" />
             <p className="font-semibold">Nenhum funcionário adicionado</p>
-            <p className="text-sm">Adicione funcionários para vê-los aqui.</p>
+            <p className="text-sm">Adicione funcionários para gerar os QR Codes.</p>
           </div>
-        ) : filteredEmployees.length === 0 && appliedSearchTerm ? (
+        ) : employeeWithQrs.length === 0 && appliedSearchTerm ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
                 <Search className="h-10 w-10 mb-4" />
                 <p className="font-semibold">Nenhum resultado encontrado</p>
                 <p className="text-sm">Tente uma busca diferente ou limpe o filtro.</p>
             </div>
         ) : (
-          <div className="border rounded-md">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Ramal</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredEmployees.map((employee, index) => (
-                    <TableRow key={index}>
-                        <TableCell className="font-medium">{employee.nome}</TableCell>
-                        <TableCell>{employee.setor}</TableCell>
-                        <TableCell>{employee.placa || 'N/A'}</TableCell>
-                        <TableCell>{employee.ramal || 'N/A'}</TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {employeeWithQrs.map((employee, index) => (
+              <div
+                key={index}
+                className="p-4 border rounded-lg flex flex-col items-center justify-center text-center gap-3"
+              >
+                <Image src={employee.qrUrl} alt={`QR Code para ${employee.nome}`} width={150} height={150} className="rounded-md" />
+                <div className="text-sm overflow-hidden w-full">
+                  <p className="font-semibold truncate">{employee.nome}</p>
+                  <p className="text-muted-foreground truncate">{employee.setor}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handlePrint(employee)}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Imprimir
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
