@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, Users } from "lucide-react";
+import { Home, Users, Truck } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AppHeaderProps {
     title: string;
     description: string;
-    activePage: 'employees' | 'visitors';
+    activePage: 'employees' | 'visitors' | 'vehicles';
     children?: React.ReactNode;
 }
 
@@ -49,6 +49,21 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     </TooltipTrigger>
                     <TooltipContent>
                         <p>Visitantes</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button asChild variant={activePage === 'vehicles' ? "default" : "outline"} size="icon">
+                             <Link href="/veiculos">
+                                <Truck className="h-5 w-5" />
+                                <span className="sr-only">Página de Veículos</span>
+                            </Link>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Veículos</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
