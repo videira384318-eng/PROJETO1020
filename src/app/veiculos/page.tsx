@@ -15,6 +15,7 @@ import { VehicleHistory } from '@/components/vehicle-history';
 import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VehicleMovementDialog, type MovementFormData } from '@/components/vehicle-movement-dialog';
 
 
 const vehicleFormSchema = z.object({
@@ -38,6 +39,7 @@ export default function VeiculosPage() {
   const [vehicles, setVehicles] = useState<VehicleFormData[]>([]);
   const [vehicleLog, setVehicleLog] = useState<VehicleLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [movementVehicle, setMovementVehicle] = useState<VehicleWithStatus | null>(null);
   const { toast } = useToast();
 
   const form = useForm<VehicleFormData>({
@@ -104,23 +106,34 @@ export default function VeiculosPage() {
   };
 
   const handleVehicleClick = (vehicle: VehicleWithStatus) => {
-    const newType = vehicle.status === 'entry' ? 'exit' : 'entry';
+    setMovementVehicle(vehicle);
+  }
+  
+  const handleMovementSubmit = (data: MovementFormData) => {
+    if (!movementVehicle) return;
+
+    const newType = movementVehicle.status === 'entry' ? 'exit' : 'entry';
     const translatedType = newType === 'entry' ? 'entrada' : 'saída';
 
     const newLogEntry: VehicleLogEntry = {
-        ...vehicle,
+        ...movementVehicle,
+        ...data,
         logId: `log_${new Date().getTime()}`,
         timestamp: new Date().toISOString(),
         type: newType,
     };
     
+    // Also update the main vehicle record with the latest driver/gate info
+    setVehicles(prev => prev.map(v => v.id === movementVehicle.id ? {...v, ...data} : v));
     setVehicleLog(prev => [newLogEntry, ...prev]);
     
     toast({
         title: "Movimentação Registrada!",
-        description: `Registrada ${translatedType} para o veículo ${vehicle.placa}.`,
+        description: `Registrada ${translatedType} para o veículo ${movementVehicle.placa}.`,
         className: newType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
     });
+    
+    setMovementVehicle(null);
   }
 
   const vehiclesWithStatus: VehicleWithStatus[] = useMemo(() => {
@@ -133,6 +146,10 @@ export default function VeiculosPage() {
         ...vehicle,
         status: lastLog ? lastLog.type : 'exit', // Default to 'exit' if no log
       };
+    }).sort((a, b) => {
+       if (a.placa < b.placa) return -1;
+       if (a.placa > b.placa) return 1;
+       return 0;
     });
   }, [vehicles, vehicleLog]);
 
@@ -248,6 +265,13 @@ export default function VeiculosPage() {
             </Tabs>
         </div>
       </div>
+      
+      <VehicleMovementDialog
+        isOpen={!!movementVehicle}
+        onClose={() => setMovementVehicle(null)}
+        vehicle={movementVehicle}
+        onSubmit={handleMovementSubmit}
+      />
     </main>
   );
 }
