@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import QRCode from 'qrcode';
 import {
   Dialog,
   DialogContent,
@@ -18,10 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { QrCode, Printer, PlusCircle } from 'lucide-react';
-import Image from 'next/image';
-import { useToast } from '@/hooks/use-toast';
-
+import { PlusCircle } from 'lucide-react';
 
 const qrFormSchema = z.object({
   id: z.string().optional(),
@@ -34,12 +30,11 @@ const qrFormSchema = z.object({
 export type QrFormData = z.infer<typeof qrFormSchema>;
 
 interface QRGeneratorProps {
-    onAddEmployee: (data: QrFormData) => void;
+    onAddEmployee: (data: Omit<QrFormData, 'id'>) => void;
 }
 
 export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { toast } = useToast();
 
   const form = useForm<QrFormData>({
     resolver: zodResolver(qrFormSchema),
@@ -52,11 +47,8 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
   });
 
   const handleGenerate = (data: QrFormData) => {
-    onAddEmployee(data);
-    toast({
-        title: "Funcionário Adicionado!",
-        description: `${data.nome} foi adicionado(a) à lista.`
-    })
+    const { id, ...employeeData } = data;
+    onAddEmployee(employeeData);
     form.reset();
     setIsOpen(false);
   };

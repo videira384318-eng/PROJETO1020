@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PlusCircle, Truck, History } from 'lucide-react';
+import { PlusCircle, Truck } from 'lucide-react';
 import { VehicleList, type VehicleWithStatus } from '@/components/vehicle-list';
 import { VehicleHistory } from '@/components/vehicle-history';
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,16 @@ import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VehicleMovementDialog, type MovementFormData } from '@/components/vehicle-movement-dialog';
 import { EditVehicleLogDialog, type EditLogFormData } from '@/components/edit-vehicle-log-dialog';
+import { 
+    addVehicle, 
+    deleteVehicle, 
+    getVehicles, 
+    addVehicleLog,
+    updateVehicleLog,
+    deleteVehicleLog,
+    getVehicleLog,
+    updateVehicle
+} from '@/services/vehicleService';
 
 
 const vehicleFormSchema = z.object({
@@ -55,121 +65,138 @@ export default function VeiculosPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const storedVehicles = localStorage.getItem('qr-attendance-vehicles');
-    if (storedVehicles) {
-        try {
-            setVehicles(JSON.parse(storedVehicles));
-        } catch (error) {
-            console.error("Falha ao analisar os veículos do localStorage", error);
-        }
-    }
-     const storedLog = localStorage.getItem('qr-attendance-vehicle-log');
-    if (storedLog) {
-        try {
-            setVehicleLog(JSON.parse(storedLog));
-        } catch (error) {
-            console.error("Falha ao analisar o histórico de veículos do localStorage", error);
-        }
+    const unsubscribeVehicles = getVehicles(setVehicles);
+    const unsubscribeLog = getVehicleLog(setVehicleLog);
+
+    return () => {
+        unsubscribeVehicles();
+        unsubscribeLog();
     }
   }, []);
 
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('qr-attendance-vehicles', JSON.stringify(vehicles));
+  const handleAddVehicle = async (data: VehicleFormData) => {
+    try {
+        await addVehicle(data);
+        toast({
+          title: "Veículo Cadastrado!",
+          description: `O veículo com placa ${data.placa} foi adicionado.`,
+        });
+        form.reset();
+    } catch(e) {
+        console.error("Erro ao adicionar veículo:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Salvar",
+            description: "Não foi possível cadastrar o veículo."
+        })
     }
-  }, [vehicles, isClient]);
-  
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('qr-attendance-vehicle-log', JSON.stringify(vehicleLog));
-    }
-  }, [vehicleLog, isClient]);
-
-  const handleAddVehicle = (data: VehicleFormData) => {
-    const newVehicle: VehicleFormData = {
-      ...data,
-      id: `vehicle_${new Date().getTime()}`,
-    };
-    setVehicles(prev => [newVehicle, ...prev]);
-    toast({
-      title: "Veículo Cadastrado!",
-      description: `O veículo com placa ${data.placa} foi adicionado.`,
-    });
-    form.reset();
   };
   
-  const handleDeleteVehicle = (vehicleId: string) => {
-    setVehicles(prev => prev.filter(v => v.id !== vehicleId));
-    toast({
-      title: "Veículo Removido",
-      description: "O veículo foi removido da lista. Seu histórico foi mantido.",
-    });
+  const handleDeleteVehicle = async (vehicleId: string) => {
+    try {
+        await deleteVehicle(vehicleId);
+        toast({
+          title: "Veículo Removido",
+          description: "O veículo foi removido da lista. Seu histórico foi mantido.",
+        });
+    } catch (e) {
+        console.error("Erro ao remover veículo:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Remover",
+            description: "Não foi possível remover o veículo."
+        })
+    }
   };
 
   const handleVehicleClick = (vehicle: VehicleWithStatus) => {
     setMovementVehicle(vehicle);
   }
   
-  const handleMovementSubmit = (data: MovementFormData) => {
+  const handleMovementSubmit = async (data: MovementFormData) => {
     if (!movementVehicle) return;
 
     const newType = movementVehicle.status === 'entry' ? 'exit' : 'entry';
     const translatedType = newType === 'entry' ? 'entrada' : 'saída';
 
-    const newLogEntry: VehicleLogEntry = {
+    const newLogEntry: Omit<VehicleLogEntry, 'logId'> = {
         ...movementVehicle,
         ...data,
-        logId: `log_${new Date().getTime()}`,
+        id: movementVehicle.id!,
         timestamp: new Date().toISOString(),
         type: newType,
     };
     
-    // Also update the main vehicle record with the latest driver/gate info
-    setVehicles(prev => prev.map(v => v.id === movementVehicle.id ? {...v, ...data} : v));
-    setVehicleLog(prev => [newLogEntry, ...prev]);
-    
-    toast({
-        title: "Movimentação Registrada!",
-        description: `Registrada ${translatedType} para o veículo ${movementVehicle.placa}.`,
-        className: newType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
-    });
-    
-    setMovementVehicle(null);
+    try {
+        await addVehicleLog(newLogEntry);
+        // Also update the main vehicle record with the latest driver/gate info
+        await updateVehicle(movementVehicle.id!, data);
+        
+        toast({
+            title: "Movimentação Registrada!",
+            description: `Registrada ${translatedType} para o veículo ${movementVehicle.placa}.`,
+            className: newType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
+        });
+        
+        setMovementVehicle(null);
+    } catch (e) {
+         console.error("Erro ao registrar movimentação:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Registrar",
+            description: "Não foi possível registrar a movimentação."
+        })
+    }
   }
   
   const handleEditLogEntry = (logEntry: VehicleLogEntry) => {
     setEditingLogEntry(logEntry);
   };
   
-  const handleDeleteVehicleLog = (logId: string) => {
-    setVehicleLog(prev => prev.filter(log => log.logId !== logId));
-     toast({
-      title: "Registro de Histórico Removido",
-      description: "A movimentação foi removida do histórico.",
-    });
+  const handleDeleteVehicleLog = async (logId: string) => {
+    try {
+        await deleteVehicleLog(logId);
+        toast({
+          title: "Registro de Histórico Removido",
+          description: "A movimentação foi removida do histórico.",
+        });
+    } catch(e) {
+        console.error("Erro ao remover registro do histórico:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Remover",
+            description: "Não foi possível remover o registro do histórico."
+        })
+    }
   }
 
-  const handleEditLogSubmit = (data: EditLogFormData) => {
+  const handleEditLogSubmit = async (data: EditLogFormData) => {
     if (!editingLogEntry) return;
 
     const newDate = new Date(data.date);
     const [hours, minutes] = data.time.split(':').map(Number);
     newDate.setHours(hours, minutes, 0, 0);
 
-    const updatedLogEntry: VehicleLogEntry = {
-      ...editingLogEntry,
+    const updatedLogEntry = {
       condutor: data.condutor,
       timestamp: newDate.toISOString(),
     };
     
-    setVehicleLog(prev => prev.map(log => log.logId === editingLogEntry.logId ? updatedLogEntry : log));
-
-    toast({
-        title: "Registro Atualizado!",
-        description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,
-    });
-    
-    setEditingLogEntry(null);
+    try {
+        await updateVehicleLog(editingLogEntry.logId, updatedLogEntry);
+        toast({
+            title: "Registro Atualizado!",
+            description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,
+        });
+        setEditingLogEntry(null);
+    } catch(e) {
+        console.error("Erro ao atualizar registro:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Atualizar",
+            description: "Não foi possível atualizar o registro."
+        })
+    }
   }
 
   const vehiclesWithStatus: VehicleWithStatus[] = useMemo(() => {

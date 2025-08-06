@@ -16,6 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReEntryDialog, type ReEntryFormData } from '@/components/re-entry-dialog';
+import {
+    addVisitor,
+    updateVisitor,
+    deleteVisitorByPersonId,
+    deleteVisitorsByPersonIds,
+    deleteVisitorLog,
+    getVisitors
+} from '@/services/visitorService';
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
@@ -62,56 +70,52 @@ export default function VisitantesPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const storedVisitors = localStorage.getItem('qr-attendance-visitors');
-    if (storedVisitors) {
-        try {
-            setVisitors(JSON.parse(storedVisitors));
-        } catch (error) {
-            console.error("Falha ao analisar os visitantes do localStorage", error);
-            localStorage.removeItem('qr-attendance-visitors');
-        }
-    }
+    const unsubscribe = getVisitors(setVisitors);
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('qr-attendance-visitors', JSON.stringify(visitors));
-    }
-  }, [visitors, isClient]);
-
-  const handleAddVisitor = (data: VisitorFormData) => {
+  const handleAddVisitor = async (data: VisitorFormData) => {
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
     const newVisitor: VisitorFormData = {
       ...data,
-      id: `visit_${new Date().getTime()}`,
       personId: personId,
       createdAt: new Date().toISOString(),
       entryTime: new Date().toISOString(),
       status: 'inside',
     };
-    setVisitors(prev => [newVisitor, ...prev]);
-    toast({
-      title: "Visitante Cadastrado e Entrada Registrada!",
-      description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
-    });
-    form.reset();
+    try {
+        await addVisitor(newVisitor);
+        toast({
+          title: "Visitante Cadastrado e Entrada Registrada!",
+          description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
+        });
+        form.reset();
+    } catch (e) {
+        console.error("Erro ao adicionar visitante:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Salvar",
+            description: "Não foi possível adicionar o visitante."
+        });
+    }
   };
   
-  const handleDeleteSelectedVisitors = () => {
-    const personIdsToDelete = new Set(selectedVisitors);
-    
-    // Instead of filtering the main visitors array, we filter the derived `currentVisitors` list
-    // to find the personIds to remove from the main list.
-    const currentVisitorPersonIds = currentVisitors.map(v => v.personId);
-    const personIdsToActuallyDelete = currentVisitorPersonIds.filter(id => personIdsToDelete.has(id!));
-
-    setVisitors(prev => prev.filter(v => !personIdsToActuallyDelete.includes(v.personId!)));
-    
-    setSelectedVisitors([]);
-    toast({
-        title: "Visitantes Removidos",
-        description: `Os ${personIdsToActuallyDelete.length} visitante(s) selecionado(s) foram removidos. O histórico foi mantido.`,
-    });
+  const handleDeleteSelectedVisitors = async () => {
+    try {
+        await deleteVisitorsByPersonIds(selectedVisitors);
+        setSelectedVisitors([]);
+        toast({
+            title: "Visitantes Removidos",
+            description: `Os ${selectedVisitors.length} visitante(s) selecionado(s) foram removidos.`,
+        });
+    } catch(e) {
+        console.error("Erro ao remover visitantes:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Remover",
+            description: "Não foi possível remover os visitantes selecionados."
+        });
+    }
   };
 
   const handleToggleVisitorSelection = (personId: string) => {
@@ -130,45 +134,71 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleDeleteVisitor = (personId: string) => {
-    setVisitors(prev => prev.filter(v => v.personId !== personId));
-    setSelectedVisitors(prev => prev.filter(id => id !== personId));
-    toast({
-      title: "Visitante Removido",
-      description: "O visitante foi removido da lista. Seu histórico foi mantido.",
-    });
+  const handleDeleteVisitor = async (personId: string) => {
+    try {
+        await deleteVisitorByPersonId(personId);
+        setSelectedVisitors(prev => prev.filter(id => id !== personId));
+        toast({
+          title: "Visitante Removido",
+          description: "O visitante e todo o seu histórico foram removidos.",
+        });
+    } catch(e) {
+         console.error("Erro ao remover visitante:", e);
+         toast({
+            variant: "destructive",
+            title: "Erro ao Remover",
+            description: "Não foi possível remover o visitante."
+        });
+    }
   };
 
-  const handleReEntrySubmit = (data: ReEntryFormData) => {
+  const handleReEntrySubmit = async (data: ReEntryFormData) => {
     if (!reEntryVisitor) return;
 
     const newVisit: VisitorFormData = {
         ...reEntryVisitor, // Spread base data from the last visit
         ...data, // Spread new data from the form
-        id: `visit_${new Date().getTime()}`,
+        id: undefined, // Let firestore create new id
         status: 'inside',
         entryTime: new Date().toISOString(),
         exitTime: undefined, // Clear exit time for the new visit
         createdAt: new Date().toISOString(),
     };
-    setVisitors(prev => [newVisit, ...prev]);
-    toast({
-        title: "Nova Entrada Registrada!",
-        description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
-    });
-    setReEntryVisitor(null); // Close the dialog
+    try {
+        await addVisitor(newVisit);
+        toast({
+            title: "Nova Entrada Registrada!",
+            description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
+        });
+        setReEntryVisitor(null); // Close the dialog
+    } catch (e) {
+        console.error("Erro ao registrar nova entrada:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Registrar",
+            description: "Não foi possível registrar a nova entrada."
+        });
+    }
   };
 
-  const handleVisitorExit = (visitorId: string) => {
-    setVisitors(prev => prev.map(v => 
-        v.id === visitorId 
-        ? { ...v, status: 'exited', exitTime: new Date().toISOString() } 
-        : v
-    ));
-     toast({
-      title: "Saída Registrada!",
-      description: `A saída do visitante foi registrada com sucesso.`,
-    });
+  const handleVisitorExit = async (visitorId: string) => {
+    try {
+        await updateVisitor(visitorId, {
+            status: 'exited',
+            exitTime: new Date().toISOString()
+        });
+        toast({
+          title: "Saída Registrada!",
+          description: `A saída do visitante foi registrada com sucesso.`,
+        });
+    } catch (e) {
+        console.error("Erro ao registrar saída:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Registrar",
+            description: "Não foi possível registrar a saída."
+        });
+    }
   };
   
   const handleVisitorClick = (visitor: VisitorFormData) => {
@@ -179,12 +209,21 @@ export default function VisitantesPage() {
     }
   }
 
-  const handleDeleteVisitorLog = (visitId: string) => {
-    setVisitors(prev => prev.filter(v => v.id !== visitId));
-    toast({
-      title: "Registro de Histórico Removido",
-      description: "A visita foi removida do histórico.",
-    });
+  const handleDeleteVisitorLog = async (visitId: string) => {
+    try {
+        await deleteVisitorLog(visitId);
+        toast({
+          title: "Registro de Histórico Removido",
+          description: "A visita foi removida do histórico.",
+        });
+    } catch(e) {
+         console.error("Erro ao remover registro do histórico:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Remover",
+            description: "Não foi possível remover o registro do histórico."
+        });
+    }
   };
   
   // This list will contain only the latest record for each person, to be shown in the "current" list.

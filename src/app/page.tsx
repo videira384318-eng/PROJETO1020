@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
+import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
+import { addScan, deleteScan, getScans } from '@/services/scanService';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -25,35 +27,17 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
-    try {
-      const storedScans = localStorage.getItem('qr-attendance-scans');
-      if (storedScans) {
-        setScans(JSON.parse(storedScans));
-      }
-      const storedEmployees = localStorage.getItem('qr-attendance-employees');
-      if (storedEmployees) {
-        setEmployees(JSON.parse(storedEmployees));
-      }
-    } catch (error) {
-      console.error("Falha ao analisar os registros do localStorage", error);
-      localStorage.removeItem('qr-attendance-scans');
-      localStorage.removeItem('qr-attendance-employees');
+    
+    const unsubscribeEmployees = getEmployees(setEmployees);
+    const unsubscribeScans = getScans(setScans);
+    
+    return () => {
+        unsubscribeEmployees();
+        unsubscribeScans();
     }
   }, []);
 
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('qr-attendance-scans', JSON.stringify(scans));
-    }
-  }, [scans, isClient]);
-  
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('qr-attendance-employees', JSON.stringify(employees));
-    }
-  }, [employees, isClient]);
-
-  const handleScan = (decodedText: string) => {
+  const handleScan = async (decodedText: string) => {
     try {
       const { nome, setor, placa, ramal } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
@@ -66,8 +50,7 @@ export default function Home() {
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
-      const newScan: AttendanceScan = {
-        scanId: `scan_${new Date().getTime()}_${Math.random().toString(36).substring(7)}`,
+      const newScan: Omit<AttendanceScan, 'scanId'> = {
         employeeId: employeeId,
         scanTime: new Date().toISOString(),
         scanType: newScanType,
@@ -75,10 +58,11 @@ export default function Home() {
         ramal: ramal || 'N/A'
       };
 
-      setScans(prevScans => [newScan, ...prevScans]);
+      await addScan(newScan);
+
       toast({
         title: "Escaneamento Concluído!",
-        description: `Registrada ${translatedType} para ${newScan.employeeId}.`,
+        description: `Registrada ${translatedType} para ${employeeId}.`,
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
 
@@ -92,28 +76,57 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = (employeeData: QrFormData) => {
-    const newEmployee: QrFormData = {
-      ...employeeData,
-      id: `employee_${new Date().getTime()}`,
-    };
-    setEmployees(prev => [...prev, newEmployee]);
+  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
+    try {
+        await addEmployee(employeeData);
+        toast({
+            title: "Funcionário Adicionado!",
+            description: `${employeeData.nome} foi adicionado(a) à lista.`
+        });
+    } catch (error) {
+        console.error("Erro ao adicionar funcionário:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Adicionar",
+            description: "Não foi possível adicionar o funcionário.",
+        });
+    }
   }
   
-  const handleClearEmployees = () => {
-    setEmployees([]);
-    setSelectedEmployees([]);
-    localStorage.removeItem('qr-attendance-employees');
+  const handleClearEmployees = async () => {
+    try {
+        await clearEmployees();
+        setSelectedEmployees([]);
+        toast({
+            title: "Lista Limpa",
+            description: "Todos os funcionários foram removidos.",
+        });
+    } catch(error){
+        console.error("Erro ao limpar funcionários:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Limpar",
+            description: "Não foi possível limpar a lista de funcionários.",
+        });
+    }
   }
 
-  const handleDeleteSelectedEmployees = () => {
-    const employeeIdsToDelete = new Set(selectedEmployees);
-    setEmployees(prev => prev.filter(emp => !employeeIdsToDelete.has(emp.id!)));
-    setSelectedEmployees([]);
-    toast({
-        title: "Funcionários Removidos",
-        description: `Os ${employeeIdsToDelete.size} funcionário(s) selecionado(s) foram removidos.`,
-    });
+  const handleDeleteSelectedEmployees = async () => {
+    try {
+        await deleteEmployees(selectedEmployees);
+        toast({
+            title: "Funcionários Removidos",
+            description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) foram removidos.`,
+        });
+        setSelectedEmployees([]);
+    } catch (error) {
+        console.error("Erro ao excluir funcionários:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Excluir",
+            description: "Não foi possível remover os funcionários selecionados.",
+        });
+    }
   };
 
   const handleToggleEmployeeSelection = (employeeId: string) => {
@@ -133,12 +146,21 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = (scanId: string) => {
-    setScans(prevScans => prevScans.filter(scan => scan.scanId !== scanId));
-    toast({
-        title: "Registro Excluído",
-        description: "O registro de ponto foi removido do histórico.",
-    });
+  const handleDeleteScan = async (scanId: string) => {
+    try {
+        await deleteScan(scanId);
+        toast({
+            title: "Registro Excluído",
+            description: "O registro de ponto foi removido do histórico.",
+        });
+    } catch (error) {
+         console.error("Erro ao excluir registro:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Excluir",
+            description: "Não foi possível remover o registro de ponto.",
+        });
+    }
   }
   
   const handleEmployeeClick = (employee: QrFormData) => {
