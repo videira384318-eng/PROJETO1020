@@ -111,20 +111,13 @@ export default function Home() {
         </div>
         <div className="flex gap-2">
             <QRGenerator onAddEmployee={handleAddEmployee}/>
-            <Button variant="outline" onClick={clearLogs} disabled={scans.length === 0}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Limpar Registros
-            </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="grid grid-cols-1 gap-8 items-start">
         <div className="space-y-8">
             <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
             <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
-        </div>
-        <div className="space-y-8">
-             <AttendanceLog scans={scans} />
         </div>
       </div>
     </main>
