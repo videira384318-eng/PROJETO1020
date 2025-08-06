@@ -137,9 +137,8 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                 </TableHeader>
                 <TableBody>
                     {filteredVisitors.map((visitor) => (
-                    <Tooltip key={visitor.id}>
-                      <TooltipTrigger asChild>
                         <TableRow 
+                            key={visitor.id}
                             onClick={() => onVisitorClick(visitor)}
                             className='cursor-pointer'
                         >
@@ -154,13 +153,22 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                             </TableCell>
                             <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
                             <TableCell>{getStatusBadge(visitor.status)}</TableCell>
-                            <TableCell className="text-right space-x-1">
+                            <TableCell className="text-right space-x-1 relative">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        {/* This div is the hover target for the tooltip */}
+                                        <div className="absolute inset-0"></div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{getActionTooltip(visitor.status)}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
-                                        className="h-7 w-7" 
+                                        className="h-7 w-7 relative z-10" // Add z-index to keep button on top
                                         disabled={visitor.status === 'inside'} 
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -185,11 +193,6 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                                 </AlertDialog>
                             </TableCell>
                         </TableRow>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{getActionTooltip(visitor.status)}</p>
-                      </TooltipContent>
-                    </Tooltip>
                     ))}
                 </TableBody>
             </Table>
