@@ -84,18 +84,32 @@ export function VisitorHistory({ visitors }: VisitorHistoryProps) {
             <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Entrada</TableHead>
-                    <TableHead>Saída</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>RG</TableHead>
+                        <TableHead>CPF</TableHead>
+                        <TableHead>Empresa</TableHead>
+                        <TableHead>Placa</TableHead>
+                        <TableHead>Responsável</TableHead>
+                        <TableHead>Motivo</TableHead>
+                        <TableHead>Portaria</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Entrada</TableHead>
+                        <TableHead>Saída</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {filteredVisitors.map((visitor) => (
                     <TableRow key={visitor.id}>
                         <TableCell className="font-medium">{visitor.nome}</TableCell>
+                        <TableCell>{visitor.rg}</TableCell>
+                        <TableCell>{visitor.cpf}</TableCell>
                         <TableCell>{visitor.empresa}</TableCell>
+                        <TableCell>{visitor.placa || 'N/A'}</TableCell>
+                        <TableCell>{visitor.responsavel}</TableCell>
+                         <TableCell className="max-w-[150px] truncate">
+                            <span className="block truncate">{visitor.motivo}</span>
+                        </TableCell>
+                        <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
                         <TableCell>{getStatusBadge(visitor.status)}</TableCell>
                         <TableCell className="text-muted-foreground">{visitor.entryTime ? new Date(visitor.entryTime).toLocaleString('pt-BR') : '—'}</TableCell>
                         <TableCell className="text-muted-foreground">{visitor.exitTime ? new Date(visitor.exitTime).toLocaleString('pt-BR') : '—'}</TableCell>
