@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Home, PlusCircle, Users } from 'lucide-react';
+import { PlusCircle, Users } from 'lucide-react';
 import { VisitorList } from '@/components/visitor-list';
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from '@/components/theme-toggle';
+import { AppHeader } from '@/components/app-header';
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
@@ -82,21 +81,11 @@ export default function VisitantesPage() {
 
   return (
     <main className="container mx-auto p-4 md:p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-4xl font-bold font-headline text-primary">Cadastro de Visitantes</h1>
-          <p className="text-muted-foreground">Registre e gerencie a entrada de visitantes.</p>
-        </div>
-        <div className="flex items-center gap-2">
-            <Link href="/">
-              <Button variant="outline">
-                <Home className="mr-2 h-4 w-4" />
-                Página de Funcionários
-              </Button>
-            </Link>
-            <ThemeToggle />
-        </div>
-      </div>
+       <AppHeader
+        title="Cadastro de Visitantes"
+        description="Registre e gerencie a entrada de visitantes."
+        activePage="visitors"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <Card className="lg:col-span-1">

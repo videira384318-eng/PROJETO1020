@@ -9,18 +9,15 @@ import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-lis
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
-import { ThemeToggle } from '@/components/theme-toggle';
-import Link from 'next/link';
 import { AnomalyDetector } from '@/components/anomaly-detector';
+import { AppHeader } from '@/components/app-header';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -79,7 +76,6 @@ export default function Home() {
       };
 
       setScans(prevScans => [newScan, ...prevScans]);
-      setIsScanning(false);
       toast({
         title: "Escaneamento Concluído!",
         description: `Registrada ${translatedType} para ${newScan.employeeId}.`,
@@ -151,26 +147,17 @@ export default function Home() {
 
   return (
     <main className="container mx-auto p-4 md:p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-4xl font-bold font-headline text-primary">Controle de Ponto QR</h1>
-          <p className="text-muted-foreground">Gerencie o ponto dos funcionários e detecte anomalias.</p>
-        </div>
-        <div className="flex gap-2">
-            <Link href="/visitantes">
-              <Button variant="outline">
-                <Users className="mr-2 h-4 w-4" />
-                Página de Visitantes
-              </Button>
-            </Link>
-            <QRGenerator onAddEmployee={handleAddEmployee}/>
-            <ThemeToggle />
-        </div>
-      </div>
+      <AppHeader
+        title="Controle de Ponto QR"
+        description="Gerencie o ponto dos funcionários e detecte anomalias."
+        activePage="employees"
+      >
+        <QRGenerator onAddEmployee={handleAddEmployee} />
+      </AppHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <div className="flex flex-col gap-8">
-            <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
+            <QRScanner onScan={handleScan} />
             <AnomalyDetector scans={scans} />
         </div>
         <Tabs defaultValue="employees" className="w-full">
