@@ -120,6 +120,14 @@ export default function VisitantesPage() {
       description: `A saída do visitante foi registrada com sucesso.`,
     });
   };
+  
+  const handleVisitorClick = (visitor: VisitorFormData) => {
+    if (visitor.status === 'registered') {
+        handleVisitorEntry(visitor.id!);
+    } else if (visitor.status === 'inside') {
+        handleVisitorExit(visitor.id!);
+    }
+  }
 
   const historyVisitors = useMemo(() => {
     return visitors.filter(v => v.status === 'inside' || v.status === 'exited');
@@ -292,6 +300,7 @@ export default function VisitantesPage() {
                         onDelete={handleDeleteVisitor}
                         onEnter={handleVisitorEntry}
                         onExit={handleVisitorExit}
+                        onVisitorClick={handleVisitorClick}
                     />
                 </TabsContent>
                  <TabsContent value="history">

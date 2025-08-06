@@ -25,9 +25,10 @@ interface VisitorListProps {
   onDelete: (visitorId: string) => void;
   onEnter: (visitorId: string) => void;
   onExit: (visitorId: string) => void;
+  onVisitorClick: (visitor: VisitorFormData) => void;
 }
 
-export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorListProps) {
+export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClick }: VisitorListProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
@@ -114,25 +115,29 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
                 </TableHeader>
                 <TableBody>
                     {filteredVisitors.map((visitor) => (
-                    <TableRow key={visitor.id} className={visitor.status === 'exited' ? 'opacity-60' : ''}>
+                    <TableRow 
+                        key={visitor.id} 
+                        onClick={() => onVisitorClick(visitor)}
+                        className={visitor.status === 'exited' ? 'opacity-60' : 'cursor-pointer'}
+                    >
                         <TableCell className="font-medium">{visitor.nome}</TableCell>
                         <TableCell>{visitor.empresa}</TableCell>
                         <TableCell>{visitor.responsavel}</TableCell>
                         <TableCell>{getStatusBadge(visitor.status)}</TableCell>
                         <TableCell className="text-right space-x-1">
                            {visitor.status === 'registered' && (
-                             <Button variant="outline" size="sm" onClick={() => onEnter(visitor.id!)}>
+                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onEnter(visitor.id!); }}>
                                 <LogIn className="h-4 w-4 mr-1" /> Entrada
                              </Button>
                            )}
                            {visitor.status === 'inside' && (
-                             <Button variant="outline" size="sm" onClick={() => onExit(visitor.id!)}>
+                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onExit(visitor.id!); }}>
                                 <LogOut className="h-4 w-4 mr-1" /> Saída
                              </Button>
                            )}
                            <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={visitor.status === 'inside'}>
+                                <Button variant="ghost" size="icon" disabled={visitor.status === 'inside'} onClick={(e) => e.stopPropagation()}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                     <span className="sr-only">Excluir Visitante</span>
                                 </Button>
