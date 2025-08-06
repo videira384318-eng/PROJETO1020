@@ -55,7 +55,15 @@ const userFormSchema = z.object({
   role: z.enum(['rh', 'portaria'], { required_error: "O perfil é obrigatório." }),
 });
 
+const editUserFormSchema = z.object({
+    username: z.string().min(3, "O nome de usuário deve ter pelo menos 3 caracteres.").optional(),
+    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").or(z.literal('')).optional(),
+    role: z.enum(['rh', 'portaria'], { required_error: "O perfil é obrigatório." }).optional(),
+})
+
+
 type UserFormData = z.infer<typeof userFormSchema>;
+type EditUserFormData = z.infer<typeof editUserFormSchema>;
 
 
 export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }: UserManagementProps) {
@@ -72,8 +80,8 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
     },
   });
 
-  const editForm = useForm<Partial<UserFormData>>({
-    resolver: zodResolver(userFormSchema.partial()),
+  const editForm = useForm<EditUserFormData>({
+    resolver: zodResolver(editUserFormSchema),
   });
 
   const handleAddNewUser = (data: UserFormData) => {
@@ -92,7 +100,7 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
     setIsEditDialogOpen(true);
   }
 
-  const handleUpdateSubmit = (data: Partial<UserFormData>) => {
+  const handleUpdateSubmit = (data: EditUserFormData) => {
     if (!editingUser) return;
     
     const updateData: Partial<User> = {};
@@ -258,6 +266,22 @@ export function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser }:
             </DialogHeader>
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(handleUpdateSubmit)} className="space-y-4">
+                 <FormField
+                    control={editForm.control}
+                    name="username"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome de Usuário</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <UserCog className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="ex: joao.silva" {...field} className="pl-9"/>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                 />
                  <FormField
                     control={editForm.control}
                     name="password"

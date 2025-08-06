@@ -32,24 +32,29 @@ const USERS_COLLECTION = 'users';
 // Note: In a real-world application, password handling would involve hashing.
 // Here we store it as plain text for simplicity of the simulation.
 
-const createAdmUserIfNeeded = async () => {
-    const admUserRef = doc(db, USERS_COLLECTION, "adm_user"); // Use a fixed ID for the admin user
-    const admUserSnap = await getDoc(admUserRef);
-
-    if (!admUserSnap.exists()) {
-        console.log("Creating default administrator user...");
-        await setDoc(admUserRef, {
-            username: "adm",
-            password: "admin123", // Default password - CHANGE THIS IN A REAL APP
-            role: "adm"
-        });
-    }
-};
-
-// Call this once when the service is loaded
-createAdmUserIfNeeded();
-
 export const verifyUser = async (username: string, password: string): Promise<Role | null> => {
+    // Special handling for the admin user. If it's the first login, create it.
+    if (username.toLowerCase() === 'adm') {
+        const admUserRef = doc(db, USERS_COLLECTION, 'adm_user');
+        const admUserSnap = await getDoc(admUserRef);
+        
+        // If admin user doesn't exist, create it with the default password.
+        if (!admUserSnap.exists()) {
+            if (password === 'admin123') {
+                console.log("Creating default administrator user...");
+                await setDoc(admUserRef, {
+                    username: "adm",
+                    password: "admin123",
+                    role: "adm"
+                });
+                return 'adm';
+            } else {
+                return null; // Incorrect password for initial admin creation
+            }
+        }
+    }
+    
+    // For all other users (and subsequent admin logins)
     const q = query(collection(db, USERS_COLLECTION), where("username", "==", username));
     const querySnapshot = await getDocs(q);
     
@@ -80,7 +85,19 @@ export const addUser = async (userData: Omit<User, 'id'>): Promise<string> => {
 
 export const updateUser = async (userId: string, userData: Partial<User>): Promise<void> => {
     const docRef = doc(db, USERS_COLLECTION, userId);
-    await updateDoc(docRef, userData);
+    const updateData: Partial<User> = {};
+
+    if (userData.username) {
+        updateData.username = userData.username;
+    }
+     if (userData.password) {
+        updateData.password = userData.password;
+    }
+    if (userData.role) {
+        updateData.role = userData.role;
+    }
+    
+    await updateDoc(docRef, updateData);
 };
 
 export const deleteUser = async (userId: string): Promise<void> => {
