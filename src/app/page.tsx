@@ -5,7 +5,6 @@ import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
 import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator } from '@/components/qr-generator';
-import { AnomalyDetector } from '@/components/anomaly-detector';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
@@ -94,19 +93,12 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-        <div className="lg:col-span-3 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
-              <div className="space-y-8">
-                <AnomalyDetector scans={scans} />
-              </div>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="space-y-8">
+            <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
         </div>
-        <div className="lg:col-span-2">
-            <div className="sticky top-8 space-y-8">
-                 <AttendanceLog scans={scans} />
-            </div>
+        <div className="space-y-8">
+             <AttendanceLog scans={scans} />
         </div>
       </div>
     </main>
