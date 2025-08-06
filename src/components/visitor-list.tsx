@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search } from 'lucide-react';
+import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -26,6 +26,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ReEntryDialog } from './re-entry-dialog';
+
 
 interface VisitorListProps {
   visitors: VisitorFormData[];
@@ -99,6 +101,17 @@ export function VisitorList({
             return 'Registrar Nova Entrada';
         default:
             return '';
+    }
+  }
+  
+  const getActionIcon = (status: VisitorFormData['status']) => {
+     switch (status) {
+        case 'inside':
+            return <LogOut className="h-4 w-4" />;
+        case 'exited':
+            return <LogIn className="h-4 w-4" />;
+        default:
+            return null;
     }
   }
 
@@ -189,7 +202,7 @@ export function VisitorList({
                 </TableHeader>
                 <TableBody>
                     {filteredVisitors.map((visitor) => (
-                        <TableRow 
+                         <TableRow 
                             key={visitor.id}
                             data-state={selectedVisitors.includes(visitor.personId!) ? 'selected' : ''}
                             onClick={() => onVisitorClick(visitor)}
@@ -207,8 +220,15 @@ export function VisitorList({
                             <TableCell>{visitor.empresa}</TableCell>
                             <TableCell>{visitor.placa || 'N/A'}</TableCell>
                             <TableCell>{visitor.responsavel}</TableCell>
-                            <TableCell className="max-w-[150px] truncate">
-                                <span className="block truncate">{visitor.motivo}</span>
+                            <TableCell className="max-w-[150px]">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <span className="block truncate">{visitor.motivo}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{visitor.motivo}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </TableCell>
                             <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
                             <TableCell>{getStatusBadge(visitor.status)}</TableCell>
@@ -221,6 +241,7 @@ export function VisitorList({
                                             className="h-7 w-7"
                                             onClick={() => onVisitorClick(visitor)}
                                         >
+                                           {getActionIcon(visitor.status)}
                                            <span className="sr-only">{getActionTooltip(visitor.status)}</span>
                                         </Button>
                                     </TooltipTrigger>

@@ -15,6 +15,7 @@ import { VisitorHistory } from '@/components/visitor-history';
 import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReEntryDialog, type ReEntryFormData } from '@/components/re-entry-dialog';
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
@@ -42,6 +43,7 @@ export default function VisitantesPage() {
   const [visitors, setVisitors] = useState<VisitorFormData[]>([]);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [reEntryVisitor, setReEntryVisitor] = useState<VisitorFormData | null>(null);
   const { toast } = useToast();
 
   const form = useForm<VisitorFormData>({
@@ -131,20 +133,24 @@ export default function VisitantesPage() {
     });
   };
 
-  const handleVisitorEntry = (visitor: VisitorFormData) => {
-     const newVisit: VisitorFormData = {
-      ...visitor,
-      id: `visit_${new Date().getTime()}`,
-      status: 'inside',
-      entryTime: new Date().toISOString(),
-      exitTime: undefined, // Clear exit time for the new visit
-      createdAt: new Date().toISOString(),
+  const handleReEntrySubmit = (data: ReEntryFormData) => {
+    if (!reEntryVisitor) return;
+
+    const newVisit: VisitorFormData = {
+        ...reEntryVisitor, // Spread base data from the last visit
+        ...data, // Spread new data from the form
+        id: `visit_${new Date().getTime()}`,
+        status: 'inside',
+        entryTime: new Date().toISOString(),
+        exitTime: undefined, // Clear exit time for the new visit
+        createdAt: new Date().toISOString(),
     };
     setVisitors(prev => [newVisit, ...prev]);
-     toast({
-      title: "Nova Entrada Registrada!",
-      description: `Uma nova entrada para ${visitor.nome} foi registrada.`,
+    toast({
+        title: "Nova Entrada Registrada!",
+        description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
     });
+    setReEntryVisitor(null); // Close the dialog
   };
 
   const handleVisitorExit = (visitorId: string) => {
@@ -163,7 +169,7 @@ export default function VisitantesPage() {
     if (visitor.status === 'inside') {
         handleVisitorExit(visitor.id!);
     } else if (visitor.status === 'exited') {
-        handleVisitorEntry(visitor);
+        setReEntryVisitor(visitor);
     }
   }
   
@@ -368,6 +374,13 @@ export default function VisitantesPage() {
             </Tabs>
         </div>
       </div>
+      
+      <ReEntryDialog 
+        isOpen={!!reEntryVisitor}
+        onClose={() => setReEntryVisitor(null)}
+        visitor={reEntryVisitor}
+        onSubmit={handleReEntrySubmit}
+      />
     </main>
   );
 }
