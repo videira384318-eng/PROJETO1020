@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
 import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
@@ -101,6 +101,15 @@ export default function Home() {
     });
   }
 
+  const sortedScansForLog = useMemo(() => {
+    return [...scans].sort((a, b) => {
+      if (a.employeeId < b.employeeId) return -1;
+      if (a.employeeId > b.employeeId) return 1;
+      return new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime();
+    });
+  }, [scans]);
+
+
   if (!isClient) {
     return null;
   }
@@ -128,7 +137,7 @@ export default function Home() {
                 <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
             </TabsContent>
             <TabsContent value="history">
-                <AttendanceLog scans={scans} onDelete={handleDeleteScan}/>
+                <AttendanceLog scans={sortedScansForLog} onDelete={handleDeleteScan}/>
             </TabsContent>
         </Tabs>
       </div>
