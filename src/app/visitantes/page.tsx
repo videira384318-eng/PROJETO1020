@@ -149,7 +149,7 @@ export default function VisitantesPage() {
     if (selectedVisitors.length === currentVisitors.length) {
       setSelectedVisitors([]);
     } else {
-      setSelectedVisitors(currentVisitors.map(v => v.personId!));
+      setSelectedVisitors(currentVisitors.map(v => v.personId!).filter(id => id));
     }
   };
 
@@ -258,8 +258,9 @@ export default function VisitantesPage() {
 
     for (const visitor of sorted) {
       // Use personId if it exists, otherwise fallback to id for older records
-      const key = visitor.personId || visitor.id!;
-      latestVisitorRecord[key] = visitor;
+      if (visitor.personId) {
+        latestVisitorRecord[visitor.personId] = visitor;
+      }
     }
 
     return Object.values(latestVisitorRecord);
@@ -485,3 +486,5 @@ export default function VisitantesPage() {
     </main>
   );
 }
+
+    
