@@ -36,20 +36,22 @@ export default function Home() {
 
   const handleScan = (decodedText: string) => {
     try {
-      const { type, nome, setor, placa, ramal } = JSON.parse(decodedText);
-      const translatedType = type === 'entry' ? 'entrada' : 'saída';
-      if (!type || !nome || !setor) {
+      const { nome, setor, placa, ramal } = JSON.parse(decodedText);
+      const employeeId = `${nome} (${setor})`;
+      
+      if (!nome || !setor) {
         throw new Error('Dados do QR code incompletos.');
       }
-      if (type !== 'entry' && type !== 'exit') {
-        throw new Error('Tipo de escaneamento inválido');
-      }
-
+      
+      const lastScanForEmployee = scans.find(scan => scan.employeeId === employeeId);
+      const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
+      const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
+      
       const newScan: AttendanceScan = {
         scanId: `scan_${new Date().getTime()}_${Math.random().toString(36).substring(7)}`,
-        employeeId: `${nome} (${setor})`,
+        employeeId: employeeId,
         scanTime: new Date().toISOString(),
-        scanType: type,
+        scanType: newScanType,
       };
 
       setScans(prevScans => [newScan, ...prevScans]);
