@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search, LogIn, LogOut, Info } from 'lucide-react';
+import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -59,6 +59,8 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClic
       visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.rg.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.motivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (visitor.placa && visitor.placa.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [sortedVisitors, searchTerm]);
@@ -108,14 +110,19 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClic
                 <p className="text-sm">Tente uma busca diferente.</p>
             </div>
         ) : (
-          <div className="border rounded-md">
+          <div className="border rounded-md text-xs">
             <TooltipProvider>
             <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>Visitante</TableHead>
-                    <TableHead>Documentos</TableHead>
-                    <TableHead>Veículo</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>RG</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Placa</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead>Motivo</TableHead>
+                    <TableHead>Portaria</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -127,46 +134,38 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClic
                         onClick={() => onVisitorClick(visitor)}
                         className={visitor.status === 'exited' ? 'opacity-60' : 'cursor-pointer'}
                     >
-                        <TableCell>
-                          <div className="font-medium">{visitor.nome}</div>
-                          <div className="text-sm text-muted-foreground">{visitor.empresa}</div>
+                        <TableCell className="font-medium">{visitor.nome}</TableCell>
+                        <TableCell>{visitor.rg}</TableCell>
+                        <TableCell>{visitor.cpf}</TableCell>
+                        <TableCell>{visitor.empresa}</TableCell>
+                        <TableCell>{visitor.placa || 'N/A'}</TableCell>
+                        <TableCell>{visitor.responsavel}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <span className="block truncate">{visitor.motivo}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{visitor.motivo}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">RG: {visitor.rg}</div>
-                          <div className="text-sm text-muted-foreground">CPF: {visitor.cpf}</div>
-                        </TableCell>
-                        <TableCell>
-                           <div className="text-sm">{visitor.placa || 'N/A'}</div>
-                           <div className="text-sm text-muted-foreground">Portaria: {visitor.portaria.toUpperCase()}</div>
-                        </TableCell>
+                        <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
                         <TableCell>{getStatusBadge(visitor.status)}</TableCell>
                         <TableCell className="text-right space-x-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="cursor-default" onClick={(e) => e.stopPropagation()}>
-                                <Info className="h-4 w-4" />
-                                <span className="sr-only">Detalhes da Visita</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="max-w-xs text-sm">
-                              <p><span className="font-semibold">Responsável:</span> {visitor.responsavel}</p>
-                              <p><span className="font-semibold">Motivo:</span> {visitor.motivo}</p>
-                            </TooltipContent>
-                          </Tooltip>
-
                            {visitor.status === 'registered' && (
-                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onEnter(visitor.id!); }}>
-                                <LogIn className="h-4 w-4 mr-1" /> Entrada
+                             <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEnter(visitor.id!); }}>
+                                <LogIn className="h-3 w-3 mr-1" /> Entrada
                              </Button>
                            )}
                            {visitor.status === 'inside' && (
-                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onExit(visitor.id!); }}>
-                                <LogOut className="h-4 w-4 mr-1" /> Saída
+                             <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onExit(visitor.id!); }}>
+                                <LogOut className="h-3 w-3 mr-1" /> Saída
                              </Button>
                            )}
                            <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={visitor.status === 'inside'} onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={visitor.status === 'inside'} onClick={(e) => e.stopPropagation()}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                     <span className="sr-only">Excluir Visitante</span>
                                 </Button>
