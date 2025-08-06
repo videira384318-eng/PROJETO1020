@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
 import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
-import { QRGenerator } from '@/components/qr-generator';
+import { QRGenerator, type QrFormData } from '@/components/qr-generator';
+import { EmployeeList } from '@/components/employee-list';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
+  const [employees, setEmployees] = useState<QrFormData[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
@@ -22,9 +24,14 @@ export default function Home() {
       if (storedScans) {
         setScans(JSON.parse(storedScans));
       }
+      const storedEmployees = localStorage.getItem('qr-attendance-employees');
+      if (storedEmployees) {
+        setEmployees(JSON.parse(storedEmployees));
+      }
     } catch (error) {
       console.error("Falha ao analisar os registros do localStorage", error);
       localStorage.removeItem('qr-attendance-scans');
+      localStorage.removeItem('qr-attendance-employees');
     }
   }, []);
 
@@ -33,10 +40,16 @@ export default function Home() {
       localStorage.setItem('qr-attendance-scans', JSON.stringify(scans));
     }
   }, [scans, isClient]);
+  
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('qr-attendance-employees', JSON.stringify(employees));
+    }
+  }, [employees, isClient]);
 
   const handleScan = (decodedText: string) => {
     try {
-      const { nome, setor, placa, ramal } = JSON.parse(decodedText);
+      const { nome, setor } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
       
       if (!nome || !setor) {
@@ -70,6 +83,15 @@ export default function Home() {
       });
     }
   };
+  
+  const handleAddEmployee = (employeeData: QrFormData) => {
+    setEmployees(prev => [...prev, employeeData]);
+  }
+  
+  const handleClearEmployees = () => {
+    setEmployees([]);
+    localStorage.removeItem('qr-attendance-employees');
+  }
 
   const clearLogs = () => {
     setScans([]);
@@ -85,10 +107,10 @@ export default function Home() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-bold font-headline text-primary">Controle de Ponto QR</h1>
-          <p className="text-muted-foreground">Escaneie os QR codes para registrar a presença dos funcionários.</p>
+          <p className="text-muted-foreground">Gere QR codes para os funcionários ou escaneie para registrar o ponto.</p>
         </div>
         <div className="flex gap-2">
-            <QRGenerator />
+            <QRGenerator onAddEmployee={handleAddEmployee}/>
             <Button variant="outline" onClick={clearLogs} disabled={scans.length === 0}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Limpar Registros
@@ -99,6 +121,7 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <div className="space-y-8">
             <QRScanner onScan={handleScan} isScanning={isScanning} setIsScanning={setIsScanning} />
+            <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
         </div>
         <div className="space-y-8">
              <AttendanceLog scans={scans} />

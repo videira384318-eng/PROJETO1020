@@ -13,12 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { QrCode, Printer } from 'lucide-react';
+import { QrCode, Printer, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
+
 
 const qrFormSchema = z.object({
   nome: z.string().min(1, "O nome é obrigatório."),
@@ -27,12 +30,15 @@ const qrFormSchema = z.object({
   ramal: z.string().optional(),
 });
 
-type QrFormData = z.infer<typeof qrFormSchema>;
+export type QrFormData = z.infer<typeof qrFormSchema>;
 
-export function QRGenerator() {
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
+interface QRGeneratorProps {
+    onAddEmployee: (data: QrFormData) => void;
+}
+
+export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [qrData, setQrData] = useState<QrFormData | null>(null);
+  const { toast } = useToast();
 
   const form = useForm<QrFormData>({
     resolver: zodResolver(qrFormSchema),
@@ -44,104 +50,34 @@ export function QRGenerator() {
     },
   });
 
-  const generateQR = async (data: QrFormData) => {
-    try {
-      const url = await QRCode.toDataURL(JSON.stringify(data), {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#3F51B5',
-          light: '#FFFFFF',
-        }
-      });
-      setQrCodeUrl(url);
-      setQrData(data);
-    } catch (err) {
-      console.error(err);
-    }
+  const handleGenerate = (data: QrFormData) => {
+    onAddEmployee(data);
+    toast({
+        title: "Funcionário Adicionado!",
+        description: `${data.nome} foi adicionado(a) à lista.`
+    })
+    form.reset();
+    setIsOpen(false);
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-        printWindow.document.write(`
-        <html>
-            <head>
-            <title>Imprimir QR Code</title>
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; }
-                }
-                body { 
-                    display: flex; 
-                    flex-direction: column;
-                    align-items: center; 
-                    justify-content: center; 
-                    height: 100vh; 
-                    margin: 0; 
-                    font-family: Arial, sans-serif;
-                }
-                .print-container {
-                    text-align: center;
-                    border: 2px solid #ccc;
-                    padding: 20px;
-                    border-radius: 10px;
-                }
-                img {
-                    max-width: 80%;
-                }
-                h2, p {
-                    margin: 5px 0;
-                }
-            </style>
-            </head>
-            <body>
-                <div class="print-container">
-                    <h2>QR Code de Ponto</h2>
-                    <img src="${qrCodeUrl}" alt="QR Code" />
-                    ${qrData ? `
-                        <p><strong>Nome:</strong> ${qrData.nome}</p>
-                        <p><strong>Setor:</strong> ${qrData.setor}</p>
-                        ${qrData.placa ? `<p><strong>Placa:</strong> ${qrData.placa}</p>` : ''}
-                        ${qrData.ramal ? `<p><strong>Ramal:</strong> ${qrData.ramal}</p>` : ''}
-                    ` : ''}
-                </div>
-            </body>
-        </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 250);
-    }
-  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-        setIsOpen(open);
-        if (!open) {
-            setQrCodeUrl('');
-            setQrData(null);
-            form.reset();
-        }
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
-          <QrCode className="mr-2 h-4 w-4" />
-          Gerar QR Code
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Adicionar Funcionário
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">Gerar QR Code de Ponto</DialogTitle>
+          <DialogTitle className="font-headline">Adicionar Novo Funcionário</DialogTitle>
           <DialogDescription>
-            Preencha os dados do funcionário para gerar um QR code.
+            Preencha os dados para gerar um QR code e adicioná-lo à lista.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(generateQR)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-4">
                  <FormField
                     control={form.control}
                     name="nome"
@@ -194,28 +130,19 @@ export function QRGenerator() {
                         </FormItem>
                     )}
                     />
-                <DialogFooter className="pt-4">
-                     <Button type="submit" className="flex-1">Gerar QR Code</Button>
+                <DialogFooter className="pt-4 sm:justify-start">
+                     <Button type="submit">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Adicionar à Lista
+                    </Button>
+                     <DialogClose asChild>
+                        <Button type="button" variant="ghost">
+                            Cancelar
+                        </Button>
+                     </DialogClose>
                 </DialogFooter>
             </form>
         </Form>
-        
-        {qrCodeUrl && qrData && (
-          <div className="mt-4 p-4 border-dashed border-2 border-primary rounded-lg flex flex-col items-center bg-primary/10">
-            <p className="font-headline text-lg mb-2 capitalize">QR Code para Funcionário</p>
-            <Image src={qrCodeUrl} alt={`QR Code para ${qrData.nome}`} width={250} height={250} />
-            <div className="text-center mt-2 text-sm text-primary/80">
-                <p><strong>Nome:</strong> {qrData.nome}</p>
-                <p><strong>Setor:</strong> {qrData.setor}</p>
-                {qrData.placa && <p><strong>Placa:</strong> {qrData.placa}</p>}
-                {qrData.ramal && <p><strong>Ramal:</strong> {qrData.ramal}</p>}
-            </div>
-             <Button onClick={handlePrint} variant="secondary" className="mt-4 w-full">
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimir QR Code
-            </Button>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
