@@ -76,6 +76,8 @@ export default function Home() {
       toast({
         title: "Escaneamento Concluído!",
         description: `Registrada ${translatedType} para ${newScan.employeeId}.`,
+        variant: newScanType === 'entry' ? 'default' : 'destructive',
+        className: newScanType === 'entry' ? 'bg-green-600 text-white' : '',
       });
 
     } catch (error) {

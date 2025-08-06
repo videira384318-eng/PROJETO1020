@@ -115,8 +115,8 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
                         <TableCell>{employee.placa || 'N/A'}</TableCell>
                         <TableCell>{employee.ramal || 'N/A'}</TableCell>
                         <TableCell>
-                            <Badge variant={employee.status === 'entry' ? 'default' : 'secondary'} className="capitalize flex items-center gap-1.5 w-fit">
-                                {employee.status === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
+                            <Badge variant={employee.status === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit text-xs px-2 py-0.5">
+                                {employee.status === 'entry' ? <LogIn size={12}/> : <LogOut size={12}/>}
                                 {employee.status === 'entry' ? 'Dentro' : 'Fora'}
                             </Badge>
                         </TableCell>
