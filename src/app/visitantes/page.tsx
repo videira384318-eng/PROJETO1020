@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
+  // Add a unique identifier for the person, not the visit
+  personId: z.string().optional(),
   nome: z.string().min(1, "O nome é obrigatório."),
   rg: z.string().min(1, "O RG é obrigatório."),
   cpf: z.string().min(1, "O CPF é obrigatório."),
@@ -31,7 +33,7 @@ const visitorFormSchema = z.object({
   createdAt: z.string().optional(),
   entryTime: z.string().optional(),
   exitTime: z.string().optional(),
-  status: z.enum(['registered', 'inside', 'exited']).optional(),
+  status: z.enum(['inside', 'exited']).optional(),
 });
 
 export type VisitorFormData = z.infer<typeof visitorFormSchema>;
@@ -75,16 +77,19 @@ export default function VisitantesPage() {
   }, [visitors, isClient]);
 
   const handleAddVisitor = (data: VisitorFormData) => {
+    const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
     const newVisitor: VisitorFormData = {
       ...data,
-      id: `visitor_${new Date().getTime()}`,
+      id: `visit_${new Date().getTime()}`,
+      personId: personId,
       createdAt: new Date().toISOString(),
-      status: 'registered',
+      entryTime: new Date().toISOString(),
+      status: 'inside',
     };
     setVisitors(prev => [newVisitor, ...prev]);
     toast({
-      title: "Visitante Cadastrado!",
-      description: `${data.nome} foi adicionado(a) à lista de visitantes.`,
+      title: "Visitante Cadastrado e Entrada Registrada!",
+      description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
     });
     form.reset();
   };
@@ -97,15 +102,19 @@ export default function VisitantesPage() {
     });
   };
 
-  const handleVisitorEntry = (visitorId: string) => {
-    setVisitors(prev => prev.map(v => 
-        v.id === visitorId 
-        ? { ...v, status: 'inside', entryTime: new Date().toISOString() } 
-        : v
-    ));
-    toast({
-      title: "Entrada Registrada!",
-      description: `A entrada do visitante foi registrada com sucesso.`,
+  const handleVisitorEntry = (visitor: VisitorFormData) => {
+     const newVisit: VisitorFormData = {
+      ...visitor,
+      id: `visit_${new Date().getTime()}`,
+      status: 'inside',
+      entryTime: new Date().toISOString(),
+      exitTime: undefined, // Clear exit time for the new visit
+      createdAt: new Date().toISOString(),
+    };
+    setVisitors(prev => [newVisit, ...prev]);
+     toast({
+      title: "Nova Entrada Registrada!",
+      description: `Uma nova entrada para ${visitor.nome} foi registrada.`,
     });
   };
 
@@ -122,15 +131,27 @@ export default function VisitantesPage() {
   };
   
   const handleVisitorClick = (visitor: VisitorFormData) => {
-    if (visitor.status === 'registered') {
-        handleVisitorEntry(visitor.id!);
-    } else if (visitor.status === 'inside') {
+    if (visitor.status === 'inside') {
         handleVisitorExit(visitor.id!);
+    } else if (visitor.status === 'exited') {
+        handleVisitorEntry(visitor);
     }
   }
+  
+  // This list will contain only the latest record for each person, to be shown in the "current" list.
+  const currentVisitors = useMemo(() => {
+    const latestVisitorRecord: Record<string, VisitorFormData> = {};
 
-  const historyVisitors = useMemo(() => {
-    return visitors.filter(v => v.status === 'inside' || v.status === 'exited');
+    // Sort visitors by time to process the most recent ones last
+    const sorted = [...visitors].sort((a,b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+
+    for (const visitor of sorted) {
+      // Use personId if it exists, otherwise fallback to id for older records
+      const key = visitor.personId || visitor.id!;
+      latestVisitorRecord[key] = visitor;
+    }
+
+    return Object.values(latestVisitorRecord);
   }, [visitors]);
 
   if (!isClient) {
@@ -296,16 +317,14 @@ export default function VisitantesPage() {
                 </TabsList>
                 <TabsContent value="visitors">
                     <VisitorList 
-                        visitors={visitors} 
+                        visitors={currentVisitors} 
                         onDelete={handleDeleteVisitor}
-                        onEnter={handleVisitorEntry}
-                        onExit={handleVisitorExit}
                         onVisitorClick={handleVisitorClick}
                     />
                 </TabsContent>
                  <TabsContent value="history">
                     <VisitorHistory
-                        visitors={historyVisitors}
+                        visitors={visitors}
                     />
                 </TabsContent>
             </Tabs>

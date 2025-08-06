@@ -52,8 +52,8 @@ export function VisitorHistory({ visitors }: VisitorHistoryProps) {
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <CardTitle className="font-headline flex items-center gap-2"><History className="w-6 h-6"/> Histórico</CardTitle>
-                <CardDescription>Consulte os registros de entrada e saída.</CardDescription>
+                <CardTitle className="font-headline flex items-center gap-2"><History className="w-6 h-6"/> Histórico de Visitas</CardTitle>
+                <CardDescription>Consulte todos os registros de entrada e saída.</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

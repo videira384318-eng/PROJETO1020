@@ -29,20 +29,18 @@ import {
 interface VisitorListProps {
   visitors: VisitorFormData[];
   onDelete: (visitorId: string) => void;
-  onEnter: (visitorId: string) => void;
-  onExit: (visitorId: string) => void;
   onVisitorClick: (visitor: VisitorFormData) => void;
 }
 
-export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClick }: VisitorListProps) {
+export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
     // Show visitors who are 'inside' or 'registered' first, then 'exited'
     return [...visitors].sort((a, b) => {
-        const statusOrder = { 'inside': 1, 'registered': 2, 'exited': 3 };
-        const statusA = statusOrder[a.status!] || 4;
-        const statusB = statusOrder[b.status!] || 4;
+        const statusOrder = { 'inside': 1, 'exited': 2 };
+        const statusA = statusOrder[a.status!] || 3;
+        const statusB = statusOrder[b.status!] || 3;
         if (statusA !== statusB) {
             return statusA - statusB;
         }
@@ -70,10 +68,20 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClic
       case 'inside':
         return <Badge variant="success">Dentro</Badge>;
       case 'exited':
-        return <Badge variant="destructive">Saiu</Badge>;
-      case 'registered':
+        return <Badge variant="destructive">Fora</Badge>;
       default:
         return <Badge variant="outline">Registrado</Badge>;
+    }
+  }
+
+  const getActionTooltip = (status: VisitorFormData['status']) => {
+    switch (status) {
+        case 'inside':
+            return 'Registrar Saída';
+        case 'exited':
+            return 'Registrar Nova Entrada';
+        default:
+            return '';
     }
   }
 
@@ -82,8 +90,8 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClic
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <CardTitle className="font-headline">Visitantes Cadastrados</CardTitle>
-                <CardDescription>Gerencie a entrada e saída dos visitantes.</CardDescription>
+                <CardTitle className="font-headline">Visitantes Atuais</CardTitle>
+                <CardDescription>Clique em um visitante para registrar entrada/saída.</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -129,62 +137,51 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit, onVisitorClic
                 </TableHeader>
                 <TableBody>
                     {filteredVisitors.map((visitor) => (
-                    <TableRow 
-                        key={visitor.id} 
-                        onClick={() => onVisitorClick(visitor)}
-                        className={visitor.status === 'exited' ? 'opacity-60' : 'cursor-pointer'}
-                    >
-                        <TableCell className="font-medium">{visitor.nome}</TableCell>
-                        <TableCell>{visitor.rg}</TableCell>
-                        <TableCell>{visitor.cpf}</TableCell>
-                        <TableCell>{visitor.empresa}</TableCell>
-                        <TableCell>{visitor.placa || 'N/A'}</TableCell>
-                        <TableCell>{visitor.responsavel}</TableCell>
-                        <TableCell className="max-w-[150px] truncate">
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <span className="block truncate">{visitor.motivo}</span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>{visitor.motivo}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TableCell>
-                        <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
-                        <TableCell>{getStatusBadge(visitor.status)}</TableCell>
-                        <TableCell className="text-right space-x-1">
-                           {visitor.status === 'registered' && (
-                             <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEnter(visitor.id!); }}>
-                                <LogIn className="h-3 w-3 mr-1" /> Entrada
-                             </Button>
-                           )}
-                           {visitor.status === 'inside' && (
-                             <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onExit(visitor.id!); }}>
-                                <LogOut className="h-3 w-3 mr-1" /> Saída
-                             </Button>
-                           )}
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={visitor.status === 'inside'} onClick={(e) => e.stopPropagation()}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                    <span className="sr-only">Excluir Visitante</span>
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro do visitante.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                        </TableCell>
-                    </TableRow>
+                    <Tooltip key={visitor.id}>
+                      <TooltipTrigger asChild>
+                        <TableRow 
+                            onClick={() => onVisitorClick(visitor)}
+                            className='cursor-pointer'
+                        >
+                            <TableCell className="font-medium">{visitor.nome}</TableCell>
+                            <TableCell>{visitor.rg}</TableCell>
+                            <TableCell>{visitor.cpf}</TableCell>
+                            <TableCell>{visitor.empresa}</TableCell>
+                            <TableCell>{visitor.placa || 'N/A'}</TableCell>
+                            <TableCell>{visitor.responsavel}</TableCell>
+                            <TableCell className="max-w-[150px] truncate">
+                                <span className="block truncate">{visitor.motivo}</span>
+                            </TableCell>
+                            <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
+                            <TableCell>{getStatusBadge(visitor.status)}</TableCell>
+                            <TableCell className="text-right space-x-1">
+                               <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={visitor.status === 'inside'} onClick={(e) => e.stopPropagation()}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Excluir Visitante</span>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro do visitante.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{getActionTooltip(visitor.status)}</p>
+                      </TooltipContent>
+                    </Tooltip>
                     ))}
                 </TableBody>
             </Table>
