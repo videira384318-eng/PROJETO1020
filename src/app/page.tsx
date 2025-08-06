@@ -6,11 +6,11 @@ import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
 import { EmployeeList } from '@/components/employee-list';
-import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -130,6 +130,7 @@ export default function Home() {
         </div>
         <div className="flex gap-2">
             <QRGenerator onAddEmployee={handleAddEmployee}/>
+            <ThemeToggle />
         </div>
       </div>
 
