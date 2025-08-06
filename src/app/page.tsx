@@ -28,6 +28,7 @@ export default function Home() {
   const { toast } = useToast();
 
   const refreshData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const [allEmployees, allScans] = await Promise.all([
         getEmployees(),
@@ -36,10 +37,11 @@ export default function Home() {
       setEmployees(allEmployees);
       setScans(allScans);
     } catch (error) {
+      console.error("Erro ao carregar dados:", error);
       toast({
         variant: "destructive",
         title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do servidor. Tente novamente mais tarde.",
+        description: "Não foi possível buscar os dados do servidor. Verifique sua conexão ou tente novamente mais tarde.",
       });
     } finally {
       setIsLoading(false);
