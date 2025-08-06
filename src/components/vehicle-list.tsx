@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Truck, Search } from 'lucide-react';
+import { Trash2, Truck, Search, LogIn, LogOut } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,12 +20,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { VehicleFormData } from '@/app/veiculos/page';
 
-interface VehicleListProps {
-  vehicles: VehicleFormData[];
-  onDelete: (vehicleId: string) => void;
+export interface VehicleWithStatus extends VehicleFormData {
+  status: 'entry' | 'exit';
 }
 
-export function VehicleList({ vehicles, onDelete }: VehicleListProps) {
+interface VehicleListProps {
+  vehicles: VehicleWithStatus[];
+  onDelete: (vehicleId: string) => void;
+  onVehicleClick: (vehicle: VehicleWithStatus) => void;
+}
+
+export function VehicleList({ vehicles, onDelete, onVehicleClick }: VehicleListProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredVehicles = useMemo(() => {
@@ -36,6 +42,10 @@ export function VehicleList({ vehicles, onDelete }: VehicleListProps) {
       vehicle.condutor.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [vehicles, searchTerm]);
+  
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   return (
     <Card>
@@ -43,7 +53,7 @@ export function VehicleList({ vehicles, onDelete }: VehicleListProps) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <CardTitle className="font-headline">Veículos Cadastrados</CardTitle>
-                <CardDescription>Visualize e gerencie os veículos da empresa.</CardDescription>
+                <CardDescription>Clique em um veículo para registrar entrada/saída.</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -77,16 +87,23 @@ export function VehicleList({ vehicles, onDelete }: VehicleListProps) {
                         <TableHead>Placa</TableHead>
                         <TableHead>Condutor</TableHead>
                         <TableHead>Portaria</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {filteredVehicles.map((vehicle) => (
-                         <TableRow key={vehicle.id}>
+                         <TableRow key={vehicle.id} onClick={() => onVehicleClick(vehicle)} className="cursor-pointer">
                             <TableCell className="font-medium">{vehicle.placa}</TableCell>
                             <TableCell>{vehicle.condutor}</TableCell>
                             <TableCell>{vehicle.portaria.toUpperCase()}</TableCell>
-                            <TableCell className="text-right">
+                             <TableCell>
+                                <Badge variant={vehicle.status === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit text-xs px-2 py-0.5">
+                                    {vehicle.status === 'entry' ? <LogIn size={12}/> : <LogOut size={12}/>}
+                                    {vehicle.status === 'entry' ? 'Dentro' : 'Fora'}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right" onClick={stopPropagation}>
                                <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button variant="ghost" size="icon">
