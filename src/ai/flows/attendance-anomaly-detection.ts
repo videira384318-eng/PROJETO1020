@@ -21,6 +21,8 @@ const AttendanceScanSchema = z.object({
   employeeId: z.string().describe('Identifier for the employee.'),
   scanTime: z.string().describe('Timestamp of the scan event (ISO format).'),
   scanType: z.enum(['entry', 'exit']).describe('Type of scan event (entry or exit).'),
+  placa: z.string().optional().describe('License plate of the employee\'s vehicle.'),
+  ramal: z.string().optional().describe('Employee\'s extension number.'),
 });
 
 export type AttendanceScan = z.infer<typeof AttendanceScanSchema>;
@@ -52,7 +54,7 @@ const attendanceAnomalyDetectionPrompt = ai.definePrompt({
 
   Scans:
   {{#each this}}
-  - Scan ID: {{scanId}}, Employee ID: {{employeeId}}, Time: {{scanTime}}, Type: {{scanType}}
+  - Scan ID: {{scanId}}, Employee ID: {{employeeId}}, Time: {{scanTime}}, Type: {{scanType}}, Placa: {{placa}}, Ramal: {{ramal}}
   {{/each}}
 
   Based on your analysis, determine if an anomaly is detected and provide a description.

@@ -41,7 +41,12 @@ export function QrCodeList({ employees, onClear }: QrCodeListProps) {
     const generateQRs = async () => {
       const qrs = await Promise.all(
         filteredEmployees.map(async (employee) => {
-          const qrUrl = await QRCode.toDataURL(JSON.stringify(employee), {
+          const qrUrl = await QRCode.toDataURL(JSON.stringify({
+            nome: employee.nome,
+            setor: employee.setor,
+            placa: employee.placa,
+            ramal: employee.ramal
+          }), {
             width: 200,
             margin: 2,
             color: {

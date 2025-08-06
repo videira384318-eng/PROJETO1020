@@ -53,7 +53,7 @@ export default function Home() {
 
   const handleScan = (decodedText: string) => {
     try {
-      const { nome, setor } = JSON.parse(decodedText);
+      const { nome, setor, placa, ramal } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
       
       if (!nome || !setor) {
@@ -69,6 +69,8 @@ export default function Home() {
         employeeId: employeeId,
         scanTime: new Date().toISOString(),
         scanType: newScanType,
+        placa: placa || 'N/A',
+        ramal: ramal || 'N/A'
       };
 
       setScans(prevScans => [newScan, ...prevScans]);
@@ -76,8 +78,7 @@ export default function Home() {
       toast({
         title: "Escaneamento Concluído!",
         description: `Registrada ${translatedType} para ${newScan.employeeId}.`,
-        variant: newScanType === 'entry' ? 'default' : 'destructive',
-        className: newScanType === 'entry' ? 'bg-green-600 text-white' : '',
+        className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
 
     } catch (error) {
@@ -108,7 +109,7 @@ export default function Home() {
   }
   
   const handleEmployeeClick = (employee: QrFormData) => {
-    const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor });
+    const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor, placa: employee.placa, ramal: employee.ramal });
     handleScan(qrData);
   }
 
@@ -182,7 +183,7 @@ export default function Home() {
                         />
                     </div>
                     <div className="flex-grow w-full">
-                        <AttendanceLog scans={sortedScansForLog} onDelete={handleDeleteScan}/>
+                        <AttendanceLog scans={sortedScansForLog} employees={employees} onDelete={handleDeleteScan}/>
                     </div>
                 </div>
             </TabsContent>
