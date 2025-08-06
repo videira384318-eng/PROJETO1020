@@ -9,8 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-const FAKE_EMPLOYEE_IDS = ['EMP001', 'EMP007', 'EMP042', 'EMP113', 'EMP121'];
-
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -38,15 +36,18 @@ export default function Home() {
 
   const handleScan = (decodedText: string) => {
     try {
-      const { type } = JSON.parse(decodedText);
+      const { type, nome, setor, placa, ramal } = JSON.parse(decodedText);
       const translatedType = type === 'entry' ? 'entrada' : 'saída';
+      if (!type || !nome || !setor) {
+        throw new Error('Dados do QR code incompletos.');
+      }
       if (type !== 'entry' && type !== 'exit') {
         throw new Error('Tipo de escaneamento inválido');
       }
 
       const newScan: AttendanceScan = {
         scanId: `scan_${new Date().getTime()}_${Math.random().toString(36).substring(7)}`,
-        employeeId: FAKE_EMPLOYEE_IDS[Math.floor(Math.random() * FAKE_EMPLOYEE_IDS.length)],
+        employeeId: `${nome} (${setor})`,
         scanTime: new Date().toISOString(),
         scanType: type,
       };
