@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -19,7 +20,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { VehicleFormData } from '@/app/veiculos/page';
-import { useAuth } from '@/contexts/auth-context';
 
 export interface VehicleWithStatus extends VehicleFormData {
   status: 'entry' | 'exit';
@@ -32,7 +32,6 @@ interface VehicleListProps {
 }
 
 export function VehicleList({ vehicles, onDelete, onVehicleClick }: VehicleListProps) {
-  const { role } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredVehicles = useMemo(() => {
@@ -48,9 +47,6 @@ export function VehicleList({ vehicles, onDelete, onVehicleClick }: VehicleListP
   const stopPropagation = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
-  
-  const canDelete = role === 'adm' || role === 'rh';
-  const canClickRow = role === 'adm' || role === 'portaria';
 
   return (
     <Card>
@@ -93,12 +89,12 @@ export function VehicleList({ vehicles, onDelete, onVehicleClick }: VehicleListP
                         <TableHead>Condutor</TableHead>
                         <TableHead>Portaria</TableHead>
                         <TableHead>Status</TableHead>
-                        {canDelete && <TableHead className="text-right">Ações</TableHead>}
+                        <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {filteredVehicles.map((vehicle) => (
-                         <TableRow key={vehicle.id} onClick={() => canClickRow && onVehicleClick(vehicle)} className={canClickRow ? "cursor-pointer" : "cursor-default"}>
+                         <TableRow key={vehicle.id} onClick={() => onVehicleClick(vehicle)} className={"cursor-pointer"}>
                             <TableCell className="font-medium">{vehicle.placa}</TableCell>
                             <TableCell>{vehicle.condutor}</TableCell>
                             <TableCell>{vehicle.portaria.toUpperCase()}</TableCell>
@@ -108,30 +104,28 @@ export function VehicleList({ vehicles, onDelete, onVehicleClick }: VehicleListP
                                     {vehicle.status === 'entry' ? 'Dentro' : 'Fora'}
                                 </Badge>
                             </TableCell>
-                            {canDelete && (
-                                <TableCell className="text-right" onClick={stopPropagation}>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                            <span className="sr-only">Excluir Veículo</span>
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro do veículo.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onDelete(vehicle.id!)}>Excluir</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                    </AlertDialog>
-                                </TableCell>
-                            )}
+                            <TableCell className="text-right" onClick={stopPropagation}>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Excluir Veículo</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro do veículo.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(vehicle.id!)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

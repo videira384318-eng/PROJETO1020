@@ -4,17 +4,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, Users, Truck, Settings, LogOut } from "lucide-react";
+import { Home, Users, Truck, Settings } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@/contexts/auth-context";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 interface AppHeaderProps {
     title: string;
@@ -24,7 +15,6 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, description, activePage, children }: AppHeaderProps) {
-  const { role, logout } = useAuth();
   
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -76,36 +66,6 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     </TooltipTrigger>
                     <TooltipContent>
                         <p>Veículos</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-            {role === 'adm' && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button asChild variant={activePage === 'management' ? 'default' : 'outline'} size="icon">
-                      <Link href="/gerenciamento">
-                        <Settings className="h-5 w-5" />
-                        <span className="sr-only">Página de Gerenciamento</span>
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Gerenciamento</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-             <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="destructive" size="icon" onClick={logout}>
-                            <LogOut className="h-5 w-5" />
-                            <span className="sr-only">Sair</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Sair</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>

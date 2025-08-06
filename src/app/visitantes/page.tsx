@@ -25,7 +25,6 @@ import {
     deleteVisitorLog,
     getVisitors
 } from '@/services/visitorService';
-import { useAuth, AuthGuard } from '@/contexts/auth-context';
 
 
 const visitorFormSchema = z.object({
@@ -50,8 +49,7 @@ const visitorFormSchema = z.object({
 
 export type VisitorFormData = z.infer<typeof visitorFormSchema>;
 
-function VisitantesPageContent() {
-  const { role } = useAuth();
+export default function VisitantesPage() {
   const [visitors, setVisitors] = useState<VisitorFormData[]>([]);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -79,10 +77,6 @@ function VisitantesPageContent() {
   }, []);
 
   const handleAddVisitor = async (data: VisitorFormData) => {
-     if (role === 'rh') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
     const newVisitor: VisitorFormData = {
       ...data,
@@ -109,10 +103,6 @@ function VisitantesPageContent() {
   };
   
   const handleDeleteSelectedVisitors = async () => {
-    if (role !== 'adm') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     try {
         await deleteVisitorsByPersonIds(selectedVisitors);
         setSelectedVisitors([]);
@@ -147,10 +137,6 @@ function VisitantesPageContent() {
   };
 
   const handleDeleteVisitor = async (personId: string) => {
-     if (role !== 'adm') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     try {
         await deleteVisitorByPersonId(personId);
         setSelectedVisitors(prev => prev.filter(id => id !== personId));
@@ -218,10 +204,6 @@ function VisitantesPageContent() {
   };
   
   const handleVisitorClick = (visitor: VisitorFormData) => {
-     if (role === 'rh') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     if (visitor.status === 'inside') {
         handleVisitorExit(visitor.id!);
     } else if (visitor.status === 'exited') {
@@ -230,10 +212,6 @@ function VisitantesPageContent() {
   }
 
   const handleDeleteVisitorLog = async (visitId: string) => {
-    if (role === 'rh') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     try {
         await deleteVisitorLog(visitId);
         toast({
@@ -269,9 +247,6 @@ function VisitantesPageContent() {
   const numSelected = selectedVisitors.length;
   const numTotal = currentVisitors.length;
 
-  const canAddVisitor = role === 'adm' || role === 'portaria';
-
-
   if (!isClient) {
     return null;
   }
@@ -293,7 +268,7 @@ function VisitantesPageContent() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleAddVisitor)} className="space-y-4">
-                <fieldset disabled={!canAddVisitor}>
+                <fieldset>
                     <FormField
                     control={form.control}
                     name="nome"
@@ -420,7 +395,7 @@ function VisitantesPageContent() {
                     )}
                     />
                 </fieldset>
-                <Button type="submit" className="w-full" disabled={!canAddVisitor}>
+                <Button type="submit" className="w-full">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Salvar Visitante
                 </Button>
@@ -466,13 +441,4 @@ function VisitantesPageContent() {
       />
     </main>
   );
-}
-
-
-export default function VisitantesPage() {
-    return (
-        <AuthGuard>
-            <VisitantesPageContent />
-        </AuthGuard>
-    )
 }

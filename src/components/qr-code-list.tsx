@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Users, Search, Printer } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
-import { useAuth } from '@/contexts/auth-context';
 
 interface QrCodeListProps {
   employees: QrFormData[];
@@ -22,7 +21,6 @@ interface EmployeeWithQr extends QrFormData {
 }
 
 export function QrCodeList({ employees, onClear, disabled = false }: QrCodeListProps) {
-  const { role } = useAuth();
   const [employeeWithQrs, setEmployeeWithQrs] = useState<EmployeeWithQr[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
@@ -108,9 +106,6 @@ export function QrCodeList({ employees, onClear, disabled = false }: QrCodeListP
     }
   };
   
-  const canDelete = role === 'adm' || role === 'rh';
-
-
   return (
     <Card>
       <CardHeader>
@@ -131,12 +126,10 @@ export function QrCodeList({ employees, onClear, disabled = false }: QrCodeListP
                         disabled={disabled}
                     />
                 </div>
-                 {canDelete && (
-                    <Button variant="ghost" size="icon" onClick={handleClear} disabled={employees.length === 0 || disabled}>
-                        <Trash2 className="h-5 w-5" />
-                        <span className="sr-only">Limpar Lista de Funcionários</span>
-                    </Button>
-                 )}
+                <Button variant="ghost" size="icon" onClick={handleClear} disabled={employees.length === 0 || disabled}>
+                    <Trash2 className="h-5 w-5" />
+                    <span className="sr-only">Limpar Lista de Funcionários</span>
+                </Button>
             </div>
         </div>
       </CardHeader>

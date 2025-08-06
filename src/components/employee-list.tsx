@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from '@/contexts/auth-context';
 
 
 export interface EmployeeWithStatus extends QrFormData {
@@ -51,7 +50,6 @@ export function EmployeeList({
   onToggleSelectAll,
   onDeleteSelected
  }: EmployeeListProps) {
-  const { role } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
 
@@ -91,9 +89,6 @@ export function EmployeeList({
     setSearchTerm('');
     setAppliedSearchTerm('');
   }
-  
-  const canDelete = role === 'adm' || role === 'rh';
-  const canClickRow = role === 'adm' || role === 'portaria';
 
   return (
     <Card>
@@ -104,7 +99,7 @@ export function EmployeeList({
                 <CardDescription>Visualize, gerencie e registre o ponto dos funcionários.</CardDescription>
             </div>
              <div className="flex items-center gap-2 w-full md:w-auto">
-                {canDelete && numSelected > 0 && (
+                {numSelected > 0 && (
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
@@ -136,7 +131,7 @@ export function EmployeeList({
                         onKeyDown={handleKeyDown}
                     />
                 </div>
-                {canDelete && employees.length > 0 && (
+                {employees.length > 0 && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" disabled={employees.length === 0}>
@@ -179,7 +174,6 @@ export function EmployeeList({
             <Table>
                 <TableHeader>
                     <TableRow>
-                    {canDelete && (
                         <TableHead className="w-[40px]">
                             <Checkbox 
                             checked={numTotal > 0 && numSelected === numTotal}
@@ -187,7 +181,6 @@ export function EmployeeList({
                             onCheckedChange={onToggleSelectAll}
                             />
                         </TableHead>
-                    )}
                     <TableHead>Nome</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Placa</TableHead>
@@ -200,18 +193,16 @@ export function EmployeeList({
                     <TableRow 
                         key={employee.id} 
                         data-state={selectedEmployees.includes(employee.id!) ? 'selected' : ''}
-                        onClick={() => canClickRow && onEmployeeClick(employee)} 
-                        className={canClickRow ? "cursor-pointer" : "cursor-default"}
+                        onClick={() => onEmployeeClick(employee)} 
+                        className={"cursor-pointer"}
                     >
-                         {canDelete && (
-                            <TableCell onClick={stopPropagation}>
-                                <Checkbox
-                                    checked={selectedEmployees.includes(employee.id!)}
-                                    onCheckedChange={() => onToggleSelection(employee.id!)}
-                                    aria-label={`Selecionar ${employee.nome}`}
-                                />
-                            </TableCell>
-                         )}
+                        <TableCell onClick={stopPropagation}>
+                            <Checkbox
+                                checked={selectedEmployees.includes(employee.id!)}
+                                onCheckedChange={() => onToggleSelection(employee.id!)}
+                                aria-label={`Selecionar ${employee.nome}`}
+                            />
+                        </TableCell>
                         <TableCell className="font-medium">{employee.nome}</TableCell>
                         <TableCell>{employee.setor}</TableCell>
                         <TableCell>{employee.placa || 'N/A'}</TableCell>

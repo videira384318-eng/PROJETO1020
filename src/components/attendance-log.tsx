@@ -1,3 +1,4 @@
+
 "use client";
 
 import { LogIn, LogOut, Trash2, Calendar as CalendarIcon } from 'lucide-react';
@@ -18,7 +19,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useAuth } from '@/contexts/auth-context';
 
 interface AttendanceLogProps {
   scans: AttendanceScan[];
@@ -33,7 +33,6 @@ function translateScanType(scanType: 'entry' | 'exit') {
 }
 
 export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, isCalendarOpen }: AttendanceLogProps) {
-  const { role } = useAuth();
   
   const getEmployeeDetails = (employeeId: string) => {
     const employee = employees.find(emp => `${emp.nome} (${emp.setor})` === employeeId);
@@ -42,8 +41,6 @@ export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, is
       ramal: employee?.ramal || 'N/A',
     };
   };
-  
-  const canDelete = role === 'adm' || role === 'rh';
 
   return (
     <Card>
@@ -70,13 +67,13 @@ export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, is
                 <TableHead>Placa</TableHead>
                 <TableHead>Ramal</TableHead>
                 <TableHead>Status</TableHead>
-                {canDelete && <TableHead className="text-right">Ações</TableHead>}
+                <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {scans.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={canDelete ? 7 : 6} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     Nenhum registro ainda.
                     </TableCell>
                 </TableRow>
@@ -96,30 +93,28 @@ export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, is
                                 {translateScanType(scan.scanType)}
                             </Badge>
                         </TableCell>
-                        {canDelete && (
-                            <TableCell className="text-right">
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                        <span className="sr-only">Excluir Registro</span>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro de ponto.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => onDelete(scan.scanId)}>Excluir</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                                </AlertDialog>
-                            </TableCell>
-                        )}
+                        <TableCell className="text-right">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    <span className="sr-only">Excluir Registro</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro de ponto.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(scan.scanId)}>Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
                     </TableRow>
                   );
                 })}

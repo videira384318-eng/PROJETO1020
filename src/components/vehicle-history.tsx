@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -25,7 +26,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAuth } from '@/contexts/auth-context';
 
 
 interface VehicleHistoryProps {
@@ -39,7 +39,6 @@ function translateScanType(scanType: 'entry' | 'exit') {
 }
 
 export function VehicleHistory({ log, onEdit, onDelete }: VehicleHistoryProps) {
-  const { role } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedLog = useMemo(() => {
@@ -55,8 +54,6 @@ export function VehicleHistory({ log, onEdit, onDelete }: VehicleHistoryProps) {
       entry.condutor.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [sortedLog, searchTerm]);
-  
-  const canEditDelete = role === 'adm' || role === 'rh';
 
   return (
     <Card>
@@ -101,7 +98,7 @@ export function VehicleHistory({ log, onEdit, onDelete }: VehicleHistoryProps) {
                             <TableHead>Portaria</TableHead>
                             <TableHead>Tipo</TableHead>
                             <TableHead>Data e Hora</TableHead>
-                            {canEditDelete && <TableHead className="text-right">Ações</TableHead>}
+                            <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -117,41 +114,39 @@ export function VehicleHistory({ log, onEdit, onDelete }: VehicleHistoryProps) {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString('pt-BR')}</TableCell>
-                            {canEditDelete && (
-                                <TableCell className="text-right">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(entry)}>
-                                                <Pencil className="h-4 w-4" />
-                                                <span className="sr-only">Editar Registro</span>
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Editar Registro</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                    <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                            <span className="sr-only">Excluir Registro do Histórico</span>
+                            <TableCell className="text-right">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => onEdit(entry)}>
+                                            <Pencil className="h-4 w-4" />
+                                            <span className="sr-only">Editar Registro</span>
                                         </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Essa ação não pode ser desfeita. Isso excluirá permanentemente este registro de movimentação, mas não o cadastro do veículo.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onDelete(entry.logId)}>Excluir</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                    </AlertDialog>
-                                </TableCell>
-                            )}
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Editar Registro</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Excluir Registro do Histórico</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente este registro de movimentação, mas não o cadastro do veículo.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(entry.logId)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
                         </TableRow>
                         ))}
                     </TableBody>

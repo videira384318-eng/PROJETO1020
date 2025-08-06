@@ -28,7 +28,6 @@ import {
     getVehicleLog,
     updateVehicle
 } from '@/services/vehicleService';
-import { useAuth, AuthGuard } from '@/contexts/auth-context';
 
 
 const vehicleFormSchema = z.object({
@@ -48,8 +47,7 @@ export interface VehicleLogEntry extends VehicleFormData {
     type: 'entry' | 'exit';
 }
 
-function VeiculosPageContent() {
-  const { role } = useAuth();
+export default function VeiculosPage() {
   const [vehicles, setVehicles] = useState<VehicleFormData[]>([]);
   const [vehicleLog, setVehicleLog] = useState<VehicleLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -78,10 +76,6 @@ function VeiculosPageContent() {
   }, []);
 
   const handleAddVehicle = async (data: VehicleFormData) => {
-    if (role === 'portaria') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     try {
         await addVehicle(data);
         toast({
@@ -100,10 +94,6 @@ function VeiculosPageContent() {
   };
   
   const handleDeleteVehicle = async (vehicleId: string) => {
-     if (role === 'portaria') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     try {
         await deleteVehicle(vehicleId);
         toast({
@@ -121,10 +111,6 @@ function VeiculosPageContent() {
   };
 
   const handleVehicleClick = (vehicle: VehicleWithStatus) => {
-     if (role === 'rh') {
-        toast({ variant: "destructive", title: "Acesso Negado", description: "O perfil RH não pode registrar movimentações." });
-        return;
-    }
     setMovementVehicle(vehicle);
   }
   
@@ -165,18 +151,10 @@ function VeiculosPageContent() {
   }
   
   const handleEditLogEntry = (logEntry: VehicleLogEntry) => {
-    if (role === 'portaria') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     setEditingLogEntry(logEntry);
   };
   
   const handleDeleteVehicleLog = async (logId: string) => {
-     if (role === 'portaria') {
-        toast({ variant: "destructive", title: "Acesso Negado" });
-        return;
-    }
     try {
         await deleteVehicleLog(logId);
         toast({
@@ -239,9 +217,6 @@ function VeiculosPageContent() {
     });
   }, [vehicles, vehicleLog]);
 
-  const canAddVehicle = role === 'adm' || role === 'rh';
-  const canRegisterMovement = role === 'adm' || role === 'portaria';
-
 
   if (!isClient) {
     return null;
@@ -264,7 +239,7 @@ function VeiculosPageContent() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleAddVehicle)} className="space-y-4">
-                <fieldset disabled={!canAddVehicle}>
+                <fieldset>
                     <FormField
                     control={form.control}
                     name="placa"
@@ -326,7 +301,7 @@ function VeiculosPageContent() {
                     )}
                     />
                 </fieldset>
-                <Button type="submit" className="w-full" disabled={!canAddVehicle}>
+                <Button type="submit" className="w-full">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Salvar Veículo
                 </Button>
@@ -375,12 +350,4 @@ function VeiculosPageContent() {
 
     </main>
   );
-}
-
-export default function VeiculosPage() {
-    return (
-        <AuthGuard>
-            <VeiculosPageContent />
-        </AuthGuard>
-    )
 }
