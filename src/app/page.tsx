@@ -106,6 +106,11 @@ export default function Home() {
         description: "O registro de ponto foi removido do histórico.",
     });
   }
+  
+  const handleEmployeeClick = (employee: QrFormData) => {
+    const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor });
+    handleScan(qrData);
+  }
 
   const sortedScansForLog = useMemo(() => {
     const filteredScans = selectedDate 
@@ -160,7 +165,7 @@ export default function Home() {
                 <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
             <TabsContent value="employees">
-                <EmployeeList employees={employeesWithStatus} onClear={handleClearEmployees}/>
+                <EmployeeList employees={employeesWithStatus} onClear={handleClearEmployees} onEmployeeClick={handleEmployeeClick} />
             </TabsContent>
             <TabsContent value="qrcodes">
                 <QrCodeList employees={employees} onClear={handleClearEmployees}/>

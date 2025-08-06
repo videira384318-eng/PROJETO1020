@@ -17,9 +17,10 @@ export interface EmployeeWithStatus extends QrFormData {
 interface EmployeeListProps {
   employees: EmployeeWithStatus[];
   onClear: () => void;
+  onEmployeeClick: (employee: QrFormData) => void;
 }
 
-export function EmployeeList({ employees, onClear }: EmployeeListProps) {
+export function EmployeeList({ employees, onClear, onEmployeeClick }: EmployeeListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
 
@@ -62,7 +63,7 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <CardTitle className="font-headline">Lista de Funcionários</CardTitle>
-                <CardDescription>Visualize e gerencie os funcionários cadastrados.</CardDescription>
+                <CardDescription>Visualize, gerencie e registre o ponto dos funcionários.</CardDescription>
             </div>
              <div className="flex items-center gap-2 w-full md:w-auto">
                 <div className="relative w-full md:w-64">
@@ -109,7 +110,7 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
                 </TableHeader>
                 <TableBody>
                     {filteredEmployees.map((employee, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={index} onClick={() => onEmployeeClick(employee)} className="cursor-pointer">
                         <TableCell className="font-medium">{employee.nome}</TableCell>
                         <TableCell>{employee.setor}</TableCell>
                         <TableCell>{employee.placa || 'N/A'}</TableCell>
