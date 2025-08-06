@@ -33,9 +33,7 @@ function GerenciamentoPageContent() {
     }
 
     const unsubscribe = getUsers((allUsers) => {
-        // Filter out the current adm user from the list to prevent self-modification
-        const filteredUsers = allUsers.filter(u => u.id !== user?.uid);
-        setUsers(filteredUsers);
+        setUsers(allUsers);
     });
 
     return () => unsubscribe();
