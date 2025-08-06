@@ -75,7 +75,7 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
       <CardContent>
         <div id={QR_SCANNER_ELEMENT_ID} className="w-full rounded-md [&>div]:rounded-md [&>video]:rounded-md [&>div>span]:hidden [&>div>button]:hidden" />
         {!isScanning && (
-          <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-[305px] -mt-[305px] border-2 border-dashed rounded-md bg-muted/50">
+          <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-[305px] -mt-[305px] rounded-md bg-muted/50">
             <p>Clique no ícone da câmera para iniciar a leitura.</p>
           </div>
         )}
