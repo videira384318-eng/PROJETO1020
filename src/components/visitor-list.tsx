@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
+import { Trash2, Users, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { VisitorFormData } from '@/app/visitantes/page';
 import { Badge } from './ui/badge';
+import { Checkbox } from './ui/checkbox';
 import {
   Tooltip,
   TooltipContent,
@@ -28,11 +29,27 @@ import {
 
 interface VisitorListProps {
   visitors: VisitorFormData[];
-  onDelete: (visitorId: string) => void;
+  selectedVisitors: string[];
+  numSelected: number;
+  numTotal: number;
+  onDelete: (personId: string) => void;
   onVisitorClick: (visitor: VisitorFormData) => void;
+  onToggleSelection: (personId: string) => void;
+  onToggleSelectAll: () => void;
+  onDeleteSelected: () => void;
 }
 
-export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListProps) {
+export function VisitorList({ 
+  visitors,
+  selectedVisitors,
+  numSelected,
+  numTotal,
+  onDelete, 
+  onVisitorClick,
+  onToggleSelection,
+  onToggleSelectAll,
+  onDeleteSelected
+}: VisitorListProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
@@ -93,14 +110,38 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                 <CardTitle className="font-headline">Visitantes Atuais</CardTitle>
                 <CardDescription>Clique em um visitante para registrar entrada/saída.</CardDescription>
             </div>
-            <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Pesquisar..." 
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              {numSelected > 0 && (
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir ({numSelected})
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} visitante(s) selecionado(s).
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={onDeleteSelected}>Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              )}
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar..." 
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
         </div>
       </CardHeader>
@@ -123,6 +164,13 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
             <Table>
                 <TableHeader>
                     <TableRow>
+                    <TableHead className="w-[40px]">
+                        <Checkbox 
+                           checked={numSelected === numTotal && numTotal > 0}
+                           indeterminate={numSelected > 0 && numSelected < numTotal}
+                           onCheckedChange={onToggleSelectAll}
+                        />
+                    </TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>RG</TableHead>
                     <TableHead>CPF</TableHead>
@@ -139,25 +187,60 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                     {filteredVisitors.map((visitor) => (
                         <TableRow 
                             key={visitor.id}
-                            onClick={() => onVisitorClick(visitor)}
-                            className='cursor-pointer'
+                            data-state={selectedVisitors.includes(visitor.personId!) ? 'selected' : ''}
                         >
-                            <TableCell className="font-medium">{visitor.nome}</TableCell>
-                            <TableCell>{visitor.rg}</TableCell>
-                            <TableCell>{visitor.cpf}</TableCell>
-                            <TableCell>{visitor.empresa}</TableCell>
-                            <TableCell>{visitor.placa || 'N/A'}</TableCell>
-                            <TableCell>{visitor.responsavel}</TableCell>
-                            <TableCell className="max-w-[150px] truncate">
+                            <TableCell>
+                                <Checkbox
+                                    checked={selectedVisitors.includes(visitor.personId!)}
+                                    onCheckedChange={() => onToggleSelection(visitor.personId!)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </TableCell>
+                            <TableCell 
+                                className="font-medium cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.nome}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.rg}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.cpf}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.empresa}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.placa || 'N/A'}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.responsavel}</TableCell>
+                            <TableCell
+                                className="max-w-[150px] truncate cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >
                                 <span className="block truncate">{visitor.motivo}</span>
                             </TableCell>
-                            <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
-                            <TableCell>{getStatusBadge(visitor.status)}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{visitor.portaria.toUpperCase()}</TableCell>
+                            <TableCell
+                                className="cursor-pointer"
+                                onClick={() => onVisitorClick(visitor)}
+                            >{getStatusBadge(visitor.status)}</TableCell>
                             <TableCell className="text-right space-x-1 relative">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        {/* This div is the hover target for the tooltip */}
-                                        <div className="absolute inset-0"></div>
+                                        <div 
+                                          className="absolute inset-0 z-0 cursor-pointer"
+                                          onClick={() => onVisitorClick(visitor)}
+                                        />
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p>{getActionTooltip(visitor.status)}</p>
@@ -168,7 +251,7 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
-                                        className="h-7 w-7 relative z-10" // Add z-index to keep button on top
+                                        className="h-7 w-7 relative z-10"
                                         disabled={visitor.status === 'inside'} 
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -182,12 +265,15 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro do visitante.
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente todos os registros deste visitante.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
+                                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(visitor.personId!);
+                                      }}>Excluir</AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>

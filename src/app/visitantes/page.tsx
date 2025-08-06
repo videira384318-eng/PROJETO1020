@@ -40,6 +40,7 @@ export type VisitorFormData = z.infer<typeof visitorFormSchema>;
 
 export default function VisitantesPage() {
   const [visitors, setVisitors] = useState<VisitorFormData[]>([]);
+  const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
@@ -93,9 +94,37 @@ export default function VisitantesPage() {
     });
     form.reset();
   };
+  
+  const handleDeleteSelectedVisitors = () => {
+    const personIdsToDelete = new Set(selectedVisitors);
+    setVisitors(prev => prev.filter(v => !personIdsToDelete.has(v.personId!)));
+    setSelectedVisitors([]);
+    toast({
+        title: "Visitantes Removidos",
+        description: "Os visitantes selecionados foram removidos.",
+    });
+  };
 
-  const handleDeleteVisitor = (visitorId: string) => {
-    setVisitors(prev => prev.filter(v => v.id !== visitorId));
+  const handleToggleVisitorSelection = (personId: string) => {
+    setSelectedVisitors(prev => 
+      prev.includes(personId) 
+      ? prev.filter(id => id !== personId)
+      : [...prev, personId]
+    )
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedVisitors.length === currentVisitors.length) {
+      setSelectedVisitors([]);
+    } else {
+      setSelectedVisitors(currentVisitors.map(v => v.personId!));
+    }
+  };
+
+
+  const handleDeleteVisitor = (personId: string) => {
+    setVisitors(prev => prev.filter(v => v.personId !== personId));
+    setSelectedVisitors(prev => prev.filter(id => id !== personId));
     toast({
       title: "Visitante Removido",
       description: "O registro do visitante foi removido da lista.",
@@ -153,6 +182,9 @@ export default function VisitantesPage() {
 
     return Object.values(latestVisitorRecord);
   }, [visitors]);
+  
+  const numSelected = selectedVisitors.length;
+  const numTotal = currentVisitors.length;
 
   if (!isClient) {
     return null;
@@ -318,8 +350,14 @@ export default function VisitantesPage() {
                 <TabsContent value="visitors">
                     <VisitorList 
                         visitors={currentVisitors} 
+                        selectedVisitors={selectedVisitors}
+                        numSelected={numSelected}
+                        numTotal={numTotal}
                         onDelete={handleDeleteVisitor}
                         onVisitorClick={handleVisitorClick}
+                        onToggleSelection={handleToggleVisitorSelection}
+                        onToggleSelectAll={handleToggleSelectAll}
+                        onDeleteSelected={handleDeleteSelectedVisitors}
                     />
                 </TabsContent>
                  <TabsContent value="history">
