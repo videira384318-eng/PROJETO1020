@@ -5,13 +5,17 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search } from 'lucide-react';
+import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
+export interface EmployeeWithStatus extends QrFormData {
+  status: 'entry' | 'exit';
+}
 
 interface EmployeeListProps {
-  employees: QrFormData[];
+  employees: EmployeeWithStatus[];
   onClear: () => void;
 }
 
@@ -100,6 +104,7 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
                     <TableHead>Setor</TableHead>
                     <TableHead>Placa</TableHead>
                     <TableHead>Ramal</TableHead>
+                    <TableHead>Status</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -109,6 +114,12 @@ export function EmployeeList({ employees, onClear }: EmployeeListProps) {
                         <TableCell>{employee.setor}</TableCell>
                         <TableCell>{employee.placa || 'N/A'}</TableCell>
                         <TableCell>{employee.ramal || 'N/A'}</TableCell>
+                        <TableCell>
+                            <Badge variant={employee.status === 'entry' ? 'default' : 'secondary'} className="capitalize flex items-center gap-1.5 w-fit">
+                                {employee.status === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
+                                {employee.status === 'entry' ? 'Dentro' : 'Fora'}
+                            </Badge>
+                        </TableCell>
                     </TableRow>
                     ))}
                 </TableBody>

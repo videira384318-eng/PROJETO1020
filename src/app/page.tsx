@@ -5,7 +5,7 @@ import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
 import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
-import { EmployeeList } from '@/components/employee-list';
+import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-list';
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -117,6 +117,20 @@ export default function Home() {
     });
   }, [scans, selectedDate]);
 
+  const employeesWithStatus: EmployeeWithStatus[] = useMemo(() => {
+    return employees.map(employee => {
+      const employeeId = `${employee.nome} (${employee.setor})`;
+      const lastScan = scans
+        .filter(scan => scan.employeeId === employeeId)
+        .sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
+      
+      return {
+        ...employee,
+        status: lastScan ? lastScan.scanType : 'exit', // Default to 'exit' if no scans
+      };
+    });
+  }, [employees, scans]);
+
 
   if (!isClient) {
     return null;
@@ -144,7 +158,7 @@ export default function Home() {
                 <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
             <TabsContent value="employees">
-                <EmployeeList employees={employees} onClear={handleClearEmployees}/>
+                <EmployeeList employees={employeesWithStatus} onClear={handleClearEmployees}/>
             </TabsContent>
             <TabsContent value="qrcodes">
                 <QrCodeList employees={employees} onClear={handleClearEmployees}/>
