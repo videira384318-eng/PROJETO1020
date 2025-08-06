@@ -71,14 +71,16 @@ export function EmployeeList({ employees, onQrClick, onClear }: EmployeeListProp
             {employeeWithQrs.map((employee, index) => (
               <div
                 key={index}
-                className="p-3 border rounded-lg flex items-center gap-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="p-3 border rounded-lg flex items-start gap-4 cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => onQrClick(employee)}
                 title={`Registrar ponto para ${employee.nome}`}
               >
-                <Image src={employee.qrUrl} alt={`QR Code para ${employee.nome}`} width={60} height={60} className="rounded-md" />
+                <Image src={employee.qrUrl} alt={`QR Code para ${employee.nome}`} width={60} height={60} className="rounded-md flex-shrink-0" />
                 <div className="text-sm overflow-hidden">
                   <p className="font-semibold truncate">{employee.nome}</p>
                   <p className="text-muted-foreground truncate">{employee.setor}</p>
+                  {employee.placa && <p className="text-xs text-muted-foreground truncate">Placa: {employee.placa}</p>}
+                  {employee.ramal && <p className="text-xs text-muted-foreground truncate">Ramal: {employee.ramal}</p>}
                 </div>
               </div>
             ))}
