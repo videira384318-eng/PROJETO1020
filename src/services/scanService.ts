@@ -2,41 +2,46 @@
 "use client";
 
 import type { AttendanceScan } from '@/types';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, limit } from 'firebase/firestore';
 
-const SCANS_COLLECTION = 'scans';
+const SCANS_KEY = 'scans';
 
-export const addScan = async (scanData: Omit<AttendanceScan, 'scanId'>): Promise<string> => {
-    const docRef = await addDoc(collection(db, SCANS_COLLECTION), scanData);
-    return docRef.id;
+const getStoredScans = (): AttendanceScan[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(SCANS_KEY);
+    return stored ? JSON.parse(stored) : [];
 };
 
-export const getScans = async (): Promise<AttendanceScan[]> => {
-    const q = query(collection(db, SCANS_COLLECTION), orderBy('scanTime', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const scans: AttendanceScan[] = [];
-    querySnapshot.forEach((doc) => {
-        scans.push({ scanId: doc.id, ...doc.data() } as AttendanceScan);
-    });
-    return scans;
+const setStoredScans = (scans: AttendanceScan[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(SCANS_KEY, JSON.stringify(scans));
 };
 
-export const getLastScanForEmployee = async (employeeId: string): Promise<AttendanceScan | null> => {
-    const q = query(
-        collection(db, SCANS_COLLECTION), 
-        where('employeeId', '==', employeeId), 
-        orderBy('scanTime', 'desc'), 
-        limit(1)
-    );
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-        return null;
-    }
-    const docData = querySnapshot.docs[0];
-    return { scanId: docData.id, ...docData.data() } as AttendanceScan;
+
+export const addScan = (scanData: Omit<AttendanceScan, 'scanId'>): string => {
+    const scans = getStoredScans();
+    const newId = `scan_${new Date().getTime()}_${Math.random()}`;
+    const newScan = { scanId: newId, ...scanData };
+    const updatedScans = [...scans, newScan];
+    setStoredScans(updatedScans);
+    return newId;
 };
 
-export const deleteScan = async (scanId: string): Promise<void> => {
-    await deleteDoc(doc(db, SCANS_COLLECTION, scanId));
+export const getScans = (): AttendanceScan[] => {
+    const scans = getStoredScans();
+    return scans.sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());
+};
+
+export const getLastScanForEmployee = (employeeId: string): AttendanceScan | null => {
+    const scans = getStoredScans();
+    const employeeScans = scans
+        .filter(scan => scan.employeeId === employeeId)
+        .sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());
+    
+    return employeeScans.length > 0 ? employeeScans[0] : null;
+};
+
+export const deleteScan = (scanId: string): void => {
+    let scans = getStoredScans();
+    scans = scans.filter(scan => scan.scanId !== scanId);
+    setStoredScans(scans);
 };

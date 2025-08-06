@@ -9,13 +9,13 @@ import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-lis
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StorageIndicator } from '@/components/storage-indicator';
 
 
 export default function Home() {
@@ -25,34 +25,51 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [storageUsage, setStorageUsage] = useState({ used: 0, total: 5, percentage: 0 });
   const { toast } = useToast();
+  
+  const calculateStorage = useCallback(() => {
+    let totalBytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+            const value = localStorage.getItem(key);
+            if (value) {
+                totalBytes += new Blob([key, value]).size;
+            }
+        }
+    }
+    const totalMB = 5; // Standard localStorage limit
+    const usedMB = totalBytes / (1024 * 1024);
+    const percentage = (usedMB / totalMB) * 100;
+    setStorageUsage({ used: Number(usedMB.toFixed(2)), total: totalMB, percentage: Number(percentage.toFixed(2)) });
+  }, []);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(() => {
     setIsLoading(true);
     try {
-      const [allEmployees, allScans] = await Promise.all([
-        getEmployees(),
-        getScans()
-      ]);
+      const allEmployees = getEmployees();
+      const allScans = getScans();
       setEmployees(allEmployees);
       setScans(allScans);
+      calculateStorage();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
         variant: "destructive",
         title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do servidor. Verifique sua conexão ou tente novamente mais tarde.",
+        description: "Não foi possível buscar os dados do armazenamento local.",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, calculateStorage]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  const handleScan = async (decodedText: string) => {
+  const handleScan = (decodedText: string) => {
     try {
       const { nome, setor, placa, ramal } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
@@ -61,7 +78,7 @@ export default function Home() {
         throw new Error('Dados do QR code incompletos.');
       }
       
-      const lastScanForEmployee = await getLastScanForEmployee(employeeId);
+      const lastScanForEmployee = getLastScanForEmployee(employeeId);
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
@@ -73,8 +90,8 @@ export default function Home() {
         ramal: ramal || 'N/A'
       };
 
-      await addScan(newScan);
-      await refreshData();
+      addScan(newScan);
+      refreshData();
 
       toast({
         title: "Escaneamento Concluído!",
@@ -92,10 +109,10 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
+  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
     try {
-        await addEmployee(employeeData);
-        await refreshData();
+        addEmployee(employeeData);
+        refreshData();
         toast({
             title: "Funcionário Adicionado!",
             description: `${employeeData.nome} foi adicionado(a) à lista.`
@@ -110,11 +127,11 @@ export default function Home() {
     }
   }
   
-  const handleClearEmployees = async () => {
+  const handleClearEmployees = () => {
     try {
-        await clearEmployees();
+        clearEmployees();
         setSelectedEmployees([]);
-        await refreshData();
+        refreshData();
         toast({
             title: "Lista Limpa",
             description: "Todos os funcionários foram removidos.",
@@ -129,15 +146,15 @@ export default function Home() {
     }
   }
 
-  const handleDeleteSelectedEmployees = async () => {
+  const handleDeleteSelectedEmployees = () => {
     try {
-        await deleteEmployees(selectedEmployees);
+        deleteEmployees(selectedEmployees);
         toast({
             title: "Funcionários Removidos",
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) foram removidos.`,
         });
         setSelectedEmployees([]);
-        await refreshData();
+        refreshData();
     } catch (error) {
         console.error("Erro ao excluir funcionários:", error);
         toast({
@@ -165,10 +182,10 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = async (scanId: string) => {
+  const handleDeleteScan = (scanId: string) => {
     try {
-        await deleteScan(scanId);
-        await refreshData();
+        deleteScan(scanId);
+        refreshData();
         toast({
             title: "Registro Excluído",
             description: "O registro de ponto foi removido do histórico.",
@@ -183,9 +200,9 @@ export default function Home() {
     }
   }
   
-  const handleEmployeeClick = async (employee: QrFormData) => {
+  const handleEmployeeClick = (employee: QrFormData) => {
     const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor, placa: employee.placa, ramal: employee.ramal });
-    await handleScan(qrData);
+    handleScan(qrData);
   }
 
   const sortedScansForLog = useMemo(() => {
@@ -253,6 +270,14 @@ export default function Home() {
       >
         <QRGenerator onAddEmployee={handleAddEmployee} />
       </AppHeader>
+      
+      <div className="mb-8">
+          <StorageIndicator
+            used={storageUsage.used}
+            total={storageUsage.total}
+            percentage={storageUsage.percentage}
+          />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="flex flex-col gap-8 lg:col-span-1">

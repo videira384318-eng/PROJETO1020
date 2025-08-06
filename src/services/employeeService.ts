@@ -2,44 +2,44 @@
 "use client";
 
 import type { QrFormData } from '@/components/qr-generator';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, writeBatch } from 'firebase/firestore';
 
-const EMPLOYEES_COLLECTION = 'employees';
+const EMPLOYEES_KEY = 'employees';
 
-export const addEmployee = async (employeeData: Omit<QrFormData, 'id'>): Promise<string> => {
-    const docRef = await addDoc(collection(db, EMPLOYEES_COLLECTION), employeeData);
-    return docRef.id;
+const getStoredEmployees = (): QrFormData[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(EMPLOYEES_KEY);
+    return stored ? JSON.parse(stored) : [];
 };
 
-export const getEmployees = async (): Promise<QrFormData[]> => {
-    const q = query(collection(db, EMPLOYEES_COLLECTION));
-    const querySnapshot = await getDocs(q);
-    const employees: QrFormData[] = [];
-    querySnapshot.forEach((doc) => {
-        employees.push({ id: doc.id, ...doc.data() } as QrFormData);
-    });
-    return employees;
+const setStoredEmployees = (employees: QrFormData[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
 };
 
-export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
+export const addEmployee = (employeeData: Omit<QrFormData, 'id'>): string => {
+    const employees = getStoredEmployees();
+    const newId = `emp_${new Date().getTime()}_${Math.random()}`;
+    const newEmployee = { id: newId, ...employeeData };
+    const updatedEmployees = [...employees, newEmployee];
+    setStoredEmployees(updatedEmployees);
+    return newId;
+};
+
+export const getEmployees = (): QrFormData[] => {
+    return getStoredEmployees();
+};
+
+export const deleteEmployees = (employeeIds: string[]): void => {
     if (employeeIds.length === 0) return;
-    const batch = writeBatch(db);
-    employeeIds.forEach(id => {
-        const docRef = doc(db, EMPLOYEES_COLLECTION, id);
-        batch.delete(docRef);
-    });
-    await batch.commit();
+    let employees = getStoredEmployees();
+    employees = employees.filter(emp => !employeeIds.includes(emp.id!));
+    setStoredEmployees(employees);
 };
 
-export const clearEmployees = async (): Promise<void> => {
-    const q = query(collection(db, EMPLOYEES_COLLECTION));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return;
-    
-    const batch = writeBatch(db);
-    querySnapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
+export const clearEmployees = (): void => {
+    setStoredEmployees([]);
+    // Also clear related scans
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('scans');
+    }
 };

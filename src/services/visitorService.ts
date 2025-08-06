@@ -2,56 +2,56 @@
 "use client";
 
 import type { VisitorFormData } from '@/app/visitantes/page';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc, writeBatch } from 'firebase/firestore';
 
-const VISITORS_COLLECTION = 'visitors';
+const VISITORS_KEY = 'visitors';
 
-export const addVisitor = async (visitorData: Omit<VisitorFormData, 'id'>): Promise<string> => {
-    const docRef = await addDoc(collection(db, VISITORS_COLLECTION), visitorData);
-    return docRef.id;
+// --- Local Storage Helpers ---
+const getStoredVisitors = (): VisitorFormData[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(VISITORS_KEY);
+    return stored ? JSON.parse(stored) : [];
 };
 
-export const updateVisitor = async (visitorId: string, visitorData: Partial<VisitorFormData>): Promise<void> => {
-    const visitorRef = doc(db, VISITORS_COLLECTION, visitorId);
-    await updateDoc(visitorRef, visitorData);
+const setStoredVisitors = (visitors: VisitorFormData[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(VISITORS_KEY, JSON.stringify(visitors));
 };
 
-export const getVisitors = async (): Promise<VisitorFormData[]> => {
-    const q = query(collection(db, VISITORS_COLLECTION));
-    const querySnapshot = await getDocs(q);
-    const visitors: VisitorFormData[] = [];
-    querySnapshot.forEach((doc) => {
-        visitors.push({ id: doc.id, ...doc.data() } as VisitorFormData);
-    });
-    return visitors;
+// --- Visitor Management ---
+export const addVisitor = (visitorData: Omit<VisitorFormData, 'id'>): string => {
+    const visitors = getStoredVisitors();
+    const newId = `vis_${new Date().getTime()}_${Math.random()}`;
+    const newVisitor = { id: newId, ...visitorData };
+    const updatedVisitors = [...visitors, newVisitor];
+    setStoredVisitors(updatedVisitors);
+    return newId;
 };
 
-export const deleteVisitorByPersonId = async (personId: string): Promise<void> => {
-    const q = query(collection(db, VISITORS_COLLECTION), where('personId', '==', personId));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return;
-    
-    const batch = writeBatch(db);
-    querySnapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
+export const updateVisitor = (visitorId: string, visitorData: Partial<VisitorFormData>): void => {
+    let visitors = getStoredVisitors();
+    visitors = visitors.map(v => v.id === visitorId ? { ...v, ...visitorData } : v);
+    setStoredVisitors(visitors);
 };
 
-export const deleteVisitorsByPersonIds = async (personIds: string[]): Promise<void> => {
+export const getVisitors = (): VisitorFormData[] => {
+    return getStoredVisitors();
+};
+
+export const deleteVisitorByPersonId = (personId: string): void => {
+    let visitors = getStoredVisitors();
+    visitors = visitors.filter(v => v.personId !== personId);
+    setStoredVisitors(visitors);
+};
+
+export const deleteVisitorsByPersonIds = (personIds: string[]): void => {
     if (personIds.length === 0) return;
-    const q = query(collection(db, VISITORS_COLLECTION), where('personId', 'in', personIds));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return;
-    
-    const batch = writeBatch(db);
-    querySnapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
+    let visitors = getStoredVisitors();
+    visitors = visitors.filter(v => !personIds.includes(v.personId!));
+    setStoredVisitors(visitors);
 };
 
-export const deleteVisitorLog = async (visitId: string): Promise<void> => {
-    await deleteDoc(doc(db, VISITORS_COLLECTION, visitId));
+export const deleteVisitorLog = (visitId: string): void => {
+    let visitors = getStoredVisitors();
+    visitors = visitors.filter(v => v.id !== visitId);
+    setStoredVisitors(visitors);
 };
