@@ -33,29 +33,29 @@ const USERS_COLLECTION = 'users';
 // Here we store it as plain text for simplicity of the simulation.
 
 export const verifyUser = async (username: string, password: string): Promise<Role | null> => {
-    // Special handling for the admin user. If it's the first login, create it.
+    // Special handling to create the admin user on first attempt if it doesn't exist.
     if (username.toLowerCase() === 'adm') {
         const admUserRef = doc(db, USERS_COLLECTION, 'adm_user');
         const admUserSnap = await getDoc(admUserRef);
         
-        // If admin user doesn't exist, create it with the default password.
         if (!admUserSnap.exists()) {
+            // Only allow initial creation with the default password.
             if (password === 'admin123') {
                 console.log("Creating default administrator user...");
                 await setDoc(admUserRef, {
                     username: "adm",
-                    password: "admin123",
+                    password: "admin123", 
                     role: "adm"
                 });
-                return 'adm';
             } else {
-                return null; // Incorrect password for initial admin creation
+                 // If the adm user doesn't exist and the password is not the default, fail.
+                return null;
             }
         }
     }
     
-    // For all other users (and subsequent admin logins)
-    const q = query(collection(db, USERS_COLLECTION), where("username", "==", username));
+    // Universal login check for all users, including subsequent admin logins.
+    const q = query(collection(db, USERS_COLLECTION), where("username", "==", username.toLowerCase()));
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
@@ -97,7 +97,9 @@ export const updateUser = async (userId: string, userData: Partial<User>): Promi
         updateData.role = userData.role;
     }
     
-    await updateDoc(docRef, updateData);
+    if (Object.keys(updateData).length > 0) {
+        await updateDoc(docRef, updateData);
+    }
 };
 
 export const deleteUser = async (userId: string): Promise<void> => {
@@ -109,7 +111,10 @@ export const getUsers = (callback: (users: User[]) => void): Unsubscribe => {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const users: User[] = [];
         querySnapshot.forEach((doc) => {
-            users.push({ id: doc.id, ...doc.data() } as User);
+            // Exclude the 'adm' user from the list shown in the management UI
+            if (doc.data().username !== 'adm') {
+                 users.push({ id: doc.id, ...doc.data() } as User);
+            }
         });
         callback(users);
     });
