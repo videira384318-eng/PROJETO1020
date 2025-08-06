@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from '@/contexts/auth-context';
 
 interface VisitorHistoryProps {
   visitors: VisitorFormData[];
@@ -26,6 +27,7 @@ interface VisitorHistoryProps {
 }
 
 export function VisitorHistory({ visitors, onDelete }: VisitorHistoryProps) {
+  const { role } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
@@ -59,6 +61,8 @@ export function VisitorHistory({ visitors, onDelete }: VisitorHistoryProps) {
         return <Badge variant="outline">N/A</Badge>;
     }
   }
+  
+  const canDelete = role === 'adm' || role === 'portaria';
 
   return (
     <Card>
@@ -108,7 +112,7 @@ export function VisitorHistory({ visitors, onDelete }: VisitorHistoryProps) {
                         <TableHead>Status</TableHead>
                         <TableHead>Entrada</TableHead>
                         <TableHead>Saída</TableHead>
-                        <TableHead className="text-right">Ação</TableHead>
+                        {canDelete && <TableHead className="text-right">Ação</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -127,28 +131,30 @@ export function VisitorHistory({ visitors, onDelete }: VisitorHistoryProps) {
                         <TableCell>{getStatusBadge(visitor.status)}</TableCell>
                         <TableCell className="text-muted-foreground">{visitor.entryTime ? new Date(visitor.entryTime).toLocaleString('pt-BR') : '—'}</TableCell>
                         <TableCell className="text-muted-foreground">{visitor.exitTime ? new Date(visitor.exitTime).toLocaleString('pt-BR') : '—'}</TableCell>
-                        <TableCell className="text-right">
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                    <span className="sr-only">Excluir Registro do Histórico</span>
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente este registro de visita, mas não o cadastro do visitante.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                        </TableCell>
+                        {canDelete && (
+                            <TableCell className="text-right">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Excluir Registro do Histórico</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente este registro de visita, mas não o cadastro do visitante.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
+                        )}
                     </TableRow>
                     ))}
                 </TableBody>

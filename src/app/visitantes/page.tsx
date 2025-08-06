@@ -24,6 +24,8 @@ import {
     deleteVisitorLog,
     getVisitors
 } from '@/services/visitorService';
+import { useAuth } from '@/contexts/auth-context';
+
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
@@ -48,6 +50,7 @@ const visitorFormSchema = z.object({
 export type VisitorFormData = z.infer<typeof visitorFormSchema>;
 
 export default function VisitantesPage() {
+  const { role } = useAuth();
   const [visitors, setVisitors] = useState<VisitorFormData[]>([]);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -75,6 +78,10 @@ export default function VisitantesPage() {
   }, []);
 
   const handleAddVisitor = async (data: VisitorFormData) => {
+     if (role === 'rh') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
     const newVisitor: VisitorFormData = {
       ...data,
@@ -101,6 +108,10 @@ export default function VisitantesPage() {
   };
   
   const handleDeleteSelectedVisitors = async () => {
+    if (role !== 'adm') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await deleteVisitorsByPersonIds(selectedVisitors);
         setSelectedVisitors([]);
@@ -135,6 +146,10 @@ export default function VisitantesPage() {
   };
 
   const handleDeleteVisitor = async (personId: string) => {
+     if (role !== 'adm') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await deleteVisitorByPersonId(personId);
         setSelectedVisitors(prev => prev.filter(id => id !== personId));
@@ -202,6 +217,10 @@ export default function VisitantesPage() {
   };
   
   const handleVisitorClick = (visitor: VisitorFormData) => {
+     if (role === 'rh') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     if (visitor.status === 'inside') {
         handleVisitorExit(visitor.id!);
     } else if (visitor.status === 'exited') {
@@ -210,6 +229,10 @@ export default function VisitantesPage() {
   }
 
   const handleDeleteVisitorLog = async (visitId: string) => {
+    if (role === 'rh') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await deleteVisitorLog(visitId);
         toast({
@@ -245,6 +268,9 @@ export default function VisitantesPage() {
   const numSelected = selectedVisitors.length;
   const numTotal = currentVisitors.length;
 
+  const canAddVisitor = role === 'adm' || role === 'portaria';
+
+
   if (!isClient) {
     return null;
   }
@@ -266,132 +292,134 @@ export default function VisitantesPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleAddVisitor)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Maria dos Santos" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="rg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>RG</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: 12.345.678-9" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cpf"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CPF</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: 123.456.789-00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="empresa"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empresa</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Acme Inc." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="placa"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Placa do Veículo (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: BRA2E19" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="responsavel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Responsável pela Visita</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: João da Silva (TI)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="motivo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Motivo da Visita</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Reunião com o setor de Vendas" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="portaria"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Portaria</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex items-center space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="p1" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              P1
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="p2" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              P2
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full">
+                <fieldset disabled={!canAddVisitor}>
+                    <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome Completo</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Maria dos Santos" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="rg"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>RG</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: 12.345.678-9" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="cpf"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>CPF</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: 123.456.789-00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="empresa"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Empresa</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Acme Inc." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="placa"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Placa do Veículo (Opcional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: BRA2E19" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="responsavel"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Responsável pela Visita</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: João da Silva (TI)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="motivo"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Motivo da Visita</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Reunião com o setor de Vendas" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="portaria"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3">
+                        <FormLabel>Portaria</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex items-center space-x-4"
+                            >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="p1" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                P1
+                                </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="p2" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                P2
+                                </FormLabel>
+                            </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </fieldset>
+                <Button type="submit" className="w-full" disabled={!canAddVisitor}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Salvar Visitante
                 </Button>

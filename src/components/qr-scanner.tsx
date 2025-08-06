@@ -12,9 +12,10 @@ const QR_SCANNER_ELEMENT_ID = "qr-reader";
 
 interface QRScannerProps {
   onScan: (decodedText: string) => void;
+  disabled?: boolean;
 }
 
-export function QRScanner({ onScan }: QRScannerProps) {
+export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const { toast } = useToast();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -32,6 +33,14 @@ export function QRScanner({ onScan }: QRScannerProps) {
         }
     };
   }, []);
+  
+  useEffect(() => {
+    // If the component becomes disabled while scanning, stop the scanner.
+    if (disabled && isScanning) {
+      stopScanner();
+    }
+  }, [disabled, isScanning]);
+
 
   const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
     onScan(decodedText);
@@ -114,14 +123,21 @@ export function QRScanner({ onScan }: QRScannerProps) {
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-2xl font-headline">Leitor de QR Code</CardTitle>
-        <Button onClick={toggleScan} variant="outline" size="icon" className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0">
+        <Button onClick={toggleScan} variant="outline" size="icon" className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0" disabled={disabled}>
             {isScanning ? <CameraOff /> : <Camera />}
             <span className="sr-only">{isScanning ? 'Parar Leitura' : 'Iniciar Leitura'}</span>
         </Button>
       </CardHeader>
       <CardContent>
         <div id={QR_SCANNER_ELEMENT_ID} className="w-full rounded-md [&>div]:rounded-md [&>video]:rounded-md [&>div>span]:hidden [&>div>button]:hidden"></div>
-        {hasPermission === false && !isScanning && (
+        {disabled && (
+            <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-md text-muted-foreground bg-muted/20">
+                <CameraOff className="h-10 w-10 mb-2" />
+                <p className="font-semibold">Leitor Desabilitado</p>
+                <p className="text-sm">Seu perfil não tem permissão para escanear.</p>
+            </div>
+        )}
+        {hasPermission === false && !isScanning && !disabled && (
              <Alert variant="destructive">
               <CameraOff className="h-4 w-4" />
               <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
@@ -130,7 +146,7 @@ export function QRScanner({ onScan }: QRScannerProps) {
               </AlertDescription>
             </Alert>
         )}
-         {!isScanning && hasPermission !== false && (
+         {!isScanning && hasPermission !== false && !disabled && (
           <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-md text-muted-foreground bg-muted/20">
             <Camera className="h-10 w-10 mb-2" />
             <p>Clique no botão da câmera para começar</p>

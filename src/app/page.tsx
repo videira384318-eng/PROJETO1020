@@ -15,8 +15,10 @@ import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
 import { addScan, deleteScan, getScans } from '@/services/scanService';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function Home() {
+  const { role } = useAuth();
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
@@ -38,6 +40,14 @@ export default function Home() {
   }, []);
 
   const handleScan = async (decodedText: string) => {
+    if (role === 'rh') {
+        toast({
+            variant: "destructive",
+            title: "Acesso Negado",
+            description: "O perfil RH não pode registrar ponto.",
+        });
+        return;
+    }
     try {
       const { nome, setor, placa, ramal } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
@@ -147,6 +157,10 @@ export default function Home() {
 
 
   const handleDeleteScan = async (scanId: string) => {
+    if (role === 'portaria') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await deleteScan(scanId);
         toast({
@@ -164,6 +178,14 @@ export default function Home() {
   }
   
   const handleEmployeeClick = (employee: QrFormData) => {
+    if (role === 'rh') {
+      toast({
+        variant: "destructive",
+        title: "Acesso Negado",
+        description: "O perfil RH não pode registrar ponto.",
+      });
+      return;
+    }
     const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor, placa: employee.placa, ramal: employee.ramal });
     handleScan(qrData);
   }
@@ -197,6 +219,11 @@ export default function Home() {
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
 
+  const canAddEmployee = role === 'adm' || role === 'rh';
+  const canScan = role === 'adm' || role === 'portaria';
+  const canPrint = role === 'adm' || role === 'rh';
+  const canDelete = role === 'adm' || role === 'rh';
+
 
   if (!isClient) {
     return null;
@@ -209,17 +236,17 @@ export default function Home() {
         description="Gerencie o ponto dos funcionários."
         activePage="employees"
       >
-        <QRGenerator onAddEmployee={handleAddEmployee} />
+        {canAddEmployee && <QRGenerator onAddEmployee={handleAddEmployee} />}
       </AppHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <div className="flex flex-col gap-8">
-            <QRScanner onScan={handleScan} />
+            <QRScanner onScan={handleScan} disabled={!canScan}/>
         </div>
         <Tabs defaultValue="employees" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="employees">Funcionários</TabsTrigger>
-                <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
+                <TabsTrigger value="qrcodes" disabled={!canPrint}>QR Codes</TabsTrigger>
                 <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
             <TabsContent value="employees">
@@ -236,7 +263,7 @@ export default function Home() {
                 />
             </TabsContent>
             <TabsContent value="qrcodes">
-                <QrCodeList employees={employees} onClear={handleClearEmployees}/>
+                <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canPrint}/>
             </TabsContent>
             <TabsContent value="history">
                 <div className="flex flex-col lg:flex-row gap-8">

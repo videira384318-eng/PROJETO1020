@@ -3,8 +3,18 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, Users, Truck } from "lucide-react";
+import { Home, Users, Truck, UserCog } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth, type Role } from "@/contexts/auth-context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface AppHeaderProps {
     title: string;
@@ -14,6 +24,8 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, description, activePage, children }: AppHeaderProps) {
+  const { role, setRole } = useAuth();
+  
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
       <div>
@@ -67,6 +79,23 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <UserCog className="h-5 w-5" />
+                        <span className="sr-only">Selecionar Perfil</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                    <DropdownMenuLabel>Selecionar Perfil</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup value={role} onValueChange={(value) => setRole(value as Role)}>
+                        <DropdownMenuRadioItem value="adm">Administrador</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="rh">RH</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="portaria">Portaria</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <ThemeToggle />
         </div>
         {children}

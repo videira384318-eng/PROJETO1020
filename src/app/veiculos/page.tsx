@@ -27,6 +27,7 @@ import {
     getVehicleLog,
     updateVehicle
 } from '@/services/vehicleService';
+import { useAuth } from '@/contexts/auth-context';
 
 
 const vehicleFormSchema = z.object({
@@ -47,6 +48,7 @@ export interface VehicleLogEntry extends VehicleFormData {
 }
 
 export default function VeiculosPage() {
+  const { role } = useAuth();
   const [vehicles, setVehicles] = useState<VehicleFormData[]>([]);
   const [vehicleLog, setVehicleLog] = useState<VehicleLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -75,6 +77,10 @@ export default function VeiculosPage() {
   }, []);
 
   const handleAddVehicle = async (data: VehicleFormData) => {
+    if (role === 'portaria') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await addVehicle(data);
         toast({
@@ -93,6 +99,10 @@ export default function VeiculosPage() {
   };
   
   const handleDeleteVehicle = async (vehicleId: string) => {
+     if (role === 'portaria') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await deleteVehicle(vehicleId);
         toast({
@@ -110,6 +120,10 @@ export default function VeiculosPage() {
   };
 
   const handleVehicleClick = (vehicle: VehicleWithStatus) => {
+     if (role === 'rh') {
+        toast({ variant: "destructive", title: "Acesso Negado", description: "O perfil RH não pode registrar movimentações." });
+        return;
+    }
     setMovementVehicle(vehicle);
   }
   
@@ -150,10 +164,18 @@ export default function VeiculosPage() {
   }
   
   const handleEditLogEntry = (logEntry: VehicleLogEntry) => {
+    if (role === 'portaria') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     setEditingLogEntry(logEntry);
   };
   
   const handleDeleteVehicleLog = async (logId: string) => {
+     if (role === 'portaria') {
+        toast({ variant: "destructive", title: "Acesso Negado" });
+        return;
+    }
     try {
         await deleteVehicleLog(logId);
         toast({
@@ -216,6 +238,9 @@ export default function VeiculosPage() {
     });
   }, [vehicles, vehicleLog]);
 
+  const canAddVehicle = role === 'adm' || role === 'rh';
+  const canRegisterMovement = role === 'adm' || role === 'portaria';
+
 
   if (!isClient) {
     return null;
@@ -238,67 +263,69 @@ export default function VeiculosPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleAddVehicle)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="placa"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Placa</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: BRA2E19" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="condutor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Condutor</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: João da Silva" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="portaria"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Portaria Comum</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex items-center space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="p1" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              P1
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="p2" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              P2
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full">
+                <fieldset disabled={!canAddVehicle}>
+                    <FormField
+                    control={form.control}
+                    name="placa"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Placa</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: BRA2E19" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="condutor"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Condutor</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: João da Silva" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="portaria"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3">
+                        <FormLabel>Portaria Comum</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex items-center space-x-4"
+                            >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="p1" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                P1
+                                </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="p2" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                P2
+                                </FormLabel>
+                            </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </fieldset>
+                <Button type="submit" className="w-full" disabled={!canAddVehicle}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Salvar Veículo
                 </Button>

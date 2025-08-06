@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
+import { Trash2, Users, Search, LogIn, LogOut, Edit } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ReEntryDialog } from './re-entry-dialog';
+import { useAuth } from '@/contexts/auth-context';
 
 
 interface VisitorListProps {
@@ -52,6 +53,7 @@ export function VisitorList({
   onToggleSelectAll,
   onDeleteSelected
 }: VisitorListProps) {
+  const { role } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
@@ -118,6 +120,9 @@ export function VisitorList({
   const stopPropagation = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+  
+  const canPerformActions = role === 'adm' || role === 'portaria';
+  const canDelete = role === 'adm';
 
   return (
     <Card>
@@ -128,7 +133,7 @@ export function VisitorList({
                 <CardDescription>Clique em um visitante para registrar entrada/saída.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
-              {numSelected > 0 && (
+              {canDelete && numSelected > 0 && (
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
@@ -181,13 +186,15 @@ export function VisitorList({
             <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead className="w-[40px]">
-                        <Checkbox 
-                           checked={numTotal > 0 && numSelected === numTotal}
-                           indeterminate={numSelected > 0 && numSelected < numTotal}
-                           onCheckedChange={onToggleSelectAll}
-                        />
-                    </TableHead>
+                    {canDelete && (
+                        <TableHead className="w-[40px]">
+                            <Checkbox 
+                            checked={numTotal > 0 && numSelected === numTotal}
+                            indeterminate={numSelected > 0 && numSelected < numTotal}
+                            onCheckedChange={onToggleSelectAll}
+                            />
+                        </TableHead>
+                    )}
                     <TableHead>Nome</TableHead>
                     <TableHead>RG</TableHead>
                     <TableHead>CPF</TableHead>
@@ -197,7 +204,7 @@ export function VisitorList({
                     <TableHead>Motivo</TableHead>
                     <TableHead>Portaria</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    {canPerformActions && <TableHead className="text-right">Ações</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -205,15 +212,17 @@ export function VisitorList({
                          <TableRow 
                             key={visitor.id}
                             data-state={selectedVisitors.includes(visitor.personId!) ? 'selected' : ''}
-                            onClick={() => onVisitorClick(visitor)}
-                            className="cursor-pointer"
+                            onClick={() => canPerformActions && onVisitorClick(visitor)}
+                            className={canPerformActions ? "cursor-pointer" : "cursor-default"}
                         >
-                            <TableCell onClick={stopPropagation}>
-                                <Checkbox
-                                    checked={selectedVisitors.includes(visitor.personId!)}
-                                    onCheckedChange={() => onToggleSelection(visitor.personId!)}
-                                />
-                            </TableCell>
+                            {canDelete && (
+                                <TableCell onClick={stopPropagation}>
+                                    <Checkbox
+                                        checked={selectedVisitors.includes(visitor.personId!)}
+                                        onCheckedChange={() => onToggleSelection(visitor.personId!)}
+                                    />
+                                </TableCell>
+                            )}
                             <TableCell className="font-medium">{visitor.nome}</TableCell>
                             <TableCell>{visitor.rg}</TableCell>
                             <TableCell>{visitor.cpf}</TableCell>
@@ -232,49 +241,53 @@ export function VisitorList({
                             </TableCell>
                             <TableCell>{visitor.portaria.toUpperCase()}</TableCell>
                             <TableCell>{getStatusBadge(visitor.status)}</TableCell>
-                            <TableCell className="text-right space-x-1" onClick={stopPropagation}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
+                            {canPerformActions && (
+                                <TableCell className="text-right space-x-1" onClick={stopPropagation}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-7 w-7"
+                                                onClick={() => onVisitorClick(visitor)}
+                                            >
+                                            {getActionIcon(visitor.status)}
+                                            <span className="sr-only">{getActionTooltip(visitor.status)}</span>
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{getActionTooltip(visitor.status)}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                {canDelete && (
+                                    <AlertDialog>
+                                    <AlertDialogTrigger asChild>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
                                             className="h-7 w-7"
-                                            onClick={() => onVisitorClick(visitor)}
+                                            disabled={visitor.status === 'inside'}
                                         >
-                                           {getActionIcon(visitor.status)}
-                                           <span className="sr-only">{getActionTooltip(visitor.status)}</span>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                            <span className="sr-only">Excluir Visitante</span>
                                         </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{getActionTooltip(visitor.status)}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                               <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-7 w-7"
-                                        disabled={visitor.status === 'inside'}
-                                    >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                        <span className="sr-only">Excluir Visitante</span>
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente todos os registros deste visitante.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDelete(visitor.personId!)}>Excluir</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                            </TableCell>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Essa ação não pode ser desfeita. Isso excluirá permanentemente todos os registros deste visitante.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDelete(visitor.personId!)}>Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                    </AlertDialog>
+                                )}
+                                </TableCell>
+                            )}
                         </TableRow>
                     ))}
                 </TableBody>

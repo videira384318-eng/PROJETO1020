@@ -9,17 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Users, Search, Printer } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
+import { useAuth } from '@/contexts/auth-context';
 
 interface QrCodeListProps {
   employees: QrFormData[];
   onClear: () => void;
+  disabled?: boolean;
 }
 
 interface EmployeeWithQr extends QrFormData {
   qrUrl: string;
 }
 
-export function QrCodeList({ employees, onClear }: QrCodeListProps) {
+export function QrCodeList({ employees, onClear, disabled = false }: QrCodeListProps) {
+  const { role } = useAuth();
   const [employeeWithQrs, setEmployeeWithQrs] = useState<EmployeeWithQr[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
@@ -104,6 +107,8 @@ export function QrCodeList({ employees, onClear }: QrCodeListProps) {
       printWindow.close();
     }
   };
+  
+  const canDelete = role === 'adm' || role === 'rh';
 
 
   return (
@@ -123,17 +128,26 @@ export function QrCodeList({ employees, onClear }: QrCodeListProps) {
                         value={searchTerm}
                         onChange={handleSearchChange}
                         onKeyDown={handleKeyDown}
+                        disabled={disabled}
                     />
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleClear} disabled={employees.length === 0}>
-                    <Trash2 className="h-5 w-5" />
-                    <span className="sr-only">Limpar Lista de Funcionários</span>
-                </Button>
+                 {canDelete && (
+                    <Button variant="ghost" size="icon" onClick={handleClear} disabled={employees.length === 0 || disabled}>
+                        <Trash2 className="h-5 w-5" />
+                        <span className="sr-only">Limpar Lista de Funcionários</span>
+                    </Button>
+                 )}
             </div>
         </div>
       </CardHeader>
       <CardContent>
-        {employees.length === 0 ? (
+        {disabled ? (
+             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
+                <Users className="h-10 w-10 mb-4" />
+                <p className="font-semibold">Acesso Negado</p>
+                <p className="text-sm">Seu perfil não pode visualizar ou imprimir QR Codes.</p>
+            </div>
+        ) : employees.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
             <Users className="h-10 w-10 mb-4" />
             <p className="font-semibold">Nenhum funcionário adicionado</p>
