@@ -2,36 +2,25 @@
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
+import { Search, History, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import type { VisitorFormData } from '@/app/visitantes/page';
 import { Badge } from './ui/badge';
 
-interface VisitorListProps {
+interface VisitorHistoryProps {
   visitors: VisitorFormData[];
-  onDelete: (visitorId: string) => void;
-  onEnter: (visitorId: string) => void;
-  onExit: (visitorId: string) => void;
 }
 
-export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorListProps) {
+export function VisitorHistory({ visitors }: VisitorHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
-    return [...visitors].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+    return [...visitors].sort((a, b) => {
+        const timeA = a.exitTime || a.entryTime || a.createdAt;
+        const timeB = b.exitTime || b.entryTime || b.createdAt;
+        return new Date(timeB!).getTime() - new Date(timeA!).getTime();
+    });
   }, [visitors]);
 
   const filteredVisitors = useMemo(() => {
@@ -53,9 +42,8 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
         return <Badge variant="success">Dentro</Badge>;
       case 'exited':
         return <Badge variant="destructive">Saiu</Badge>;
-      case 'registered':
       default:
-        return <Badge variant="outline">Registrado</Badge>;
+        return <Badge variant="outline">N/A</Badge>;
     }
   }
 
@@ -64,13 +52,13 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <CardTitle className="font-headline">Visitantes Cadastrados</CardTitle>
-                <CardDescription>Gerencie a entrada e saída dos visitantes.</CardDescription>
+                <CardTitle className="font-headline flex items-center gap-2"><History className="w-6 h-6"/> Histórico</CardTitle>
+                <CardDescription>Consulte os registros de entrada e saída.</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Pesquisar..." 
+                    placeholder="Pesquisar no histórico..." 
                     className="pl-9"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -82,8 +70,8 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
         {visitors.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
             <Users className="h-10 w-10 mb-4" />
-            <p className="font-semibold">Nenhum visitante cadastrado</p>
-            <p className="text-sm">Use o formulário para adicionar o primeiro.</p>
+            <p className="font-semibold">Nenhum registro no histórico</p>
+            <p className="text-sm">Os registros de entrada e saída aparecerão aqui.</p>
           </div>
         ) : filteredVisitors.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
@@ -98,9 +86,9 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
                     <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Empresa</TableHead>
-                    <TableHead>Responsável</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead>Entrada</TableHead>
+                    <TableHead>Saída</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -108,40 +96,9 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
                     <TableRow key={visitor.id}>
                         <TableCell className="font-medium">{visitor.nome}</TableCell>
                         <TableCell>{visitor.empresa}</TableCell>
-                        <TableCell>{visitor.responsavel}</TableCell>
                         <TableCell>{getStatusBadge(visitor.status)}</TableCell>
-                        <TableCell className="text-right space-x-1">
-                           {visitor.status === 'registered' && (
-                             <Button variant="outline" size="sm" onClick={() => onEnter(visitor.id!)}>
-                                <LogIn className="h-4 w-4 mr-1" /> Entrada
-                             </Button>
-                           )}
-                           {visitor.status === 'inside' && (
-                             <Button variant="outline" size="sm" onClick={() => onExit(visitor.id!)}>
-                                <LogOut className="h-4 w-4 mr-1" /> Saída
-                             </Button>
-                           )}
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                    <span className="sr-only">Excluir Visitante</span>
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro do visitante.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDelete(visitor.id!)}>Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">{visitor.entryTime ? new Date(visitor.entryTime).toLocaleString('pt-BR') : '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">{visitor.exitTime ? new Date(visitor.exitTime).toLocaleString('pt-BR') : '—'}</TableCell>
                     </TableRow>
                     ))}
                 </TableBody>

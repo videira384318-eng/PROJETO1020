@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,8 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { PlusCircle, Users } from 'lucide-react';
 import { VisitorList } from '@/components/visitor-list';
+import { VisitorHistory } from '@/components/visitor-history';
 import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from '@/components/app-header';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
@@ -118,6 +120,10 @@ export default function VisitantesPage() {
       description: `A saída do visitante foi registrada com sucesso.`,
     });
   };
+
+  const historyVisitors = useMemo(() => {
+    return visitors.filter(v => v.status === 'inside' || v.status === 'exited');
+  }, [visitors]);
 
   if (!isClient) {
     return null;
@@ -275,12 +281,25 @@ export default function VisitantesPage() {
         </Card>
 
         <div className="lg:col-span-2">
-          <VisitorList 
-            visitors={visitors} 
-            onDelete={handleDeleteVisitor}
-            onEnter={handleVisitorEntry}
-            onExit={handleVisitorExit}
-          />
+            <Tabs defaultValue="visitors">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="visitors">Visitantes</TabsTrigger>
+                    <TabsTrigger value="history">Histórico</TabsTrigger>
+                </TabsList>
+                <TabsContent value="visitors">
+                    <VisitorList 
+                        visitors={visitors} 
+                        onDelete={handleDeleteVisitor}
+                        onEnter={handleVisitorEntry}
+                        onExit={handleVisitorExit}
+                    />
+                </TabsContent>
+                 <TabsContent value="history">
+                    <VisitorHistory
+                        visitors={historyVisitors}
+                    />
+                </TabsContent>
+            </Tabs>
         </div>
       </div>
     </main>
