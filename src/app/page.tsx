@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { AttendanceScan } from '@/types';
 import { QRScanner } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
@@ -14,31 +14,43 @@ import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
-import { addScan, deleteScan, getScans } from '@/services/scanService';
+import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-  const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
 
-  const refreshData = () => {
-    const allEmployees = getEmployees();
-    const allScans = getScans();
-    setEmployees(allEmployees);
-    setScans(allScans);
-  };
+  const refreshData = useCallback(async () => {
+    try {
+      const [allEmployees, allScans] = await Promise.all([
+        getEmployees(),
+        getScans()
+      ]);
+      setEmployees(allEmployees);
+      setScans(allScans);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao Carregar Dados",
+        description: "Não foi possível buscar os dados do servidor. Tente novamente mais tarde.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    setIsClient(true);
     refreshData();
-  }, []);
+  }, [refreshData]);
 
-  const handleScan = (decodedText: string) => {
+  const handleScan = async (decodedText: string) => {
     try {
       const { nome, setor, placa, ramal } = JSON.parse(decodedText);
       const employeeId = `${nome} (${setor})`;
@@ -47,8 +59,7 @@ export default function Home() {
         throw new Error('Dados do QR code incompletos.');
       }
       
-      const allScans = getScans();
-      const lastScanForEmployee = allScans.filter(scan => scan.employeeId === employeeId).sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
+      const lastScanForEmployee = await getLastScanForEmployee(employeeId);
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
@@ -60,8 +71,8 @@ export default function Home() {
         ramal: ramal || 'N/A'
       };
 
-      addScan(newScan);
-      refreshData();
+      await addScan(newScan);
+      await refreshData();
 
       toast({
         title: "Escaneamento Concluído!",
@@ -79,10 +90,10 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
+  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
     try {
-        addEmployee(employeeData);
-        refreshData();
+        await addEmployee(employeeData);
+        await refreshData();
         toast({
             title: "Funcionário Adicionado!",
             description: `${employeeData.nome} foi adicionado(a) à lista.`
@@ -97,11 +108,11 @@ export default function Home() {
     }
   }
   
-  const handleClearEmployees = () => {
+  const handleClearEmployees = async () => {
     try {
-        clearEmployees();
+        await clearEmployees();
         setSelectedEmployees([]);
-        refreshData();
+        await refreshData();
         toast({
             title: "Lista Limpa",
             description: "Todos os funcionários foram removidos.",
@@ -116,15 +127,15 @@ export default function Home() {
     }
   }
 
-  const handleDeleteSelectedEmployees = () => {
+  const handleDeleteSelectedEmployees = async () => {
     try {
-        deleteEmployees(selectedEmployees);
+        await deleteEmployees(selectedEmployees);
         toast({
             title: "Funcionários Removidos",
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) foram removidos.`,
         });
         setSelectedEmployees([]);
-        refreshData();
+        await refreshData();
     } catch (error) {
         console.error("Erro ao excluir funcionários:", error);
         toast({
@@ -152,10 +163,10 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = (scanId: string) => {
+  const handleDeleteScan = async (scanId: string) => {
     try {
-        deleteScan(scanId);
-        refreshData();
+        await deleteScan(scanId);
+        await refreshData();
         toast({
             title: "Registro Excluído",
             description: "O registro de ponto foi removido do histórico.",
@@ -170,9 +181,9 @@ export default function Home() {
     }
   }
   
-  const handleEmployeeClick = (employee: QrFormData) => {
+  const handleEmployeeClick = async (employee: QrFormData) => {
     const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor, placa: employee.placa, ramal: employee.ramal });
-    handleScan(qrData);
+    await handleScan(qrData);
   }
 
   const sortedScansForLog = useMemo(() => {
@@ -204,8 +215,31 @@ export default function Home() {
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
 
-  if (!isClient) {
-    return null;
+  if (isLoading) {
+    return (
+        <main className="container mx-auto p-4 md:p-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <Skeleton className="h-10 w-72 mb-2" />
+                    <Skeleton className="h-4 w-96" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                     <Skeleton className="h-10 w-40" />
+                </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <Skeleton className="h-[400px] lg:col-span-1" />
+                <div className="lg:col-span-2 space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-[400px] w-full" />
+                </div>
+            </div>
+        </main>
+    );
   }
 
   return (

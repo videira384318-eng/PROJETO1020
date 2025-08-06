@@ -1,41 +1,62 @@
 "use client";
 
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit, where } from 'firebase/firestore';
 import type { AttendanceScan } from '@/types';
 
-const SCANS_COLLECTION = 'scans_local';
 
-// Helper function to get scans from localStorage
-const getStoredScans = (): AttendanceScan[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(SCANS_COLLECTION);
-    return stored ? JSON.parse(stored) : [];
+const SCANS_COLLECTION = 'scans';
+
+export const addScan = async (scanData: Omit<AttendanceScan, 'scanId'>): Promise<string> => {
+    try {
+        const docRef = await addDoc(collection(db, SCANS_COLLECTION), scanData);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding scan to Firestore: ", error);
+        throw new Error("Could not add scan.");
+    }
 };
 
-// Helper function to save scans to localStorage
-const setStoredScans = (scans: AttendanceScan[]) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(SCANS_COLLECTION, JSON.stringify(scans));
+export const getScans = async (): Promise<AttendanceScan[]> => {
+    try {
+        const q = query(collection(db, SCANS_COLLECTION), orderBy("scanTime", "desc"));
+        const querySnapshot = await getDocs(q);
+        const scans: AttendanceScan[] = [];
+        querySnapshot.forEach((doc) => {
+            scans.push({ scanId: doc.id, ...doc.data() } as AttendanceScan);
+        });
+        return scans;
+    } catch (error) {
+        console.error("Error getting scans from Firestore: ", error);
+        throw new Error("Could not get scans.");
+    }
 };
 
-export const addScan = (scanData: Omit<AttendanceScan, 'scanId'>): string => {
-  const scans = getStoredScans();
-  const newScan: AttendanceScan = {
-    ...scanData,
-    scanId: `scan_${new Date().getTime()}_${Math.random()}`
-  };
-  const updatedScans = [newScan, ...scans]; // Add to the beginning for chronological order
-  setStoredScans(updatedScans);
-  return newScan.scanId;
+export const getLastScanForEmployee = async (employeeId: string): Promise<AttendanceScan | null> => {
+    try {
+        const q = query(
+            collection(db, SCANS_COLLECTION),
+            where("employeeId", "==", employeeId),
+            orderBy("scanTime", "desc"),
+            limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            return { scanId: doc.id, ...doc.data() } as AttendanceScan;
+        }
+        return null;
+    } catch (error) {
+        console.error(`Error getting last scan for employee ${employeeId}: `, error);
+        throw new Error("Could not get last scan.");
+    }
 };
 
-export const deleteScan = (scanId: string): void => {
-    const scans = getStoredScans();
-    const updatedScans = scans.filter(scan => scan.scanId !== scanId);
-    setStoredScans(updatedScans);
-};
-
-export const getScans = (): AttendanceScan[] => {
-    const scans = getStoredScans();
-    // Sort by time descending
-    return scans.sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());
+export const deleteScan = async (scanId: string): Promise<void> => {
+    try {
+        await deleteDoc(doc(db, SCANS_COLLECTION, scanId));
+    } catch (error) {
+        console.error("Error deleting scan from Firestore: ", error);
+        throw new Error("Could not delete scan.");
+    }
 };

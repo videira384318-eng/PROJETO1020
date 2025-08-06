@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,6 +25,7 @@ import {
     deleteVisitorLog,
     getVisitors
 } from '@/services/visitorService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const visitorFormSchema = z.object({
@@ -52,7 +53,7 @@ export type VisitorFormData = z.infer<typeof visitorFormSchema>;
 export default function VisitantesPage() {
   const [visitors, setVisitors] = useState<VisitorFormData[]>([]);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
-  const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [reEntryVisitor, setReEntryVisitor] = useState<VisitorFormData | null>(null);
   const { toast } = useToast();
 
@@ -70,18 +71,29 @@ export default function VisitantesPage() {
     },
   });
 
-  const refreshData = () => {
-    setVisitors(getVisitors());
-  }
+  const refreshData = useCallback(async () => {
+    try {
+      const allVisitors = await getVisitors();
+      setVisitors(allVisitors);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao Carregar Dados",
+        description: "Não foi possível buscar os dados do servidor. Tente novamente mais tarde.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
 
   useEffect(() => {
-    setIsClient(true);
     refreshData();
-  }, []);
+  }, [refreshData]);
 
-  const handleAddVisitor = (data: VisitorFormData) => {
+  const handleAddVisitor = async (data: VisitorFormData) => {
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
-    const newVisitor: VisitorFormData = {
+    const newVisitor: Omit<VisitorFormData, 'id'> = {
       ...data,
       personId: personId,
       createdAt: new Date().toISOString(),
@@ -89,8 +101,8 @@ export default function VisitantesPage() {
       status: 'inside',
     };
     try {
-        addVisitor(newVisitor);
-        refreshData();
+        await addVisitor(newVisitor);
+        await refreshData();
         toast({
           title: "Visitante Cadastrado e Entrada Registrada!",
           description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
@@ -106,11 +118,11 @@ export default function VisitantesPage() {
     }
   };
   
-  const handleDeleteSelectedVisitors = () => {
+  const handleDeleteSelectedVisitors = async () => {
     try {
-        deleteVisitorsByPersonIds(selectedVisitors);
+        await deleteVisitorsByPersonIds(selectedVisitors);
         setSelectedVisitors([]);
-        refreshData();
+        await refreshData();
         toast({
             title: "Visitantes Removidos",
             description: `Os ${selectedVisitors.length} visitante(s) selecionado(s) foram removidos.`,
@@ -141,11 +153,11 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleDeleteVisitor = (personId: string) => {
+  const handleDeleteVisitor = async (personId: string) => {
     try {
-        deleteVisitorByPersonId(personId);
+        await deleteVisitorByPersonId(personId);
         setSelectedVisitors(prev => prev.filter(id => id !== personId));
-        refreshData();
+        await refreshData();
         toast({
           title: "Visitante Removido",
           description: "O visitante e todo o seu histórico foram removidos.",
@@ -160,21 +172,21 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleReEntrySubmit = (data: ReEntryFormData) => {
+  const handleReEntrySubmit = async (data: ReEntryFormData) => {
     if (!reEntryVisitor) return;
 
-    const newVisit: VisitorFormData = {
+    const newVisit: Omit<VisitorFormData, 'id'> = {
         ...reEntryVisitor, // Spread base data from the last visit
         ...data, // Spread new data from the form
-        id: undefined, // Let local storage create new id
+        personId: reEntryVisitor.personId,
         status: 'inside',
         entryTime: new Date().toISOString(),
         exitTime: undefined, // Clear exit time for the new visit
         createdAt: new Date().toISOString(),
     };
     try {
-        addVisitor(newVisit);
-        refreshData();
+        await addVisitor(newVisit);
+        await refreshData();
         toast({
             title: "Nova Entrada Registrada!",
             description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
@@ -190,13 +202,13 @@ export default function VisitantesPage() {
     }
   };
 
-  const handleVisitorExit = (visitorId: string) => {
+  const handleVisitorExit = async (visitorId: string) => {
     try {
-        updateVisitor(visitorId, {
+        await updateVisitor(visitorId, {
             status: 'exited',
             exitTime: new Date().toISOString()
         });
-        refreshData();
+        await refreshData();
         toast({
           title: "Saída Registrada!",
           description: `A saída do visitante foi registrada com sucesso.`,
@@ -219,10 +231,10 @@ export default function VisitantesPage() {
     }
   }
 
-  const handleDeleteVisitorLog = (visitId: string) => {
+  const handleDeleteVisitorLog = async (visitId: string) => {
     try {
-        deleteVisitorLog(visitId);
-        refreshData();
+        await deleteVisitorLog(visitId);
+        await refreshData();
         toast({
           title: "Registro de Histórico Removido",
           description: "A visita foi removida do histórico.",
@@ -256,8 +268,30 @@ export default function VisitantesPage() {
   const numSelected = selectedVisitors.length;
   const numTotal = currentVisitors.length;
 
-  if (!isClient) {
-    return null;
+  if (isLoading) {
+    return (
+        <main className="container mx-auto p-4 md:p-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <Skeleton className="h-10 w-72 mb-2" />
+                    <Skeleton className="h-4 w-96" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <Skeleton className="h-[700px] lg:col-span-1" />
+                <div className="lg:col-span-2 space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-[400px] w-full" />
+                </div>
+            </div>
+        </main>
+    );
   }
 
   return (

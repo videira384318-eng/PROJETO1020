@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,8 +26,10 @@ import {
     updateVehicleLog,
     deleteVehicleLog,
     getVehicleLog,
-    updateVehicle
+    updateVehicle,
+    getLastVehicleLog
 } from '@/services/vehicleService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const vehicleFormSchema = z.object({
@@ -50,7 +52,7 @@ export interface VehicleLogEntry extends VehicleFormData {
 export default function VeiculosPage() {
   const [vehicles, setVehicles] = useState<VehicleFormData[]>([]);
   const [vehicleLog, setVehicleLog] = useState<VehicleLogEntry[]>([]);
-  const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [movementVehicle, setMovementVehicle] = useState<VehicleWithStatus | null>(null);
   const [editingLogEntry, setEditingLogEntry] = useState<VehicleLogEntry | null>(null);
   const { toast } = useToast();
@@ -64,20 +66,33 @@ export default function VeiculosPage() {
     },
   });
 
-  const refreshData = () => {
-    setVehicles(getVehicles());
-    setVehicleLog(getVehicleLog());
-  };
+  const refreshData = useCallback(async () => {
+    try {
+      const [allVehicles, allLogs] = await Promise.all([
+        getVehicles(),
+        getVehicleLog()
+      ]);
+      setVehicles(allVehicles);
+      setVehicleLog(allLogs);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao Carregar Dados",
+        description: "Não foi possível buscar os dados do servidor. Tente novamente mais tarde.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    setIsClient(true);
     refreshData();
-  }, []);
+  }, [refreshData]);
 
-  const handleAddVehicle = (data: VehicleFormData) => {
+  const handleAddVehicle = async (data: VehicleFormData) => {
     try {
-        addVehicle(data);
-        refreshData();
+        await addVehicle(data);
+        await refreshData();
         toast({
           title: "Veículo Cadastrado!",
           description: `O veículo com placa ${data.placa} foi adicionado.`,
@@ -93,10 +108,10 @@ export default function VeiculosPage() {
     }
   };
   
-  const handleDeleteVehicle = (vehicleId: string) => {
+  const handleDeleteVehicle = async (vehicleId: string) => {
     try {
-        deleteVehicle(vehicleId);
-        refreshData();
+        await deleteVehicle(vehicleId);
+        await refreshData();
         toast({
           title: "Veículo Removido",
           description: "O veículo foi removido da lista. Seu histórico foi mantido.",
@@ -115,10 +130,11 @@ export default function VeiculosPage() {
     setMovementVehicle(vehicle);
   }
   
-  const handleMovementSubmit = (data: MovementFormData) => {
+  const handleMovementSubmit = async (data: MovementFormData) => {
     if (!movementVehicle) return;
 
-    const newType = movementVehicle.status === 'entry' ? 'exit' : 'entry';
+    const lastLog = await getLastVehicleLog(movementVehicle.id!);
+    const newType = !lastLog || lastLog.type === 'exit' ? 'entry' : 'exit';
     const translatedType = newType === 'entry' ? 'entrada' : 'saída';
 
     const newLogEntry: Omit<VehicleLogEntry, 'logId'> = {
@@ -130,10 +146,9 @@ export default function VeiculosPage() {
     };
     
     try {
-        addVehicleLog(newLogEntry);
-        // Also update the main vehicle record with the latest driver/gate info
-        updateVehicle(movementVehicle.id!, data);
-        refreshData();
+        await addVehicleLog(newLogEntry);
+        await updateVehicle(movementVehicle.id!, data);
+        await refreshData();
         
         toast({
             title: "Movimentação Registrada!",
@@ -156,10 +171,10 @@ export default function VeiculosPage() {
     setEditingLogEntry(logEntry);
   };
   
-  const handleDeleteVehicleLog = (logId: string) => {
+  const handleDeleteVehicleLog = async (logId: string) => {
     try {
-        deleteVehicleLog(logId);
-        refreshData();
+        await deleteVehicleLog(logId);
+        await refreshData();
         toast({
           title: "Registro de Histórico Removido",
           description: "A movimentação foi removida do histórico.",
@@ -174,7 +189,7 @@ export default function VeiculosPage() {
     }
   }
 
-  const handleEditLogSubmit = (data: EditLogFormData) => {
+  const handleEditLogSubmit = async (data: EditLogFormData) => {
     if (!editingLogEntry) return;
 
     const newDate = new Date(data.date);
@@ -187,8 +202,8 @@ export default function VeiculosPage() {
     };
     
     try {
-        updateVehicleLog(editingLogEntry.logId, updatedLogEntry);
-        refreshData();
+        await updateVehicleLog(editingLogEntry.logId, updatedLogEntry);
+        await refreshData();
         toast({
             title: "Registro Atualizado!",
             description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,
@@ -222,8 +237,30 @@ export default function VeiculosPage() {
   }, [vehicles, vehicleLog]);
 
 
-  if (!isClient) {
-    return null;
+  if (isLoading) {
+    return (
+        <main className="container mx-auto p-4 md:p-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <Skeleton className="h-10 w-72 mb-2" />
+                    <Skeleton className="h-4 w-96" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-10 w-10" />
+                </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <Skeleton className="h-[400px] lg:col-span-1" />
+                <div className="lg:col-span-2 space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-[400px] w-full" />
+                </div>
+            </div>
+        </main>
+    );
   }
 
   return (
