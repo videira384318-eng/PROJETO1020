@@ -157,7 +157,15 @@ export function VisitorList({ visitors, onDelete, onVisitorClick }: VisitorListP
                             <TableCell className="text-right space-x-1">
                                <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={visitor.status === 'inside'} onClick={(e) => e.stopPropagation()}>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-7 w-7" 
+                                        disabled={visitor.status === 'inside'} 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                    >
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                         <span className="sr-only">Excluir Visitante</span>
                                     </Button>
