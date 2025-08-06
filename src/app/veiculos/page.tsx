@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VehicleMovementDialog, type MovementFormData } from '@/components/vehicle-movement-dialog';
+import { EditVehicleLogDialog, type EditLogFormData } from '@/components/edit-vehicle-log-dialog';
 
 
 const vehicleFormSchema = z.object({
@@ -40,6 +41,7 @@ export default function VeiculosPage() {
   const [vehicleLog, setVehicleLog] = useState<VehicleLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [movementVehicle, setMovementVehicle] = useState<VehicleWithStatus | null>(null);
+  const [editingLogEntry, setEditingLogEntry] = useState<VehicleLogEntry | null>(null);
   const { toast } = useToast();
 
   const form = useForm<VehicleFormData>({
@@ -134,6 +136,33 @@ export default function VeiculosPage() {
     });
     
     setMovementVehicle(null);
+  }
+  
+  const handleEditLogEntry = (logEntry: VehicleLogEntry) => {
+    setEditingLogEntry(logEntry);
+  };
+
+  const handleEditLogSubmit = (data: EditLogFormData) => {
+    if (!editingLogEntry) return;
+
+    const newDate = new Date(data.date);
+    const [hours, minutes] = data.time.split(':').map(Number);
+    newDate.setHours(hours, minutes, 0, 0);
+
+    const updatedLogEntry: VehicleLogEntry = {
+      ...editingLogEntry,
+      condutor: data.condutor,
+      timestamp: newDate.toISOString(),
+    };
+    
+    setVehicleLog(prev => prev.map(log => log.logId === editingLogEntry.logId ? updatedLogEntry : log));
+
+    toast({
+        title: "Registro Atualizado!",
+        description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,
+    });
+    
+    setEditingLogEntry(null);
   }
 
   const vehiclesWithStatus: VehicleWithStatus[] = useMemo(() => {
@@ -260,6 +289,7 @@ export default function VeiculosPage() {
                  <TabsContent value="history">
                     <VehicleHistory
                         log={vehicleLog}
+                        onEdit={handleEditLogEntry}
                     />
                 </TabsContent>
             </Tabs>
@@ -272,6 +302,14 @@ export default function VeiculosPage() {
         vehicle={movementVehicle}
         onSubmit={handleMovementSubmit}
       />
+      
+      <EditVehicleLogDialog
+        isOpen={!!editingLogEntry}
+        onClose={() => setEditingLogEntry(null)}
+        logEntry={editingLogEntry}
+        onSubmit={handleEditLogSubmit}
+      />
+
     </main>
   );
 }

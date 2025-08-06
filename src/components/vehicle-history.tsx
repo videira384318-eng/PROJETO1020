@@ -3,20 +3,29 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Search, History, Truck, LogIn, LogOut } from 'lucide-react';
+import { Search, History, Truck, LogIn, LogOut, Pencil } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { VehicleLogEntry } from '@/app/veiculos/page';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 interface VehicleHistoryProps {
   log: VehicleLogEntry[];
+  onEdit: (logEntry: VehicleLogEntry) => void;
 }
 
 function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function VehicleHistory({ log }: VehicleHistoryProps) {
+export function VehicleHistory({ log, onEdit }: VehicleHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedLog = useMemo(() => {
@@ -39,7 +48,7 @@ export function VehicleHistory({ log }: VehicleHistoryProps) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <CardTitle className="font-headline flex items-center gap-2"><History className="w-6 h-6"/> Histórico de Movimentação</CardTitle>
-                <CardDescription>Consulte todos os registros de entrada e saída.</CardDescription>
+                <CardDescription>Consulte e edite todos os registros de entrada e saída.</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -67,33 +76,49 @@ export function VehicleHistory({ log }: VehicleHistoryProps) {
             </div>
         ) : (
           <div className="border rounded-md">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Placa</TableHead>
-                        <TableHead>Condutor</TableHead>
-                        <TableHead>Portaria</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Data e Hora</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredLog.map((entry) => (
-                    <TableRow key={entry.logId}>
-                        <TableCell className="font-medium">{entry.placa}</TableCell>
-                        <TableCell>{entry.condutor}</TableCell>
-                        <TableCell>{entry.portaria.toUpperCase()}</TableCell>
-                         <TableCell>
-                            <Badge variant={entry.type === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit">
-                                {entry.type === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
-                                {translateScanType(entry.type)}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString('pt-BR')}</TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            <TooltipProvider>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Placa</TableHead>
+                            <TableHead>Condutor</TableHead>
+                            <TableHead>Portaria</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Data e Hora</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredLog.map((entry) => (
+                        <TableRow key={entry.logId}>
+                            <TableCell className="font-medium">{entry.placa}</TableCell>
+                            <TableCell>{entry.condutor}</TableCell>
+                            <TableCell>{entry.portaria.toUpperCase()}</TableCell>
+                            <TableCell>
+                                <Badge variant={entry.type === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit">
+                                    {entry.type === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
+                                    {translateScanType(entry.type)}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString('pt-BR')}</TableCell>
+                            <TableCell className="text-right">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => onEdit(entry)}>
+                                            <Pencil className="h-4 w-4" />
+                                            <span className="sr-only">Editar Registro</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Editar Registro</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TooltipProvider>
            </div>
         )}
       </CardContent>
