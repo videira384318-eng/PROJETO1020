@@ -7,3 +7,10 @@ export interface AttendanceScan {
     ramal?: string;
   }
   
+  export interface UserProfile {
+    uid: string;
+    email: string;
+    role: 'adm' | 'rh' | 'portaria';
+    permissions: string[];
+  }
+  

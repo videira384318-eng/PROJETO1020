@@ -16,7 +16,7 @@ import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
 import { addScan, deleteScan, getScans } from '@/services/scanService';
-import { AnomalyDetector } from '@/components/anomaly-detector';
+
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
@@ -216,7 +216,6 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="flex flex-col gap-8 lg:col-span-1">
             <QRScanner onScan={handleScan} />
-            <AnomalyDetector scans={scans} />
         </div>
         <div className="lg:col-span-2">
             <Tabs defaultValue="employees" className="w-full">
