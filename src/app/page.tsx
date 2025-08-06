@@ -9,12 +9,15 @@ import { EmployeeList } from '@/components/employee-list';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { isSameDay } from 'date-fns';
 
 export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,12 +105,16 @@ export default function Home() {
   }
 
   const sortedScansForLog = useMemo(() => {
-    return [...scans].sort((a, b) => {
+    const filteredScans = selectedDate 
+      ? scans.filter(scan => isSameDay(new Date(scan.scanTime), selectedDate))
+      : scans;
+
+    return [...filteredScans].sort((a, b) => {
       if (a.employeeId < b.employeeId) return -1;
       if (a.employeeId > b.employeeId) return 1;
       return new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime();
     });
-  }, [scans]);
+  }, [scans, selectedDate]);
 
 
   if (!isClient) {
@@ -137,7 +144,20 @@ export default function Home() {
                 <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
             </TabsContent>
             <TabsContent value="history">
-                <AttendanceLog scans={sortedScansForLog} onDelete={handleDeleteScan}/>
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="flex-shrink-0">
+                         <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            className="rounded-md border"
+                            initialFocus
+                        />
+                    </div>
+                    <div className="flex-grow w-full">
+                        <AttendanceLog scans={sortedScansForLog} onDelete={handleDeleteScan}/>
+                    </div>
+                </div>
             </TabsContent>
         </Tabs>
       </div>
