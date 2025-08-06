@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Html5Qrcode, Html5QrcodeError, Html5QrcodeResult, Html5QrcodeScannerState } from 'html5-qrcode';
 import { Camera, CameraOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,19 +18,24 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    if (isScanning && !scannerRef.current?.getState()) {
-      const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
-        onScan(decodedText);
-      };
+    const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
+      onScan(decodedText);
+    };
 
-      const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
-        // This callback is called frequently, so we don't log to avoid console spam.
-      };
-      
-      const config = { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [] };
+    const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
+      // This callback is called frequently, so we don't log to avoid console spam.
+    };
+
+    const config = { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [] };
+    
+    // Ensure scanner is only initialized once
+    if (!scannerRef.current) {
       scannerRef.current = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
-      
-      scannerRef.current.start(
+    }
+    const html5QrCode = scannerRef.current;
+    
+    if (isScanning && html5QrCode.getState() !== Html5QrcodeScannerState.SCANNING) {
+      html5QrCode.start(
         { facingMode: "environment" },
         config,
         onScanSuccess,
@@ -39,27 +44,24 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
         console.error("Failed to start QR scanner.", err);
         setIsScanning(false);
       });
-
-    } else if (!isScanning && scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.SCANNING) {
-      scannerRef.current.stop().catch(err => {
+    } else if (!isScanning && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+      html5QrCode.stop().catch(err => {
         console.error("Failed to stop scanner.", err);
       });
     }
 
     return () => {
-      if (scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.SCANNING) {
-        scannerRef.current.stop().catch(err => {
+      if (html5QrCode && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+        html5QrCode.stop().catch(err => {
           console.error("Failed to stop scanner on cleanup.", err);
         });
       }
     };
   }, [isScanning, onScan, setIsScanning]);
 
-
   const toggleScan = () => {
     setIsScanning(!isScanning);
   };
-
 
   return (
     <Card className="w-full">
