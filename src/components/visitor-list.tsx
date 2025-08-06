@@ -31,7 +31,16 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
-    return [...visitors].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+    // Show visitors who are 'inside' or 'registered' first, then 'exited'
+    return [...visitors].sort((a, b) => {
+        const statusOrder = { 'inside': 1, 'registered': 2, 'exited': 3 };
+        const statusA = statusOrder[a.status!] || 4;
+        const statusB = statusOrder[b.status!] || 4;
+        if (statusA !== statusB) {
+            return statusA - statusB;
+        }
+        return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+    });
   }, [visitors]);
 
   const filteredVisitors = useMemo(() => {
@@ -105,7 +114,7 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
                 </TableHeader>
                 <TableBody>
                     {filteredVisitors.map((visitor) => (
-                    <TableRow key={visitor.id}>
+                    <TableRow key={visitor.id} className={visitor.status === 'exited' ? 'opacity-60' : ''}>
                         <TableCell className="font-medium">{visitor.nome}</TableCell>
                         <TableCell>{visitor.empresa}</TableCell>
                         <TableCell>{visitor.responsavel}</TableCell>
@@ -123,7 +132,7 @@ export function VisitorList({ visitors, onDelete, onEnter, onExit }: VisitorList
                            )}
                            <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" disabled={visitor.status === 'inside'}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                     <span className="sr-only">Excluir Visitante</span>
                                 </Button>
