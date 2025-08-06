@@ -64,7 +64,7 @@ export function AttendanceLog({ scans, onDelete }: AttendanceLogProps) {
                     <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleDateString()}</TableCell>
                     <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleTimeString()}</TableCell>
                     <TableCell>
-                        <Badge variant={scan.scanType === 'entry' ? 'default' : 'secondary'} className="capitalize flex items-center gap-1.5 w-fit">
+                        <Badge variant={scan.scanType === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit">
                             {scan.scanType === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
                             {translateScanType(scan.scanType)}
                         </Badge>
