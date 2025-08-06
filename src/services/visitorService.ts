@@ -1,8 +1,9 @@
+
 "use client";
 
 import type { VisitorFormData } from '@/app/visitantes/page';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc, writeBatch } from 'firebase/firestore';
 
 const VISITORS_COLLECTION = 'visitors';
 
@@ -29,16 +30,26 @@ export const getVisitors = async (): Promise<VisitorFormData[]> => {
 export const deleteVisitorByPersonId = async (personId: string): Promise<void> => {
     const q = query(collection(db, VISITORS_COLLECTION), where('personId', '==', personId));
     const querySnapshot = await getDocs(q);
-    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
-    await Promise.all(deletePromises);
+    if (querySnapshot.empty) return;
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
 };
 
 export const deleteVisitorsByPersonIds = async (personIds: string[]): Promise<void> => {
     if (personIds.length === 0) return;
     const q = query(collection(db, VISITORS_COLLECTION), where('personId', 'in', personIds));
     const querySnapshot = await getDocs(q);
-    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
-    await Promise.all(deletePromises);
+    if (querySnapshot.empty) return;
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
 };
 
 export const deleteVisitorLog = async (visitId: string): Promise<void> => {

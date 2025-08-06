@@ -1,8 +1,9 @@
+
 "use client";
 
 import type { QrFormData } from '@/components/qr-generator';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where, writeBatch } from 'firebase/firestore';
 
 const EMPLOYEES_COLLECTION = 'employees';
 
@@ -23,13 +24,22 @@ export const getEmployees = async (): Promise<QrFormData[]> => {
 
 export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
     if (employeeIds.length === 0) return;
-    const deletePromises = employeeIds.map(id => deleteDoc(doc(db, EMPLOYEES_COLLECTION, id)));
-    await Promise.all(deletePromises);
+    const batch = writeBatch(db);
+    employeeIds.forEach(id => {
+        const docRef = doc(db, EMPLOYEES_COLLECTION, id);
+        batch.delete(docRef);
+    });
+    await batch.commit();
 };
 
 export const clearEmployees = async (): Promise<void> => {
     const q = query(collection(db, EMPLOYEES_COLLECTION));
     const querySnapshot = await getDocs(q);
-    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
-    await Promise.all(deletePromises);
+    if (querySnapshot.empty) return;
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
 };

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { AttendanceScan } from '@/types';
@@ -32,8 +33,8 @@ export const getLastScanForEmployee = async (employeeId: string): Promise<Attend
     if (querySnapshot.empty) {
         return null;
     }
-    const doc = querySnapshot.docs[0];
-    return { scanId: doc.id, ...doc.data() } as AttendanceScan;
+    const docData = querySnapshot.docs[0];
+    return { scanId: docData.id, ...docData.data() } as AttendanceScan;
 };
 
 export const deleteScan = async (scanId: string): Promise<void> => {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { VehicleFormData, VehicleLogEntry } from '@/app/veiculos/page';
