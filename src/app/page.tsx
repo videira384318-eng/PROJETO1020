@@ -93,9 +93,12 @@ export default function Home() {
     localStorage.removeItem('qr-attendance-employees');
   }
 
-  const handleClearScans = () => {
-    setScans([]);
-    localStorage.removeItem('qr-attendance-scans');
+  const handleDeleteScan = (scanId: string) => {
+    setScans(prevScans => prevScans.filter(scan => scan.scanId !== scanId));
+    toast({
+        title: "Registro Excluído",
+        description: "O registro de ponto foi removido do histórico.",
+    });
   }
 
   if (!isClient) {
@@ -125,7 +128,7 @@ export default function Home() {
                 <EmployeeList employees={employees} onQrClick={(data) => handleScan(JSON.stringify(data))} onClear={handleClearEmployees}/>
             </TabsContent>
             <TabsContent value="history">
-                <AttendanceLog scans={scans} onClear={handleClearScans}/>
+                <AttendanceLog scans={scans} onDelete={handleDeleteScan}/>
             </TabsContent>
         </Tabs>
       </div>

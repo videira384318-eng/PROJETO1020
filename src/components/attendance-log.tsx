@@ -6,17 +6,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { AttendanceScan } from '@/ai/flows/attendance-anomaly-detection';
 import { Button } from './ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface AttendanceLogProps {
   scans: AttendanceScan[];
-  onClear: () => void;
+  onDelete: (scanId: string) => void;
 }
 
 function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function AttendanceLog({ scans, onClear }: AttendanceLogProps) {
+export function AttendanceLog({ scans, onDelete }: AttendanceLogProps) {
   return (
     <Card>
       <CardHeader>
@@ -25,10 +36,6 @@ export function AttendanceLog({ scans, onClear }: AttendanceLogProps) {
                 <CardTitle className="font-headline">Registro de Ponto</CardTitle>
                 <CardDescription>Um registro em tempo real de todos os escaneamentos.</CardDescription>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClear} disabled={scans.length === 0}>
-                <Trash2 className="h-5 w-5" />
-                <span className="sr-only">Limpar Histórico</span>
-            </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -39,13 +46,14 @@ export function AttendanceLog({ scans, onClear }: AttendanceLogProps) {
                 <TableHead>Nome</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Horário</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {scans.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     Nenhum registro ainda.
                     </TableCell>
                 </TableRow>
@@ -55,11 +63,33 @@ export function AttendanceLog({ scans, onClear }: AttendanceLogProps) {
                     <TableCell className="font-medium">{scan.employeeId}</TableCell>
                     <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleDateString()}</TableCell>
                     <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleTimeString()}</TableCell>
-                    <TableCell className="text-right">
-                        <Badge variant={scan.scanType === 'entry' ? 'default' : 'secondary'} className="capitalize flex items-center gap-1.5 w-fit ml-auto">
+                    <TableCell>
+                        <Badge variant={scan.scanType === 'entry' ? 'default' : 'secondary'} className="capitalize flex items-center gap-1.5 w-fit">
                             {scan.scanType === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
                             {translateScanType(scan.scanType)}
                         </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className="sr-only">Excluir Registro</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Essa ação não pode ser desfeita. Isso excluirá permanentemente o registro de ponto.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDelete(scan.scanId)}>Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                 </TableRow>
                 ))}
