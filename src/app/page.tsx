@@ -26,7 +26,7 @@ export default function Home() {
         setScans(JSON.parse(storedScans));
       }
     } catch (error) {
-      console.error("Failed to parse scans from localStorage", error);
+      console.error("Falha ao analisar os registros do localStorage", error);
       localStorage.removeItem('qr-attendance-scans');
     }
   }, []);
@@ -40,8 +40,9 @@ export default function Home() {
   const handleScan = (decodedText: string) => {
     try {
       const { type } = JSON.parse(decodedText);
+      const translatedType = type === 'entry' ? 'entrada' : 'saída';
       if (type !== 'entry' && type !== 'exit') {
-        throw new Error('Invalid scan type');
+        throw new Error('Tipo de escaneamento inválido');
       }
 
       const newScan: AttendanceScan = {
@@ -54,16 +55,16 @@ export default function Home() {
       setScans(prevScans => [newScan, ...prevScans]);
       setIsScanning(false);
       toast({
-        title: "Scan Successful!",
-        description: `Recorded ${type} for ${newScan.employeeId}.`,
+        title: "Escaneamento Concluído!",
+        description: `Registrada ${translatedType} para ${newScan.employeeId}.`,
       });
 
     } catch (error) {
-      console.error("Failed to process scan:", error);
+      console.error("Falha ao processar o escaneamento:", error);
       toast({
         variant: "destructive",
-        title: "Invalid QR Code",
-        description: "Please scan a valid attendance QR code.",
+        title: "QR Code Inválido",
+        description: "Por favor, escaneie um QR code de controle de ponto válido.",
       });
     }
   };
@@ -81,14 +82,14 @@ export default function Home() {
     <main className="container mx-auto p-4 md:p-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-bold font-headline text-primary">QR Attendance</h1>
-          <p className="text-muted-foreground">Scan QR codes to record employee attendance.</p>
+          <h1 className="text-4xl font-bold font-headline text-primary">Controle de Ponto QR</h1>
+          <p className="text-muted-foreground">Escaneie os QR codes para registrar a presença dos funcionários.</p>
         </div>
         <div className="flex gap-2">
             <QRGenerator />
             <Button variant="outline" onClick={clearLogs} disabled={scans.length === 0}>
                 <Trash2 className="mr-2 h-4 w-4" />
-                Clear Logs
+                Limpar Registros
             </Button>
         </div>
       </div>

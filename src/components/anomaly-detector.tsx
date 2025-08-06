@@ -27,23 +27,23 @@ export function AnomalyDetector({ scans }: AnomalyDetectorProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Anomaly Detection</CardTitle>
-        <CardDescription>Use AI to analyze scan patterns and flag suspicious activity.</CardDescription>
+        <CardTitle className="font-headline">Detecção de Anomalias</CardTitle>
+        <CardDescription>Use IA para analisar padrões de escaneamento e sinalizar atividades suspeitas.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button onClick={handleCheck} disabled={isLoading || scans.length < 2} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Terminal className="mr-2 h-4 w-4" />}
-          {isLoading ? 'Analyzing...' : 'Check for Anomalies'}
+          {isLoading ? 'Analisando...' : 'Verificar Anomalias'}
         </Button>
         {scans.length < 2 && (
             <p className="text-sm text-center text-muted-foreground">
-                At least two scans are needed for anomaly detection.
+                São necessários pelo menos dois registros para a detecção de anomalias.
             </p>
         )}
         {result && (
           <Alert variant={result.anomalyDetected ? "destructive" : "default"} className={!result.anomalyDetected ? "bg-primary/10 border-primary/50" : ""}>
             {result.anomalyDetected ? <ShieldAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
-            <AlertTitle className="font-headline">{result.anomalyDetected ? "Anomaly Detected!" : "No Anomalies Found"}</AlertTitle>
+            <AlertTitle className="font-headline">{result.anomalyDetected ? "Anomalia Detectada!" : "Nenhuma Anomalia Encontrada"}</AlertTitle>
             <AlertDescription>
               {result.anomalyDescription}
             </AlertDescription>

@@ -23,12 +23,12 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
     };
 
     const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
-      // This callback is called frequently, so we don't log to avoid console spam.
+      // Este callback é chamado frequentemente, então não registramos para evitar spam no console.
     };
 
     const config = { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [] };
     
-    // Ensure scanner is only initialized once
+    // Garante que o scanner seja inicializado apenas uma vez
     if (!scannerRef.current) {
       scannerRef.current = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
     }
@@ -41,19 +41,19 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
         onScanSuccess,
         onScanFailure
       ).catch(err => {
-        console.error("Failed to start QR scanner.", err);
+        console.error("Falha ao iniciar o leitor de QR.", err);
         setIsScanning(false);
       });
     } else if (!isScanning && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
       html5QrCode.stop().catch(err => {
-        console.error("Failed to stop scanner.", err);
+        console.error("Falha ao parar o leitor.", err);
       });
     }
 
     return () => {
       if (html5QrCode && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
         html5QrCode.stop().catch(err => {
-          console.error("Failed to stop scanner on cleanup.", err);
+          console.error("Falha ao parar o leitor na limpeza.", err);
         });
       }
     };
@@ -66,17 +66,17 @@ export function QRScanner({ onScan, isScanning, setIsScanning }: QRScannerProps)
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-2xl font-headline">QR Code Scanner</CardTitle>
+        <CardTitle className="text-2xl font-headline">Leitor de QR Code</CardTitle>
         <Button onClick={toggleScan} variant="outline" size="icon" className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0">
             {isScanning ? <CameraOff /> : <Camera />}
-            <span className="sr-only">{isScanning ? 'Stop Scanning' : 'Start Scanning'}</span>
+            <span className="sr-only">{isScanning ? 'Parar Leitura' : 'Iniciar Leitura'}</span>
         </Button>
       </CardHeader>
       <CardContent>
         <div id={QR_SCANNER_ELEMENT_ID} className="w-full rounded-md [&>div]:rounded-md [&>video]:rounded-md [&>div>span]:hidden [&>div>button]:hidden" />
         {!isScanning && (
           <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-[305px] -mt-[305px] border-2 border-dashed rounded-md bg-muted/50">
-            <p>Click the camera icon to start scanning.</p>
+            <p>Clique no ícone da câmera para iniciar a leitura.</p>
           </div>
         )}
       </CardContent>

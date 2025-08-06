@@ -16,6 +16,11 @@ import Image from 'next/image';
 
 type ScanType = 'entry' | 'exit';
 
+function translateScanType(scanType: ScanType | null) {
+    if (!scanType) return '';
+    return scanType === 'entry' ? 'Entrada' : 'Saída';
+}
+
 export function QRGenerator() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [scanType, setScanType] = useState<ScanType | null>(null);
@@ -44,25 +49,25 @@ export function QRGenerator() {
       <DialogTrigger asChild>
         <Button>
           <QrCode className="mr-2 h-4 w-4" />
-          Generate QR Code
+          Gerar QR Code
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">Generate Attendance QR Code</DialogTitle>
+          <DialogTitle className="font-headline">Gerar QR Code de Ponto</DialogTitle>
           <DialogDescription>
-            Generate a QR code for employees to scan for entry or exit.
+            Gere um QR code para os funcionários escanearem na entrada ou saída.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex justify-around gap-4">
-            <Button onClick={() => generateQR('entry')} className="flex-1">Entry</Button>
-            <Button onClick={() => generateQR('exit')} variant="secondary" className="flex-1">Exit</Button>
+            <Button onClick={() => generateQR('entry')} className="flex-1">Entrada</Button>
+            <Button onClick={() => generateQR('exit')} variant="secondary" className="flex-1">Saída</Button>
           </div>
           {qrCodeUrl && (
             <div className="mt-4 p-4 border-dashed border-2 border-primary rounded-lg flex flex-col items-center bg-primary/10">
-              <p className="font-headline text-lg mb-2 capitalize">Scan for {scanType}</p>
-              <Image src={qrCodeUrl} alt={`QR Code for ${scanType}`} width={250} height={250} />
+              <p className="font-headline text-lg mb-2 capitalize">Escanear para {translateScanType(scanType)}</p>
+              <Image src={qrCodeUrl} alt={`QR Code para ${scanType}`} width={250} height={250} />
             </div>
           )}
         </div>
