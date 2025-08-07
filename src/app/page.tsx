@@ -27,6 +27,7 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
   const [storageUsage, setStorageUsage] = useState({ used: 0, total: 5, percentage: 0 });
+  const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
   const { toast } = useToast();
   
   const calculateStorage = useCallback(() => {
@@ -60,6 +61,16 @@ export default function Home() {
   }, [refreshData]);
 
   const handleScan = (decodedText: string) => {
+    // 5 second cooldown for the same QR code
+    if (lastScan && lastScan.data === decodedText && (Date.now() - lastScan.time) < 5000) {
+        toast({
+            variant: "destructive",
+            title: "Aguarde um momento",
+            description: "Você precisa esperar 5 segundos para escanear o mesmo QR code novamente.",
+        });
+        return;
+    }
+
     try {
       const { nome, setor, placa, ramal, id: employeeId } = JSON.parse(decodedText);
       
@@ -81,6 +92,7 @@ export default function Home() {
       };
 
       addScan(newScan);
+      setLastScan({data: decodedText, time: Date.now()});
       
       toast({
         title: "Escaneamento Concluído!",
