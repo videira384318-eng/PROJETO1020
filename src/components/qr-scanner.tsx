@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode, type Html5QrcodeError, type Html5QrcodeResult, Html5QrcodeScannerState } from 'html5-qrcode';
 import { Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,19 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
+  const stopScanner = useCallback(async () => {
+    const html5QrCode = scannerRef.current;
+    if (html5QrCode && html5QrCode.isScanning) {
+        try {
+            await html5QrCode.stop();
+        } catch(err) {
+            // Stop may fail if the scanner is not in a stopped state. This is okay.
+            console.log("Tentativa de parar leitor que já estava parado.", err);
+        }
+    }
+    setIsScanning(false);
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && !scannerRef.current) {
         scannerRef.current = new Html5Qrcode(QR_SCANNER_ELEMENT_ID, false);
@@ -40,12 +53,13 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
     if (disabled && isScanning) {
       stopScanner();
     }
-  }, [disabled, isScanning]);
+  }, [disabled, isScanning, stopScanner]);
 
 
   const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
+    // A função onScan, passada por props, agora é a única responsável
+    // por parar o scanner se necessário.
     onScan(decodedText);
-    stopScanner(); // Stop after successful scan
   };
 
   const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
@@ -99,18 +113,6 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
     }
   };
 
-  const stopScanner = async () => {
-      const html5QrCode = scannerRef.current;
-      if (html5QrCode && html5QrCode.isScanning) {
-          try {
-              await html5QrCode.stop();
-          } catch(err) {
-              // Stop may fail if the scanner is not in a stopped state. This is okay.
-              console.log("Tentativa de parar leitor que já estava parado.", err);
-          }
-      }
-      setIsScanning(false);
-  }
 
   const toggleScan = () => {
     if (isScanning) {

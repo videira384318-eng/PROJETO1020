@@ -81,8 +81,7 @@ export default function Home() {
       };
 
       await addScan(newScan);
-      await refreshData();
-
+      
       toast({
         title: "Escaneamento Concluído!",
         description: `Registrada ${translatedType} para ${nome} (${setor}).`,
@@ -96,6 +95,7 @@ export default function Home() {
         title: "QR Code Inválido",
         description: "Por favor, escaneie um QR code de controle de ponto válido.",
       });
+    } finally {
       await refreshData();
     }
   };
@@ -103,7 +103,6 @@ export default function Home() {
   const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
     try {
         await addEmployee(employeeData);
-        await refreshData();
         toast({
             title: "Funcionário Adicionado!",
             description: `${employeeData.nome} foi adicionado(a) à lista.`
@@ -115,7 +114,8 @@ export default function Home() {
             title: "Erro ao Adicionar",
             description: "Não foi possível adicionar o funcionário.",
         });
-        await refreshData();
+    } finally {
+      await refreshData();
     }
   }
   
@@ -123,7 +123,6 @@ export default function Home() {
     try {
         await clearEmployees();
         setSelectedEmployees([]);
-        await refreshData();
         toast({
             title: "Lista Limpa",
             description: "Todos os funcionários e seus registros foram removidos.",
@@ -135,6 +134,7 @@ export default function Home() {
             title: "Erro ao Limpar",
             description: "Não foi possível limpar a lista de funcionários.",
         });
+    } finally {
         await refreshData();
     }
   }
@@ -143,7 +143,6 @@ export default function Home() {
     try {
         await deleteEmployees(selectedEmployees);
         setSelectedEmployees([]);
-        await refreshData();
         toast({
             title: "Funcionários Removidos",
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) e seus registros foram removidos.`,
@@ -155,6 +154,7 @@ export default function Home() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover os funcionários selecionados.",
         });
+    } finally {
         await refreshData();
     }
   };
@@ -179,7 +179,6 @@ export default function Home() {
   const handleDeleteScan = async (scanId: string) => {
     try {
         await deleteScan(scanId);
-        await refreshData();
         toast({
             title: "Registro Excluído",
             description: "O registro de ponto foi removido do histórico.",
@@ -191,6 +190,7 @@ export default function Home() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover o registro de ponto.",
         });
+    } finally {
         await refreshData();
     }
   }
