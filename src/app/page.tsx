@@ -87,6 +87,9 @@ export default function Home() {
         description: `Registrada ${translatedType} para ${nome} (${setor}).`,
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
+      
+      // Refresh data after the scan is successful and toast is shown
+      await refreshData();
 
     } catch (error) {
       console.error("Falha ao processar o escaneamento:", error);
@@ -95,7 +98,7 @@ export default function Home() {
         title: "QR Code Inválido",
         description: "Por favor, escaneie um QR code de controle de ponto válido.",
       });
-    } finally {
+      // Also refresh data on failure to reset loading state
       await refreshData();
     }
   };
@@ -337,3 +340,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
