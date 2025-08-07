@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { AttendanceScan } from '@/types';
-import { QRScanner } from '@/components/qr-scanner';
+import { QRScanner, type QRScannerRef } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
 import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-list';
@@ -29,6 +29,7 @@ export default function Home() {
   const [storageUsage, setStorageUsage] = useState({ used: 0, total: 5, percentage: 0 });
   const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
   const { toast } = useToast();
+  const qrScannerRef = useRef<QRScannerRef>(null);
   
   const calculateStorage = useCallback(() => {
     try {
@@ -101,6 +102,7 @@ export default function Home() {
       });
       
       refreshData();
+      qrScannerRef.current?.stopScanner();
 
     } catch (error) {
       console.error("Falha ao processar o escaneamento:", error);
@@ -251,7 +253,7 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="flex flex-col gap-8 lg:col-span-1">
-            <QRScanner onScan={handleScan} />
+            <QRScanner ref={qrScannerRef} onScan={handleScan} />
         </div>
         <div className="lg:col-span-2">
             <Tabs defaultValue="employees" className="w-full">

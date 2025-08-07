@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Html5Qrcode, type Html5QrcodeError, type Html5QrcodeResult, Html5QrcodeScannerState } from 'html5-qrcode';
 import { Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,12 @@ interface QRScannerProps {
   disabled?: boolean;
 }
 
-export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
+export interface QRScannerRef {
+    stopScanner: () => void;
+}
+
+
+export const QRScanner = forwardRef<QRScannerRef, QRScannerProps>(({ onScan, disabled = false }, ref) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const { toast } = useToast();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -34,6 +39,10 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
     }
     setIsScanning(false);
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    stopScanner
+  }));
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !scannerRef.current) {
@@ -57,9 +66,8 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
 
 
   const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
-    // A função onScan, passada por props, é a única responsável por manipular o resultado.
-    // O scanner não será parado aqui para evitar conflitos.
     onScan(decodedText);
+    stopScanner();
   };
 
   const onScanFailure = (errorMessage: string, errorObject: Html5QrcodeError) => {
@@ -158,4 +166,6 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+QRScanner.displayName = "QRScanner";
