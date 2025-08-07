@@ -30,57 +30,57 @@ export default function Home() {
   const { toast } = useToast();
   
   const calculateStorage = useCallback(() => {
-    // This function can be deprecated or changed to monitor Firestore usage if needed.
-    // For now, we'll keep it as a mock or remove it later.
-    // Let's mock it to show 0 usage from local storage.
-    setStorageUsage({ used: 0, total: 5, percentage: 0 });
+    try {
+      const scansSize = new Blob([JSON.stringify(localStorage.getItem('scans') || '')]).size;
+      const employeesSize = new Blob([JSON.stringify(localStorage.getItem('employees') || '')]).size;
+      const totalUsedBytes = scansSize + employeesSize;
+      const totalUsedMb = (totalUsedBytes / (1024 * 1024)).toFixed(2);
+      const totalMb = 5; 
+      const percentage = (parseFloat(totalUsedMb) / totalMb) * 100;
+
+      setStorageUsage({ used: parseFloat(totalUsedMb), total: totalMb, percentage });
+    } catch (error) {
+      console.error("Error calculating storage usage:", error);
+      setStorageUsage({ used: 0, total: 5, percentage: 0 });
+    }
   }, []);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(() => {
     setIsLoading(true);
-    try {
-      const allEmployees = await getEmployees();
-      const allScans = await getScans();
-      setEmployees(allEmployees);
-      setScans(allScans);
-      calculateStorage();
-    } catch (error) {
-      console.error("Erro ao carregar dados do Firebase:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do Firebase.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, calculateStorage]);
+    const allEmployees = getEmployees();
+    const allScans = getScans();
+    setEmployees(allEmployees);
+    setScans(allScans);
+    calculateStorage();
+    setIsLoading(false);
+  }, [calculateStorage]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  const handleScan = async (decodedText: string) => {
+  const handleScan = (decodedText: string) => {
     try {
-      const { nome, setor, placa, ramal, id: employeeDocId } = JSON.parse(decodedText);
+      const { nome, setor, placa, ramal, id: employeeId } = JSON.parse(decodedText);
       
-      if (!employeeDocId) {
-        throw new Error('ID do funcionário ausente no QR code.');
+      const employeeExists = employees.some(e => e.id === employeeId);
+      if (!employeeExists) {
+        throw new Error('Funcionário não encontrado na lista.');
       }
       
-      const lastScanForEmployee = await getLastScanForEmployee(employeeDocId);
+      const lastScanForEmployee = getLastScanForEmployee(employeeId);
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
       const newScan: Omit<AttendanceScan, 'scanId' | 'id'> = {
-        employeeId: employeeDocId,
+        employeeId: employeeId,
         scanTime: new Date().toISOString(),
         scanType: newScanType,
         placa: placa || 'N/A',
         ramal: ramal || 'N/A'
       };
 
-      await addScan(newScan);
+      addScan(newScan);
       
       toast({
         title: "Escaneamento Concluído!",
@@ -88,7 +88,7 @@ export default function Home() {
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
       
-      await refreshData();
+      refreshData();
 
     } catch (error) {
       console.error("Falha ao processar o escaneamento:", error);
@@ -97,67 +97,37 @@ export default function Home() {
         title: "QR Code Inválido",
         description: "Por favor, escaneie um QR code de controle de ponto válido.",
       });
-      await refreshData();
     }
   };
   
-  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
-    try {
-        await addEmployee(employeeData);
-        toast({
-            title: "Funcionário Adicionado!",
-            description: `${employeeData.nome} foi adicionado(a) à lista.`
-        });
-        await refreshData();
-    } catch (error) {
-        console.error("Erro ao adicionar funcionário:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro ao Adicionar",
-            description: "Não foi possível adicionar o funcionário.",
-        });
-        await refreshData();
-    }
+  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
+    addEmployee(employeeData);
+    toast({
+        title: "Funcionário Adicionado!",
+        description: `${employeeData.nome} foi adicionado(a) à lista.`
+    });
+    refreshData();
   }
   
-  const handleClearEmployees = async () => {
-    try {
-        await clearEmployees();
-        setSelectedEmployees([]);
-        toast({
-            title: "Lista Limpa",
-            description: "Todos os funcionários e seus registros foram removidos.",
-        });
-        await refreshData();
-    } catch(error){
-        console.error("Erro ao limpar funcionários:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro ao Limpar",
-            description: "Não foi possível limpar a lista de funcionários.",
-        });
-        await refreshData();
-    }
+  const handleClearEmployees = () => {
+    clearEmployees();
+    setSelectedEmployees([]);
+    toast({
+        title: "Lista Limpa",
+        description: "Todos os funcionários e seus registros foram removidos.",
+    });
+    refreshData();
   }
 
-  const handleDeleteSelectedEmployees = async () => {
-    try {
-        await deleteEmployees(selectedEmployees);
-        setSelectedEmployees([]);
-        toast({
-            title: "Funcionários Removidos",
-            description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) e seus registros foram removidos.`,
-        });
-        await refreshData();
-    } catch (error) {
-        console.error("Erro ao excluir funcionários:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro ao Excluir",
-            description: "Não foi possível remover os funcionários selecionados.",
-        });
-        await refreshData();
-    }
+  const handleDeleteSelectedEmployees = () => {
+    deleteEmployees(selectedEmployees);
+    const count = selectedEmployees.length;
+    setSelectedEmployees([]);
+    toast({
+        title: "Funcionários Removidos",
+        description: `Os ${count} funcionário(s) selecionado(s) e seus registros foram removidos.`,
+    });
+    refreshData();
   };
 
   const handleToggleEmployeeSelection = (employeeId: string) => {
@@ -177,29 +147,19 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = async (scanId: string) => {
-    try {
-        await deleteScan(scanId);
-        toast({
-            title: "Registro Excluído",
-            description: "O registro de ponto foi removido do histórico.",
-        });
-        await refreshData();
-    } catch (error) {
-         console.error("Erro ao excluir registro:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro ao Excluir",
-            description: "Não foi possível remover o registro de ponto.",
-        });
-        await refreshData();
-    }
+  const handleDeleteScan = (scanId: string) => {
+    deleteScan(scanId);
+    toast({
+        title: "Registro Excluído",
+        description: "O registro de ponto foi removido do histórico.",
+    });
+    refreshData();
   }
   
-  const handleEmployeeClick = async (employee: QrFormData) => {
-    // We pass the entire employee object to be stringified, including the Firestore ID
+  const handleEmployeeClick = (employee: QrFormData) => {
+    // We pass the entire employee object to be stringified, including the local storage ID
     const qrData = JSON.stringify(employee);
-    await handleScan(qrData);
+    handleScan(qrData);
   }
 
   const getEmployeeNameById = useCallback((employeeId: string) => {
@@ -213,8 +173,7 @@ export default function Home() {
       ? scans.filter(scan => isSameDay(new Date(scan.scanTime), selectedDate))
       : scans;
 
-    // Scans are already sorted by time from the service
-    return filteredScans;
+    return filteredScans.sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());
   }, [scans, selectedDate]);
 
   const employeesWithStatus: EmployeeWithStatus[] = useMemo(() => {

@@ -42,14 +42,8 @@ export function QrCodeList({ employees, onClear, disabled = false }: QrCodeListP
     const generateQRs = async () => {
       const qrs = await Promise.all(
         filteredEmployees.map(async (employee) => {
-          // IMPORTANT: The QR code now contains the employee's Firestore document ID
-          const qrData = JSON.stringify({
-            id: employee.id, // This is the crucial part for Firestore lookup
-            nome: employee.nome,
-            setor: employee.setor,
-            placa: employee.placa,
-            ramal: employee.ramal
-          });
+          // The QR code contains the full employee object, including the local ID
+          const qrData = JSON.stringify(employee);
           const qrUrl = await QRCode.toDataURL(qrData, {
             width: 200,
             margin: 2,
