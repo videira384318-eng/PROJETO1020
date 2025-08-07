@@ -29,36 +29,26 @@ export default function Home() {
   const { toast } = useToast();
   
   const calculateStorage = useCallback(() => {
-    let totalBytes = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-            const value = localStorage.getItem(key);
-            if (value) {
-                totalBytes += new Blob([key, value]).size;
-            }
-        }
-    }
-    const totalMB = 5; // Standard localStorage limit
-    const usedMB = totalBytes / (1024 * 1024);
-    const percentage = (usedMB / totalMB) * 100;
-    setStorageUsage({ used: Number(usedMB.toFixed(2)), total: totalMB, percentage: Number(percentage.toFixed(2)) });
+    // This function can be deprecated or changed to monitor Firestore usage if needed.
+    // For now, we'll keep it as a mock or remove it later.
+    // Let's mock it to show 0 usage from local storage.
+    setStorageUsage({ used: 0, total: 5, percentage: 0 });
   }, []);
 
-  const refreshData = useCallback(() => {
+  const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const allEmployees = getEmployees();
-      const allScans = getScans();
+      const allEmployees = await getEmployees();
+      const allScans = await getScans();
       setEmployees(allEmployees);
       setScans(allScans);
       calculateStorage();
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("Erro ao carregar dados do Firebase:", error);
       toast({
         variant: "destructive",
         title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do armazenamento local.",
+        description: "Não foi possível buscar os dados do Firebase.",
       });
     } finally {
       setIsLoading(false);
@@ -69,33 +59,32 @@ export default function Home() {
     refreshData();
   }, [refreshData]);
 
-  const handleScan = (decodedText: string) => {
+  const handleScan = async (decodedText: string) => {
     try {
-      const { nome, setor, placa, ramal } = JSON.parse(decodedText);
-      const employeeId = `${nome} (${setor})`;
+      const { nome, setor, placa, ramal, id: employeeDocId } = JSON.parse(decodedText);
       
-      if (!nome || !setor) {
-        throw new Error('Dados do QR code incompletos.');
+      if (!employeeDocId) {
+        throw new Error('ID do funcionário ausente no QR code.');
       }
       
-      const lastScanForEmployee = getLastScanForEmployee(employeeId);
+      const lastScanForEmployee = await getLastScanForEmployee(employeeDocId);
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
-      const newScan: Omit<AttendanceScan, 'scanId'> = {
-        employeeId: employeeId,
+      const newScan: Omit<AttendanceScan, 'scanId' | 'id'> = {
+        employeeId: employeeDocId,
         scanTime: new Date().toISOString(),
         scanType: newScanType,
         placa: placa || 'N/A',
         ramal: ramal || 'N/A'
       };
 
-      addScan(newScan);
+      await addScan(newScan);
       refreshData();
 
       toast({
         title: "Escaneamento Concluído!",
-        description: `Registrada ${translatedType} para ${employeeId}.`,
+        description: `Registrada ${translatedType} para ${nome} (${setor}).`,
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
 
@@ -109,9 +98,9 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
+  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
     try {
-        addEmployee(employeeData);
+        await addEmployee(employeeData);
         refreshData();
         toast({
             title: "Funcionário Adicionado!",
@@ -127,14 +116,14 @@ export default function Home() {
     }
   }
   
-  const handleClearEmployees = () => {
+  const handleClearEmployees = async () => {
     try {
-        clearEmployees();
+        await clearEmployees();
         setSelectedEmployees([]);
         refreshData();
         toast({
             title: "Lista Limpa",
-            description: "Todos os funcionários foram removidos.",
+            description: "Todos os funcionários e seus registros foram removidos.",
         });
     } catch(error){
         console.error("Erro ao limpar funcionários:", error);
@@ -146,12 +135,12 @@ export default function Home() {
     }
   }
 
-  const handleDeleteSelectedEmployees = () => {
+  const handleDeleteSelectedEmployees = async () => {
     try {
-        deleteEmployees(selectedEmployees);
+        await deleteEmployees(selectedEmployees);
         toast({
             title: "Funcionários Removidos",
-            description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) foram removidos.`,
+            description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) e seus registros foram removidos.`,
         });
         setSelectedEmployees([]);
         refreshData();
@@ -182,9 +171,9 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = (scanId: string) => {
+  const handleDeleteScan = async (scanId: string) => {
     try {
-        deleteScan(scanId);
+        await deleteScan(scanId);
         refreshData();
         toast({
             title: "Registro Excluído",
@@ -201,27 +190,30 @@ export default function Home() {
   }
   
   const handleEmployeeClick = (employee: QrFormData) => {
-    const qrData = JSON.stringify({ nome: employee.nome, setor: employee.setor, placa: employee.placa, ramal: employee.ramal });
+    // We pass the entire employee object to be stringified, including the Firestore ID
+    const qrData = JSON.stringify(employee);
     handleScan(qrData);
   }
+
+  const getEmployeeNameById = useCallback((employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    return employee ? `${employee.nome} (${employee.setor})` : 'Funcionário não encontrado';
+  }, [employees]);
+
 
   const sortedScansForLog = useMemo(() => {
     const filteredScans = selectedDate 
       ? scans.filter(scan => isSameDay(new Date(scan.scanTime), selectedDate))
       : scans;
 
-    return [...filteredScans].sort((a, b) => {
-      if (a.employeeId < b.employeeId) return -1;
-      if (a.employeeId > b.employeeId) return 1;
-      return new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime();
-    });
+    // Scans are already sorted by time from the service
+    return filteredScans;
   }, [scans, selectedDate]);
 
   const employeesWithStatus: EmployeeWithStatus[] = useMemo(() => {
     return employees.map(employee => {
-      const employeeId = `${employee.nome} (${employee.setor})`;
       const lastScan = scans
-        .filter(scan => scan.employeeId === employeeId)
+        .filter(scan => scan.employeeId === employee.id)
         .sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
       
       return {
@@ -325,7 +317,7 @@ export default function Home() {
                         <div className="flex-grow w-full">
                             <AttendanceLog 
                                 scans={sortedScansForLog} 
-                                employees={employees} 
+                                getEmployeeNameById={getEmployeeNameById}
                                 onDelete={handleDeleteScan}
                                 onToggleCalendar={() => setShowCalendar(prev => !prev)}
                                 isCalendarOpen={showCalendar}

@@ -1,6 +1,7 @@
 export interface AttendanceScan {
+    id: string; // Document ID from Firestore
     scanId: string;
-    employeeId: string;
+    employeeId: string; // This can be the Firestore ID of the employee document
     scanTime: string;
     scanType: 'entry' | 'exit';
     placa?: string;

@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { AttendanceScan } from '@/types';
-import type { QrFormData } from './qr-generator';
 import { Button } from './ui/button';
 import {
   AlertDialog,
@@ -22,7 +21,7 @@ import {
 
 interface AttendanceLogProps {
   scans: AttendanceScan[];
-  employees: QrFormData[];
+  getEmployeeNameById: (employeeId: string) => string;
   onDelete: (scanId: string) => void;
   onToggleCalendar: () => void;
   isCalendarOpen: boolean;
@@ -32,15 +31,7 @@ function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, isCalendarOpen }: AttendanceLogProps) {
-  
-  const getEmployeeDetails = (employeeId: string) => {
-    const employee = employees.find(emp => `${emp.nome} (${emp.setor})` === employeeId);
-    return {
-      placa: employee?.placa || 'N/A',
-      ramal: employee?.ramal || 'N/A',
-    };
-  };
+export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCalendar, isCalendarOpen }: AttendanceLogProps) {
 
   return (
     <Card>
@@ -78,15 +69,13 @@ export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, is
                     </TableCell>
                 </TableRow>
                 )}
-                {scans.map((scan) => {
-                  const details = getEmployeeDetails(scan.employeeId);
-                  return (
+                {scans.map((scan) => (
                     <TableRow key={scan.scanId}>
-                        <TableCell className="font-medium">{scan.employeeId}</TableCell>
+                        <TableCell className="font-medium">{getEmployeeNameById(scan.employeeId)}</TableCell>
                         <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleDateString()}</TableCell>
                         <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleTimeString()}</TableCell>
-                        <TableCell className="text-muted-foreground">{scan.placa || details.placa}</TableCell>
-                        <TableCell className="text-muted-foreground">{scan.ramal || details.ramal}</TableCell>
+                        <TableCell className="text-muted-foreground">{scan.placa || 'N/A'}</TableCell>
+                        <TableCell className="text-muted-foreground">{scan.ramal || 'N/A'}</TableCell>
                         <TableCell>
                             <Badge variant={scan.scanType === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit">
                                 {scan.scanType === 'entry' ? <LogIn size={14}/> : <LogOut size={14}/>}
@@ -116,8 +105,8 @@ export function AttendanceLog({ scans, employees, onDelete, onToggleCalendar, is
                             </AlertDialog>
                         </TableCell>
                     </TableRow>
-                  );
-                })}
+                  )
+                )}
             </TableBody>
             </Table>
         </div>
