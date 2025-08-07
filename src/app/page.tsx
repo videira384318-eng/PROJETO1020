@@ -96,6 +96,7 @@ export default function Home() {
         title: "QR Code Inválido",
         description: "Por favor, escaneie um QR code de controle de ponto válido.",
       });
+      await refreshData();
     }
   };
   
@@ -114,6 +115,7 @@ export default function Home() {
             title: "Erro ao Adicionar",
             description: "Não foi possível adicionar o funcionário.",
         });
+        await refreshData();
     }
   }
   
@@ -133,6 +135,7 @@ export default function Home() {
             title: "Erro ao Limpar",
             description: "Não foi possível limpar a lista de funcionários.",
         });
+        await refreshData();
     }
   }
 
@@ -152,6 +155,7 @@ export default function Home() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover os funcionários selecionados.",
         });
+        await refreshData();
     }
   };
 
@@ -187,6 +191,7 @@ export default function Home() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover o registro de ponto.",
         });
+        await refreshData();
     }
   }
   
@@ -332,7 +337,3 @@ export default function Home() {
     </main>
   );
 }
-
-    
-
-    
