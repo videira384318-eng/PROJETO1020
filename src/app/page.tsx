@@ -139,12 +139,12 @@ export default function Home() {
   const handleDeleteSelectedEmployees = async () => {
     try {
         await deleteEmployees(selectedEmployees);
+        setSelectedEmployees([]);
+        await refreshData();
         toast({
             title: "Funcionários Removidos",
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) e seus registros foram removidos.`,
         });
-        setSelectedEmployees([]);
-        await refreshData();
     } catch (error) {
         console.error("Erro ao excluir funcionários:", error);
         toast({
@@ -190,10 +190,10 @@ export default function Home() {
     }
   }
   
-  const handleEmployeeClick = (employee: QrFormData) => {
+  const handleEmployeeClick = async (employee: QrFormData) => {
     // We pass the entire employee object to be stringified, including the Firestore ID
     const qrData = JSON.stringify(employee);
-    handleScan(qrData);
+    await handleScan(qrData);
   }
 
   const getEmployeeNameById = useCallback((employeeId: string) => {
@@ -332,5 +332,7 @@ export default function Home() {
     </main>
   );
 }
+
+    
 
     
