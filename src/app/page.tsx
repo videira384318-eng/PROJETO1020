@@ -61,12 +61,12 @@ export default function Home() {
   }, [refreshData]);
 
   const handleScan = (decodedText: string) => {
-    // 5 second cooldown for the same QR code
-    if (lastScan && lastScan.data === decodedText && (Date.now() - lastScan.time) < 5000) {
+    // 20 second cooldown for the same QR code
+    if (lastScan && lastScan.data === decodedText && (Date.now() - lastScan.time) < 20000) {
         toast({
             variant: "destructive",
             title: "Aguarde um momento",
-            description: "Você precisa esperar 5 segundos para escanear o mesmo QR code novamente.",
+            description: "Você precisa esperar 20 segundos para escanear o mesmo QR code novamente.",
         });
         return;
     }
