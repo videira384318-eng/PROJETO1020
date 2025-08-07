@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -80,7 +81,7 @@ export default function Home() {
       };
 
       await addScan(newScan);
-      refreshData();
+      await refreshData();
 
       toast({
         title: "Escaneamento Concluído!",
@@ -101,7 +102,7 @@ export default function Home() {
   const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id'>) => {
     try {
         await addEmployee(employeeData);
-        refreshData();
+        await refreshData();
         toast({
             title: "Funcionário Adicionado!",
             description: `${employeeData.nome} foi adicionado(a) à lista.`
@@ -120,7 +121,7 @@ export default function Home() {
     try {
         await clearEmployees();
         setSelectedEmployees([]);
-        refreshData();
+        await refreshData();
         toast({
             title: "Lista Limpa",
             description: "Todos os funcionários e seus registros foram removidos.",
@@ -143,7 +144,7 @@ export default function Home() {
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) e seus registros foram removidos.`,
         });
         setSelectedEmployees([]);
-        refreshData();
+        await refreshData();
     } catch (error) {
         console.error("Erro ao excluir funcionários:", error);
         toast({
@@ -174,7 +175,7 @@ export default function Home() {
   const handleDeleteScan = async (scanId: string) => {
     try {
         await deleteScan(scanId);
-        refreshData();
+        await refreshData();
         toast({
             title: "Registro Excluído",
             description: "O registro de ponto foi removido do histórico.",
@@ -331,3 +332,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
