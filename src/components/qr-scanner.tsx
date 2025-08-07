@@ -57,8 +57,8 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
 
 
   const onScanSuccess = (decodedText: string, decodedResult: Html5QrcodeResult) => {
-    // A função onScan, passada por props, agora é a única responsável
-    // por parar o scanner se necessário.
+    // A função onScan, passada por props, é a única responsável por manipular o resultado.
+    // O scanner não será parado aqui para evitar conflitos.
     onScan(decodedText);
   };
 
