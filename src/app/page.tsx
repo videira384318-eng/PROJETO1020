@@ -115,6 +115,19 @@ export default function Home() {
   };
   
   const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
+    const employeeExists = employees.some(
+      (e) => e.nome.trim().toLowerCase() === employeeData.nome.trim().toLowerCase()
+    );
+
+    if (employeeExists) {
+      toast({
+        variant: "destructive",
+        title: "Funcionário já cadastrado",
+        description: `Um funcionário com o nome "${employeeData.nome}" já existe.`,
+      });
+      return;
+    }
+
     addEmployee(employeeData);
     toast({
         title: "Funcionário Adicionado!",
