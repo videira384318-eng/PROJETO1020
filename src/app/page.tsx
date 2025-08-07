@@ -88,7 +88,6 @@ export default function Home() {
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
       
-      // Refresh data after the scan is successful and toast is shown
       await refreshData();
 
     } catch (error) {
@@ -98,7 +97,6 @@ export default function Home() {
         title: "QR Code Inválido",
         description: "Por favor, escaneie um QR code de controle de ponto válido.",
       });
-      // Also refresh data on failure to reset loading state
       await refreshData();
     }
   };
@@ -110,6 +108,7 @@ export default function Home() {
             title: "Funcionário Adicionado!",
             description: `${employeeData.nome} foi adicionado(a) à lista.`
         });
+        await refreshData();
     } catch (error) {
         console.error("Erro ao adicionar funcionário:", error);
         toast({
@@ -117,8 +116,7 @@ export default function Home() {
             title: "Erro ao Adicionar",
             description: "Não foi possível adicionar o funcionário.",
         });
-    } finally {
-      await refreshData();
+        await refreshData();
     }
   }
   
@@ -130,6 +128,7 @@ export default function Home() {
             title: "Lista Limpa",
             description: "Todos os funcionários e seus registros foram removidos.",
         });
+        await refreshData();
     } catch(error){
         console.error("Erro ao limpar funcionários:", error);
         toast({
@@ -137,7 +136,6 @@ export default function Home() {
             title: "Erro ao Limpar",
             description: "Não foi possível limpar a lista de funcionários.",
         });
-    } finally {
         await refreshData();
     }
   }
@@ -150,6 +148,7 @@ export default function Home() {
             title: "Funcionários Removidos",
             description: `Os ${selectedEmployees.length} funcionário(s) selecionado(s) e seus registros foram removidos.`,
         });
+        await refreshData();
     } catch (error) {
         console.error("Erro ao excluir funcionários:", error);
         toast({
@@ -157,7 +156,6 @@ export default function Home() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover os funcionários selecionados.",
         });
-    } finally {
         await refreshData();
     }
   };
@@ -186,6 +184,7 @@ export default function Home() {
             title: "Registro Excluído",
             description: "O registro de ponto foi removido do histórico.",
         });
+        await refreshData();
     } catch (error) {
          console.error("Erro ao excluir registro:", error);
         toast({
@@ -193,7 +192,6 @@ export default function Home() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover o registro de ponto.",
         });
-    } finally {
         await refreshData();
     }
   }
@@ -340,5 +338,7 @@ export default function Home() {
     </main>
   );
 }
+
+    
 
     
