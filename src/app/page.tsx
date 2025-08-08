@@ -6,6 +6,7 @@ import type { AttendanceScan } from '@/types';
 import { QRScanner, type QRScannerRef } from '@/components/qr-scanner';
 import { AttendanceLog } from '@/components/attendance-log';
 import { QRGenerator, type QrFormData } from '@/components/qr-generator';
+import { EditEmployeeDialog } from '@/components/edit-employee-dialog';
 import { EmployeeList, type EmployeeWithStatus } from '@/components/employee-list';
 import { QrCodeList } from '@/components/qr-code-list';
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
-import { addEmployee, deleteEmployees, clearEmployees, getEmployees } from '@/services/employeeService';
+import { addEmployee, deleteEmployees, clearEmployees, getEmployees, updateEmployee } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StorageIndicator } from '@/components/storage-indicator';
@@ -23,6 +24,7 @@ export default function Home() {
   const [scans, setScans] = useState<AttendanceScan[]>([]);
   const [employees, setEmployees] = useState<QrFormData[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [editingEmployee, setEditingEmployee] = useState<QrFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -73,19 +75,31 @@ export default function Home() {
     }
 
     try {
-      const { nome, setor, placa, ramal, id: employeeId } = JSON.parse(decodedText);
+      const scannedData: QrFormData = JSON.parse(decodedText);
+      const { nome, setor, placa, ramal, id: employeeId, active } = scannedData;
       
       const employeeExists = employees.some(e => e.id === employeeId);
       if (!employeeExists) {
         throw new Error('Funcionário não encontrado na lista.');
       }
       
-      const lastScanForEmployee = getLastScanForEmployee(employeeId);
+      // Check if QR code is active
+      if (active === false) {
+          toast({
+            variant: "destructive",
+            title: "QR Code Inativo",
+            description: "Por favor, procure o RH.",
+          });
+          qrScannerRef.current?.stopScanner();
+          return;
+      }
+      
+      const lastScanForEmployee = getLastScanForEmployee(employeeId!);
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
       const newScan: Omit<AttendanceScan, 'scanId' | 'id'> = {
-        employeeId: employeeId,
+        employeeId: employeeId!,
         scanTime: new Date().toISOString(),
         scanType: newScanType,
         placa: placa || 'N/A',
@@ -114,7 +128,7 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id'>) => {
+  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id' | 'active'>) => {
     const employeeExists = employees.some(
       (e) => e.nome.trim().toLowerCase() === employeeData.nome.trim().toLowerCase()
     );
@@ -135,6 +149,29 @@ export default function Home() {
     });
     refreshData();
   }
+
+  const handleUpdateEmployee = (employeeData: QrFormData) => {
+    updateEmployee(employeeData.id!, employeeData);
+    toast({
+        title: "Funcionário Atualizado!",
+        description: `Os dados de ${employeeData.nome} foram atualizados.`
+    });
+    setEditingEmployee(null);
+    refreshData();
+  }
+
+  const handleToggleActive = (employeeId: string, currentStatus: boolean) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (employee) {
+      const updatedEmployee = { ...employee, active: !currentStatus };
+      updateEmployee(employeeId, updatedEmployee);
+      toast({
+        title: `Status Alterado!`,
+        description: `O QR Code de ${employee.nome} foi ${!currentStatus ? 'ativado' : 'inativado'}.`
+      });
+      refreshData();
+    }
+  };
   
   const handleClearEmployees = () => {
     clearEmployees();
@@ -183,11 +220,14 @@ export default function Home() {
     refreshData();
   }
   
-  const handleEmployeeClick = (employee: QrFormData) => {
-    // We pass the entire employee object to be stringified, including the local storage ID
+  const handleManualEntry = (employee: QrFormData) => {
     const qrData = JSON.stringify(employee);
     handleScan(qrData);
   }
+
+  const handleEditClick = (employee: QrFormData) => {
+    setEditingEmployee(employee);
+  };
 
   const getEmployeeNameById = useCallback((employeeId: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
@@ -247,6 +287,7 @@ export default function Home() {
   }
 
   return (
+    <>
     <main className="container mx-auto p-4 md:p-8">
       <AppHeader
         title="Controle de Ponto QR"
@@ -279,7 +320,9 @@ export default function Home() {
                     <EmployeeList 
                     employees={employeesWithStatus} 
                     onClear={handleClearEmployees} 
-                    onEmployeeClick={handleEmployeeClick}
+                    onManualEntry={handleManualEntry}
+                    onEdit={handleEditClick}
+                    onToggleActive={handleToggleActive}
                     selectedEmployees={selectedEmployees}
                     numSelected={numSelected}
                     numTotal={numTotal}
@@ -322,5 +365,13 @@ export default function Home() {
         </div>
       </div>
     </main>
+    <EditEmployeeDialog 
+      isOpen={!!editingEmployee}
+      onClose={() => setEditingEmployee(null)}
+      employee={editingEmployee}
+      onSubmit={handleUpdateEmployee}
+    />
+    </>
   );
 }
+

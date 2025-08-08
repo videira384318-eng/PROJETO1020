@@ -5,11 +5,13 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search, LogIn, LogOut } from 'lucide-react';
+import { Trash2, Users, Search, LogIn, LogOut, Edit, QrCode } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from './ui/checkbox';
+import { Switch } from './ui/switch';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +32,9 @@ export interface EmployeeWithStatus extends QrFormData {
 interface EmployeeListProps {
   employees: EmployeeWithStatus[];
   onClear: () => void;
-  onEmployeeClick: (employee: QrFormData) => void;
+  onManualEntry: (employee: QrFormData) => void;
+  onEdit: (employee: QrFormData) => void;
+  onToggleActive: (employeeId: string, currentStatus: boolean) => void;
   selectedEmployees: string[];
   numSelected: number;
   numTotal: number;
@@ -42,7 +46,9 @@ interface EmployeeListProps {
 export function EmployeeList({ 
   employees, 
   onClear, 
-  onEmployeeClick,
+  onManualEntry,
+  onEdit,
+  onToggleActive,
   selectedEmployees,
   numSelected,
   numTotal,
@@ -80,7 +86,7 @@ export function EmployeeList({
     }
   }
   
-  const stopPropagation = (e: React.MouseEvent) => {
+  const stopPropagation = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
   };
 
@@ -171,6 +177,7 @@ export function EmployeeList({
             </div>
         ) : (
           <div className="border rounded-md">
+            <TooltipProvider>
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -183,9 +190,9 @@ export function EmployeeList({
                         </TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Setor</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Ramal</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Ativo</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -193,8 +200,7 @@ export function EmployeeList({
                     <TableRow 
                         key={employee.id} 
                         data-state={selectedEmployees.includes(employee.id!) ? 'selected' : ''}
-                        onClick={() => onEmployeeClick(employee)} 
-                        className={"cursor-pointer"}
+                        className="group"
                     >
                         <TableCell onClick={stopPropagation}>
                             <Checkbox
@@ -205,18 +211,57 @@ export function EmployeeList({
                         </TableCell>
                         <TableCell className="font-medium">{employee.nome}</TableCell>
                         <TableCell>{employee.setor}</TableCell>
-                        <TableCell>{employee.placa || 'N/A'}</TableCell>
-                        <TableCell>{employee.ramal || 'N/A'}</TableCell>
                         <TableCell>
                             <Badge variant={employee.status === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit text-xs px-2 py-0.5">
                                 {employee.status === 'entry' ? <LogIn size={12}/> : <LogOut size={12}/>}
                                 {employee.status === 'entry' ? 'Dentro' : 'Fora'}
                             </Badge>
                         </TableCell>
+                        <TableCell onClick={stopPropagation}>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                     <Switch 
+                                        checked={employee.active}
+                                        onCheckedChange={() => onToggleActive(employee.id!, employee.active!)}
+                                        aria-label={employee.active ? 'Desativar QR Code' : 'Ativar QR Code'}
+                                     />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{employee.active ? 'QR Code Ativo' : 'QR Code Inativo'}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TableCell>
+                         <TableCell className="text-right" onClick={stopPropagation}>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end">
+                               <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => onManualEntry(employee)}>
+                                            <QrCode className="h-4 w-4" />
+                                            <span className="sr-only">Registrar Ponto Manual</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Registrar Ponto Manual</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => onEdit(employee)}>
+                                            <Edit className="h-4 w-4" />
+                                            <span className="sr-only">Editar</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Editar Funcionário</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                        </TableCell>
                     </TableRow>
                     ))}
                 </TableBody>
             </Table>
+            </TooltipProvider>
            </div>
         )}
       </CardContent>

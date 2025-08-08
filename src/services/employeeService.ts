@@ -21,13 +21,20 @@ const setInStorage = <T>(key: string, data: T[]) => {
 
 
 // --- Employee Management ---
-export const addEmployee = (employeeData: Omit<QrFormData, 'id'>): string => {
+export const addEmployee = (employeeData: Omit<QrFormData, 'id' | 'active'>): string => {
     const employees = getFromStorage<QrFormData>(EMPLOYEES_KEY);
     const newId = `emp_${new Date().getTime()}_${Math.random()}`;
-    const newEmployee = { id: newId, ...employeeData };
+    // New employees are active by default
+    const newEmployee = { id: newId, ...employeeData, active: true };
     const updatedEmployees = [...employees, newEmployee];
     setInStorage(EMPLOYEES_KEY, updatedEmployees);
     return newId;
+};
+
+export const updateEmployee = (employeeId: string, employeeData: QrFormData): void => {
+    let employees = getFromStorage<QrFormData>(EMPLOYEES_KEY);
+    employees = employees.map(emp => (emp.id === employeeId ? { ...emp, ...employeeData } : emp));
+    setInStorage(EMPLOYEES_KEY, employees);
 };
 
 export const getEmployees = (): QrFormData[] => {

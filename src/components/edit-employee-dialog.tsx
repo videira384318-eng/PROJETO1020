@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,68 +12,63 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { PlusCircle } from 'lucide-react';
+import { Save } from 'lucide-react';
+import type { QrFormData } from './qr-generator';
 
-const qrFormSchema = z.object({
-  id: z.string().optional(),
+const editEmployeeFormSchema = z.object({
+  id: z.string(),
   nome: z.string().min(1, "O nome é obrigatório."),
   setor: z.string().min(1, "O setor é obrigatório."),
   placa: z.string().optional(),
   ramal: z.string().optional(),
-  active: z.boolean().default(true).optional(),
+  active: z.boolean().optional(),
 });
 
-export type QrFormData = z.infer<typeof qrFormSchema>;
-
-interface QRGeneratorProps {
-    onAddEmployee: (data: Omit<QrFormData, 'id' | 'active'>) => void;
+interface EditEmployeeDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  employee: QrFormData | null;
+  onSubmit: (data: QrFormData) => void;
 }
 
-export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+export function EditEmployeeDialog({ isOpen, onClose, employee, onSubmit }: EditEmployeeDialogProps) {
   const form = useForm<QrFormData>({
-    resolver: zodResolver(qrFormSchema),
-    defaultValues: {
-      nome: '',
-      setor: '',
-      placa: '',
-      ramal: '',
-      active: true,
-    },
+    resolver: zodResolver(editEmployeeFormSchema),
   });
 
-  const handleGenerate = (data: QrFormData) => {
-    const { id, active, ...employeeData } = data;
-    onAddEmployee(employeeData);
-    form.reset();
-    setIsOpen(false);
+  useEffect(() => {
+    if (employee) {
+        form.reset(employee);
+    }
+  }, [employee, form]);
+
+  const handleFormSubmit = (data: QrFormData) => {
+    onSubmit(data);
+  };
+  
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
   };
 
+  if (!employee) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Funcionário
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">Adicionar Novo Funcionário</DialogTitle>
+          <DialogTitle className="font-headline">Editar Funcionário</DialogTitle>
           <DialogDescription>
-            Preencha os dados para gerar um QR code e adicioná-lo à lista.
+            Altere os dados de <span className="font-semibold">{employee.nome}</span>.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
                  <FormField
                     control={form.control}
                     name="nome"
@@ -80,12 +76,12 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
                         <FormItem>
                         <FormLabel>Nome</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: João da Silva" {...field} />
+                            <Input {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
-                    />
+                />
                 <FormField
                     control={form.control}
                     name="setor"
@@ -93,12 +89,12 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
                         <FormItem>
                         <FormLabel>Setor</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: TI, RH, Financeiro" {...field} />
+                            <Input {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
-                    />
+                />
                 <FormField
                     control={form.control}
                     name="placa"
@@ -106,12 +102,12 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
                         <FormItem>
                         <FormLabel>Placa (Opcional)</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: BRA2E19" {...field} />
+                            <Input {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
-                    />
+                />
                 <FormField
                     control={form.control}
                     name="ramal"
@@ -119,22 +115,20 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
                         <FormItem>
                         <FormLabel>Ramal (Opcional)</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: 1234" {...field} />
+                            <Input {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
-                    />
+                />
                 <DialogFooter className="pt-4 sm:justify-start">
                      <Button type="submit">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Adicionar à Lista
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar Alterações
                     </Button>
-                     <DialogClose asChild>
-                        <Button type="button" variant="ghost">
-                            Cancelar
-                        </Button>
-                     </DialogClose>
+                    <Button type="button" variant="ghost" onClick={onClose}>
+                        Cancelar
+                    </Button>
                 </DialogFooter>
             </form>
         </Form>
