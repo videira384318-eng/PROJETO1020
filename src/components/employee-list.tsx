@@ -219,7 +219,7 @@ export function EmployeeList({
                         </TableCell>
                         <TableCell onClick={stopPropagation}>
                             <Tooltip>
-                                <TooltipTrigger>
+                                <TooltipTrigger asChild>
                                      <Switch 
                                         checked={employee.active}
                                         onCheckedChange={() => onToggleActive(employee.id!, employee.active!)}
