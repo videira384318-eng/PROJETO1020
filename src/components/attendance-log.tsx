@@ -27,13 +27,14 @@ interface AttendanceLogProps {
   onDelete: (scanId: string) => void;
   onToggleCalendar: () => void;
   isCalendarOpen: boolean;
+  canDelete: boolean;
 }
 
 function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCalendar, isCalendarOpen }: AttendanceLogProps) {
+export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCalendar, isCalendarOpen, canDelete }: AttendanceLogProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredScans = useMemo(() => {
@@ -82,13 +83,13 @@ export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCa
                 <TableHead>Placa</TableHead>
                 <TableHead>Ramal</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                {canDelete && <TableHead className="text-right">Ações</TableHead>}
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {filteredScans.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={canDelete ? 7 : 6} className="h-24 text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum registro encontrado.' : 'Nenhum registro ainda.'}
                     </TableCell>
                 </TableRow>
@@ -106,7 +107,7 @@ export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCa
                                 {translateScanType(scan.scanType)}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        {canDelete && (<TableCell className="text-right">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -127,7 +128,7 @@ export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCa
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                             </AlertDialog>
-                        </TableCell>
+                        </TableCell>)}
                     </TableRow>
                   )
                 )}

@@ -57,7 +57,7 @@ export default function VeiculosPage() {
   const [movementVehicle, setMovementVehicle] = useState<VehicleWithStatus | null>(null);
   const [editingLogEntry, setEditingLogEntry] = useState<VehicleLogEntry | null>(null);
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
 
 
   const form = useForm<VehicleFormData>({
@@ -88,8 +88,12 @@ export default function VeiculosPage() {
   }, [toast]);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    if (userProfile?.role === 'adm' || userProfile?.role === 'portaria') {
+        refreshData();
+    } else {
+        setIsLoading(false);
+    }
+  }, [refreshData, userProfile]);
 
   const handleAddVehicle = async (data: VehicleFormData) => {
     try {
@@ -263,6 +267,18 @@ export default function VeiculosPage() {
             </div>
         </main>
     );
+  }
+  
+  if (userProfile?.role !== 'adm' && userProfile?.role !== 'portaria') {
+    return (
+        <main className="container mx-auto p-4 md:p-8">
+             <AppHeader
+                title="Acesso Negado"
+                description="Você não tem permissão para ver esta página."
+                activePage="vehicles"
+            />
+        </main>
+    )
   }
 
   return (

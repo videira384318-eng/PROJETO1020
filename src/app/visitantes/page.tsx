@@ -57,7 +57,7 @@ export default function VisitantesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reEntryVisitor, setReEntryVisitor] = useState<VisitorFormData | null>(null);
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
 
   const form = useForm<VisitorFormData>({
     resolver: zodResolver(visitorFormSchema),
@@ -92,8 +92,12 @@ export default function VisitantesPage() {
 
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    if (userProfile?.role === 'adm' || userProfile?.role === 'portaria') {
+        refreshData();
+    } else {
+        setIsLoading(false);
+    }
+  }, [refreshData, userProfile]);
 
   const handleAddVisitor = async (data: VisitorFormData) => {
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
@@ -298,6 +302,18 @@ export default function VisitantesPage() {
             </div>
         </main>
     );
+  }
+  
+  if (userProfile?.role !== 'adm' && userProfile?.role !== 'portaria') {
+    return (
+        <main className="container mx-auto p-4 md:p-8">
+             <AppHeader
+                title="Acesso Negado"
+                description="Você não tem permissão para ver esta página."
+                activePage="visitors"
+            />
+        </main>
+    )
   }
 
   return (

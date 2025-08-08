@@ -17,7 +17,6 @@ import { AppHeader } from '@/components/app-header';
 import { addEmployee, deleteEmployees, getEmployees, updateEmployee, addEmployeeWithId } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StorageIndicator } from '@/components/storage-indicator';
 import { Button } from '@/components/ui/button';
 import { UploadCloud } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -31,27 +30,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [storageUsage, setStorageUsage] = useState({ used: 0, total: 5, percentage: 0 });
   const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
   const { currentUser, userProfile } = useAuth();
   
-  const calculateStorage = useCallback((employeesData: QrFormData[], scansData: AttendanceScan[]) => {
-    try {
-      // This is now an estimate as data is on Firestore
-      const estimatedSize = JSON.stringify(employeesData).length + JSON.stringify(scansData).length;
-      const totalUsedMb = (estimatedSize / (1024 * 1024)).toFixed(2);
-      const totalMb = 5; 
-      const percentage = (parseFloat(totalUsedMb) / totalMb) * 100;
-
-      setStorageUsage({ used: parseFloat(totalUsedMb), total: totalMb, percentage });
-    } catch (error) {
-      console.error("Error calculating storage usage:", error);
-      setStorageUsage({ used: 0, total: 5, percentage: 0 });
-    }
-  }, []);
-
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -59,7 +42,6 @@ export default function Home() {
       const allScans = await getScans();
       setEmployees(allEmployees);
       setScans(allScans);
-      calculateStorage(allEmployees, allScans);
     } catch (error) {
       console.error("Error refreshing data:", error);
       toast({
@@ -70,7 +52,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [calculateStorage, toast]);
+  }, [toast]);
 
   useEffect(() => {
     refreshData();
@@ -365,22 +347,16 @@ export default function Home() {
         activePage="employees"
       >
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleMigrateData}>
-            <UploadCloud className="mr-2 h-4 w-4" />
-            Migrar Dados Antigos
-          </Button>
+          {userProfile?.role === 'adm' && (
+            <Button variant="outline" onClick={handleMigrateData}>
+              <UploadCloud className="mr-2 h-4 w-4" />
+              Migrar Dados Antigos
+            </Button>
+          )}
           {canManageEmployees && <QRGenerator onAddEmployee={handleAddEmployee} />}
         </div>
       </AppHeader>
       
-      <div className="mb-8">
-          <StorageIndicator
-            used={storageUsage.used}
-            total={storageUsage.total}
-            percentage={storageUsage.percentage}
-          />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="flex flex-col gap-8 lg:col-span-1">
             <QRScanner ref={qrScannerRef} onScan={handleScan} disabled={!canScan}/>
@@ -389,7 +365,7 @@ export default function Home() {
             <Tabs defaultValue="employees" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="employees">Funcionários</TabsTrigger>
-                    {canViewQRCodes && <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>}
+                    <TabsTrigger value="qrcodes" disabled={!canViewQRCodes}>QR Codes</TabsTrigger>
                     <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
                 <TabsContent value="employees">
@@ -407,11 +383,11 @@ export default function Home() {
                     canManage={canManageEmployees}
                     />
                 </TabsContent>
-                {canViewQRCodes && (
-                  <TabsContent value="qrcodes">
-                      <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canViewQRCodes}/>
-                  </TabsContent>
-                )}
+                
+                <TabsContent value="qrcodes">
+                    <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canViewQRCodes}/>
+                </TabsContent>
+                
                 <TabsContent value="history">
                     <div className="flex flex-col lg:flex-row gap-8">
                         {showCalendar && (
@@ -435,6 +411,7 @@ export default function Home() {
                                 onDelete={handleDeleteScan}
                                 onToggleCalendar={() => setShowCalendar(prev => !prev)}
                                 isCalendarOpen={showCalendar}
+                                canDelete={canManageEmployees}
                             />
                         </div>
                     </div>
