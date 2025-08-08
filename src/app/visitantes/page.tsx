@@ -26,6 +26,7 @@ import {
     getVisitors
 } from '@/services/visitorService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/AuthContext';
 
 
 const visitorFormSchema = z.object({
@@ -56,6 +57,7 @@ export default function VisitantesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reEntryVisitor, setReEntryVisitor] = useState<VisitorFormData | null>(null);
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const form = useForm<VisitorFormData>({
     resolver: zodResolver(visitorFormSchema),
@@ -272,7 +274,7 @@ export default function VisitantesPage() {
   const numSelected = selectedVisitors.length;
   const numTotal = currentVisitors.length;
 
-  if (isLoading) {
+  if (isLoading || !currentUser) {
     return (
         <main className="container mx-auto p-4 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -489,5 +491,3 @@ export default function VisitantesPage() {
     </main>
   );
 }
-
-    

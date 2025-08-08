@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StorageIndicator } from '@/components/storage-indicator';
 import { Button } from '@/components/ui/button';
 import { UploadCloud } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 
 export default function Home() {
@@ -34,6 +35,7 @@ export default function Home() {
   const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
+  const { currentUser } = useAuth();
   
   const calculateStorage = useCallback((employeesData: QrFormData[], scansData: AttendanceScan[]) => {
     try {
@@ -324,7 +326,7 @@ export default function Home() {
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
 
-  if (isLoading) {
+  if (isLoading || !currentUser) {
     return (
         <main className="container mx-auto p-4 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -444,9 +446,3 @@ export default function Home() {
     </>
   );
 }
-
-    
-
-    
-
-    

@@ -30,6 +30,7 @@ import {
     getLastVehicleLog
 } from '@/services/vehicleService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/AuthContext';
 
 
 const vehicleFormSchema = z.object({
@@ -56,6 +57,8 @@ export default function VeiculosPage() {
   const [movementVehicle, setMovementVehicle] = useState<VehicleWithStatus | null>(null);
   const [editingLogEntry, setEditingLogEntry] = useState<VehicleLogEntry | null>(null);
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+
 
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleFormSchema),
@@ -236,7 +239,7 @@ export default function VeiculosPage() {
   }, [vehicles, vehicleLog]);
 
 
-  if (isLoading) {
+  if (isLoading || !currentUser) {
     return (
         <main className="container mx-auto p-4 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -391,5 +394,3 @@ export default function VeiculosPage() {
     </main>
   );
 }
-
-    
