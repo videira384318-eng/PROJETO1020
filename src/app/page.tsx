@@ -159,19 +159,6 @@ export default function Home() {
     setEditingEmployee(null);
     refreshData();
   }
-
-  const handleToggleActive = (employeeId: string, currentStatus: boolean) => {
-    const employee = employees.find(e => e.id === employeeId);
-    if (employee) {
-      const updatedEmployee = { ...employee, active: !currentStatus };
-      updateEmployee(employeeId, updatedEmployee);
-      toast({
-        title: `Status Alterado!`,
-        description: `O QR Code de ${employee.nome} foi ${!currentStatus ? 'ativado' : 'inativado'}.`
-      });
-      refreshData();
-    }
-  };
   
   const handleClearEmployees = () => {
     clearEmployees();
@@ -322,7 +309,6 @@ export default function Home() {
                     onClear={handleClearEmployees} 
                     onManualEntry={handleManualEntry}
                     onEdit={handleEditClick}
-                    onToggleActive={handleToggleActive}
                     selectedEmployees={selectedEmployees}
                     numSelected={numSelected}
                     numTotal={numTotal}

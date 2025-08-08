@@ -10,7 +10,6 @@ import type { QrFormData } from './qr-generator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from './ui/checkbox';
-import { Switch } from './ui/switch';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -34,7 +33,6 @@ interface EmployeeListProps {
   onClear: () => void;
   onManualEntry: (employee: QrFormData) => void;
   onEdit: (employee: QrFormData) => void;
-  onToggleActive: (employeeId: string, currentStatus: boolean) => void;
   selectedEmployees: string[];
   numSelected: number;
   numTotal: number;
@@ -48,7 +46,6 @@ export function EmployeeList({
   onClear, 
   onManualEntry,
   onEdit,
-  onToggleActive,
   selectedEmployees,
   numSelected,
   numTotal,
@@ -191,7 +188,6 @@ export function EmployeeList({
                     <TableHead>Nome</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Ativo</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -216,20 +212,6 @@ export function EmployeeList({
                                 {employee.status === 'entry' ? <LogIn size={12}/> : <LogOut size={12}/>}
                                 {employee.status === 'entry' ? 'Dentro' : 'Fora'}
                             </Badge>
-                        </TableCell>
-                        <TableCell onClick={stopPropagation}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                     <Switch 
-                                        checked={employee.active}
-                                        onCheckedChange={() => onToggleActive(employee.id!, employee.active!)}
-                                        aria-label={employee.active ? 'Desativar QR Code' : 'Ativar QR Code'}
-                                     />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>{employee.active ? 'QR Code Ativo' : 'QR Code Inativo'}</p>
-                                </TooltipContent>
-                            </Tooltip>
                         </TableCell>
                          <TableCell className="text-right" onClick={stopPropagation}>
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end">

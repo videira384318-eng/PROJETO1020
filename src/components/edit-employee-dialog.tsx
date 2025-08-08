@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Save } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
+import { Switch } from './ui/switch';
 
 const editEmployeeFormSchema = z.object({
   id: z.string(),
@@ -120,6 +121,24 @@ export function EditEmployeeDialog({ isOpen, onClose, employee, onSubmit }: Edit
                         <FormMessage />
                         </FormItem>
                     )}
+                />
+                <FormField
+                  control={form.control}
+                  name="active"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>QR Code Ativo</FormLabel>
+                        <FormMessage />
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
                 />
                 <DialogFooter className="pt-4 sm:justify-start">
                      <Button type="submit">
