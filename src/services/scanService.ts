@@ -1,53 +1,56 @@
 
-"use client";
-
+import { db } from '@/lib/firebase';
+import { collection, doc, addDoc, getDocs, deleteDoc, query, where, orderBy, limit, getDoc } from 'firebase/firestore';
 import type { AttendanceScan } from '@/types';
 
-const SCANS_KEY = 'scans';
+const SCANS_COLLECTION = 'scans';
 
-// --- Local Storage Helpers ---
-const getFromStorage = <T>(key: string): T[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-};
-
-const setInStorage = <T>(key: string, data: T[]) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(key, JSON.stringify(data));
-};
+// --- Firestore Helpers ---
+const scansCollectionRef = collection(db, SCANS_COLLECTION);
 
 // --- Scan Management ---
-export const addScan = (scanData: Omit<AttendanceScan, 'scanId' | 'id'>): string => {
-    const scans = getFromStorage<AttendanceScan>(SCANS_KEY);
-    const newId = `scan_${new Date().getTime()}_${Math.random()}`;
-    const newScan = { id: newId, scanId: newId, ...scanData };
-    const updatedScans = [...scans, newScan];
-    setInStorage(SCANS_KEY, updatedScans);
+export const addScan = async (scanData: Omit<AttendanceScan, 'scanId' | 'id'>): Promise<string> => {
+    const docRef = await addDoc(scansCollectionRef, scanData);
+    // Add the firestore-generated id as scanId for consistency
+    const newId = docRef.id;
+    await updateDoc(docRef, { id: newId, scanId: newId });
     return newId;
 };
 
-export const getScans = (): AttendanceScan[] => {
-    return getFromStorage<AttendanceScan>(SCANS_KEY);
+export const getScans = async (): Promise<AttendanceScan[]> => {
+    const q = query(scansCollectionRef, orderBy('scanTime', 'desc'));
+    const querySnapshot = await getDocs(q);
+    const scans: AttendanceScan[] = [];
+    querySnapshot.forEach((doc) => {
+        scans.push(doc.data() as AttendanceScan);
+    });
+    return scans;
 };
 
-export const getLastScanForEmployee = (employeeId: string): AttendanceScan | null => {
-    const scans = getFromStorage<AttendanceScan>(SCANS_KEY);
-    const employeeScans = scans
-        .filter(scan => scan.employeeId === employeeId)
-        .sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());
-    return employeeScans.length > 0 ? employeeScans[0] : null;
+export const getLastScanForEmployee = async (employeeId: string): Promise<AttendanceScan | null> => {
+    const q = query(
+        scansCollectionRef,
+        where('employeeId', '==', employeeId),
+        orderBy('scanTime', 'desc'),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
+    }
+    return querySnapshot.docs[0].data() as AttendanceScan;
 };
 
-export const deleteScan = (scanId: string): void => {
-    let scans = getFromStorage<AttendanceScan>(SCANS_KEY);
-    scans = scans.filter(s => s.scanId !== scanId);
-    setInStorage(SCANS_KEY, scans);
+export const deleteScan = async (scanId: string): Promise<void> => {
+    const scanDocRef = doc(db, SCANS_COLLECTION, scanId);
+    await deleteDoc(scanDocRef);
 };
 
-// This function is kept for compatibility but might not be used in a pure localStorage implementation
-export const deleteScansForEmployee = (employeeId: string): void => {
-    let scans = getFromStorage<AttendanceScan>(SCANS_KEY);
-    scans = scans.filter(scan => scan.employeeId !== employeeId);
-    setInStorage(SCANS_KEY, scans);
+export const deleteScansForEmployee = async (employeeId: string): Promise<void> => {
+    const q = query(scansCollectionRef, where('employeeId', '==', employeeId));
+    const querySnapshot = await getDocs(q);
+    
+    // Using Promise.all to delete all found documents
+    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
 };

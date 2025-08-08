@@ -1,59 +1,73 @@
 
-"use client";
-
+import { db } from '@/lib/firebase';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, getDoc } from 'firebase/firestore';
 import type { QrFormData } from '@/components/qr-generator';
-import type { AttendanceScan } from '@/types';
 
-const EMPLOYEES_KEY = 'employees';
-const SCANS_KEY = 'scans';
+const EMPLOYEES_COLLECTION = 'employees';
+const SCANS_COLLECTION = 'scans';
 
-// --- Local Storage Helpers ---
-const getFromStorage = <T>(key: string): T[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-};
-
-const setInStorage = <T>(key: string, data: T[]) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(key, JSON.stringify(data));
-};
-
+// --- Firestore Helpers ---
+const employeesCollectionRef = collection(db, EMPLOYEES_COLLECTION);
+const scansCollectionRef = collection(db, SCANS_COLLECTION);
 
 // --- Employee Management ---
-export const addEmployee = (employeeData: Omit<QrFormData, 'id' | 'active'>): string => {
-    const employees = getFromStorage<QrFormData>(EMPLOYEES_KEY);
-    const newId = `emp_${new Date().getTime()}_${Math.random()}`;
+export const addEmployee = async (employeeData: Omit<QrFormData, 'id' | 'active'>): Promise<string> => {
     // New employees are active by default
-    const newEmployee = { id: newId, ...employeeData, active: true };
-    const updatedEmployees = [...employees, newEmployee];
-    setInStorage(EMPLOYEES_KEY, updatedEmployees);
-    return newId;
+    const newEmployee = { ...employeeData, active: true };
+    const docRef = await addDoc(employeesCollectionRef, newEmployee);
+    // Add the firestore-generated id to the document
+    await updateDoc(docRef, { id: docRef.id });
+    return docRef.id;
 };
 
-export const updateEmployee = (employeeId: string, employeeData: QrFormData): void => {
-    let employees = getFromStorage<QrFormData>(EMPLOYEES_KEY);
-    employees = employees.map(emp => (emp.id === employeeId ? { ...emp, ...employeeData } : emp));
-    setInStorage(EMPLOYEES_KEY, employees);
+export const updateEmployee = async (employeeId: string, employeeData: QrFormData): Promise<void> => {
+    const employeeDocRef = doc(db, EMPLOYEES_COLLECTION, employeeId);
+    await updateDoc(employeeDocRef, employeeData);
 };
 
-export const getEmployees = (): QrFormData[] => {
-    return getFromStorage<QrFormData>(EMPLOYEES_KEY);
+export const getEmployees = async (): Promise<QrFormData[]> => {
+    const querySnapshot = await getDocs(employeesCollectionRef);
+    const employees: QrFormData[] = [];
+    querySnapshot.forEach((doc) => {
+        employees.push({ id: doc.id, ...doc.data() } as QrFormData);
+    });
+    return employees;
 };
 
-export const deleteEmployees = (employeeIds: string[]): void => {
+export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
     if (employeeIds.length === 0) return;
-    let employees = getFromStorage<QrFormData>(EMPLOYEES_KEY);
-    let scans = getFromStorage<AttendanceScan>(SCANS_KEY);
     
-    employees = employees.filter(emp => !employeeIds.includes(emp.id!));
-    scans = scans.filter(scan => !employeeIds.includes(scan.employeeId));
+    const batch = writeBatch(db);
 
-    setInStorage(EMPLOYEES_KEY, employees);
-    setInStorage(SCANS_KEY, scans);
+    // Delete employees
+    employeeIds.forEach(id => {
+        const employeeDocRef = doc(db, EMPLOYEES_COLLECTION, id);
+        batch.delete(employeeDocRef);
+    });
+
+    // Delete associated scans
+    const scansQuery = query(scansCollectionRef, where('employeeId', 'in', employeeIds));
+    const scansSnapshot = await getDocs(scansQuery);
+    scansSnapshot.forEach(scanDoc => {
+        batch.delete(scanDoc.ref);
+    });
+
+    await batch.commit();
 };
 
-export const clearEmployees = (): void => {
-     setInStorage(EMPLOYEES_KEY, []);
-     setInStorage(SCANS_KEY, []);
+// Note: clearEmployees is highly destructive and should be used with caution.
+// It's commented out to prevent accidental use. A more robust implementation
+// would involve server-side logic or a different UI flow.
+export const clearEmployees = async (): Promise<void> => {
+    // This is a placeholder. A real implementation would need to handle
+    // batch deletion of all documents in the collections, which can be complex
+    // on the client-side for large datasets.
+    console.warn("clearEmployees function is not fully implemented for Firestore client-side.");
+    // For small collections, you could do:
+    // const employeesSnapshot = await getDocs(employeesCollectionRef);
+    // const scansSnapshot = await getDocs(scansCollectionRef);
+    // const batch = writeBatch(db);
+    // employeesSnapshot.forEach(doc => batch.delete(doc.ref));
+    // scansSnapshot.forEach(doc => batch.delete(doc.ref));
+    // await batch.commit();
 };

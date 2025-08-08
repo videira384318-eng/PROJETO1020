@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
-import { addEmployee, deleteEmployees, clearEmployees, getEmployees, updateEmployee } from '@/services/employeeService';
+import { addEmployee, deleteEmployees, getEmployees, updateEmployee } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StorageIndicator } from '@/components/storage-indicator';
@@ -35,10 +35,9 @@ export default function Home() {
   
   const calculateStorage = useCallback(() => {
     try {
-      const scansSize = new Blob([JSON.stringify(localStorage.getItem('scans') || '')]).size;
-      const employeesSize = new Blob([JSON.stringify(localStorage.getItem('employees') || '')]).size;
-      const totalUsedBytes = scansSize + employeesSize;
-      const totalUsedMb = (totalUsedBytes / (1024 * 1024)).toFixed(2);
+      // This is now an estimate as data is on Firestore
+      const estimatedSize = JSON.stringify(employees).length + JSON.stringify(scans).length;
+      const totalUsedMb = (estimatedSize / (1024 * 1024)).toFixed(2);
       const totalMb = 5; 
       const percentage = (parseFloat(totalUsedMb) / totalMb) * 100;
 
@@ -47,23 +46,33 @@ export default function Home() {
       console.error("Error calculating storage usage:", error);
       setStorageUsage({ used: 0, total: 5, percentage: 0 });
     }
-  }, []);
+  }, [employees, scans]);
 
-  const refreshData = useCallback(() => {
+  const refreshData = useCallback(async () => {
     setIsLoading(true);
-    const allEmployees = getEmployees();
-    const allScans = getScans();
-    setEmployees(allEmployees);
-    setScans(allScans);
-    calculateStorage();
-    setIsLoading(false);
-  }, [calculateStorage]);
+    try {
+      const allEmployees = await getEmployees();
+      const allScans = await getScans();
+      setEmployees(allEmployees);
+      setScans(allScans);
+      calculateStorage();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar dados",
+        description: "Não foi possível buscar os dados do Firestore.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateStorage, toast]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  const handleScan = (decodedText: string) => {
+  const handleScan = async (decodedText: string) => {
     // 20 second cooldown for the same QR code
     if (lastScan && lastScan.data === decodedText && (Date.now() - lastScan.time) < 20000) {
         toast({
@@ -94,7 +103,7 @@ export default function Home() {
           return;
       }
       
-      const lastScanForEmployee = getLastScanForEmployee(employeeId!);
+      const lastScanForEmployee = await getLastScanForEmployee(employeeId!);
       const newScanType = !lastScanForEmployee || lastScanForEmployee.scanType === 'exit' ? 'entry' : 'exit';
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
@@ -106,7 +115,7 @@ export default function Home() {
         ramal: ramal || 'N/A'
       };
 
-      addScan(newScan);
+      await addScan(newScan);
       setLastScan({data: decodedText, time: Date.now()});
       
       toast({
@@ -115,7 +124,7 @@ export default function Home() {
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
       
-      refreshData();
+      await refreshData();
       qrScannerRef.current?.stopScanner();
 
     } catch (error) {
@@ -128,7 +137,7 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = (employeeData: Omit<QrFormData, 'id' | 'active'>) => {
+  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id' | 'active'>) => {
     const employeeExists = employees.some(
       (e) => e.nome.trim().toLowerCase() === employeeData.nome.trim().toLowerCase()
     );
@@ -142,43 +151,48 @@ export default function Home() {
       return;
     }
 
-    addEmployee(employeeData);
+    await addEmployee(employeeData);
     toast({
         title: "Funcionário Adicionado!",
         description: `${employeeData.nome} foi adicionado(a) à lista.`
     });
-    refreshData();
+    await refreshData();
   }
 
-  const handleUpdateEmployee = (employeeData: QrFormData) => {
-    updateEmployee(employeeData.id!, employeeData);
+  const handleUpdateEmployee = async (employeeData: QrFormData) => {
+    await updateEmployee(employeeData.id!, employeeData);
     toast({
         title: "Funcionário Atualizado!",
         description: `Os dados de ${employeeData.nome} foram atualizados.`
     });
     setEditingEmployee(null);
-    refreshData();
+    await refreshData();
   }
   
-  const handleClearEmployees = () => {
-    clearEmployees();
-    setSelectedEmployees([]);
+  const handleClearEmployees = async () => {
+    // This is a very destructive action, consider adding an additional confirm
+    // await clearEmployees(); // clearEmployees service needs to be implemented for Firestore
     toast({
-        title: "Lista Limpa",
-        description: "Todos os funcionários e seus registros foram removidos.",
+        title: "Ação não implementada",
+        description: "Limpar todos os funcionários ainda não é suportado com Firestore.",
     });
-    refreshData();
+    // setSelectedEmployees([]);
+    // toast({
+    //     title: "Lista Limpa",
+    //     description: "Todos os funcionários e seus registros foram removidos.",
+    // });
+    // await refreshData();
   }
 
-  const handleDeleteSelectedEmployees = () => {
-    deleteEmployees(selectedEmployees);
+  const handleDeleteSelectedEmployees = async () => {
+    await deleteEmployees(selectedEmployees);
     const count = selectedEmployees.length;
     setSelectedEmployees([]);
     toast({
         title: "Funcionários Removidos",
         description: `Os ${count} funcionário(s) selecionado(s) e seus registros foram removidos.`,
     });
-    refreshData();
+    await refreshData();
   };
 
   const handleToggleEmployeeSelection = (employeeId: string) => {
@@ -198,13 +212,13 @@ export default function Home() {
   };
 
 
-  const handleDeleteScan = (scanId: string) => {
-    deleteScan(scanId);
+  const handleDeleteScan = async (scanId: string) => {
+    await deleteScan(scanId);
     toast({
         title: "Registro Excluído",
         description: "O registro de ponto foi removido do histórico.",
     });
-    refreshData();
+    await refreshData();
   }
   
   const handleManualEntry = (employee: QrFormData) => {
@@ -232,13 +246,13 @@ export default function Home() {
 
   const employeesWithStatus: EmployeeWithStatus[] = useMemo(() => {
     return employees.map(employee => {
-      const lastScan = scans
+      const lastScanForEmployee = scans
         .filter(scan => scan.employeeId === employee.id)
         .sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime())[0];
       
       return {
         ...employee,
-        status: lastScan ? lastScan.scanType : 'exit', // Default to 'exit' if no scans
+        status: lastScanForEmployee ? lastScanForEmployee.scanType : 'exit', // Default to 'exit' if no scans
       };
     });
   }, [employees, scans]);
@@ -360,4 +374,3 @@ export default function Home() {
     </>
   );
 }
-
