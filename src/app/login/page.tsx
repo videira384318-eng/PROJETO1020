@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { signInUser, signUpUser } from '@/services/authService';
 import { Loader2, LogIn } from 'lucide-react';
 import Image from 'next/image';
+import { FirebaseError } from 'firebase/app';
 
 const loginFormSchema = z.object({
   email: z.string().email("Por favor, insira um email válido."),
@@ -24,7 +25,6 @@ type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSigningUp, setIsSigningUp] = useState(false); // For dev purposes
   const router = useRouter();
   const { toast } = useToast();
 
@@ -35,6 +35,40 @@ export default function LoginPage() {
       password: '',
     },
   });
+  
+  const handleAuthError = (error: any, type: 'login' | 'signup') => {
+      let title = type === 'login' ? "Falha no Login" : "Erro ao Criar Usuário";
+      let description = "Ocorreu um erro inesperado. Por favor, tente novamente.";
+
+      if (error instanceof FirebaseError) {
+          switch (error.code) {
+              case 'auth/user-not-found':
+              case 'auth/wrong-password':
+              case 'auth/invalid-credential':
+                  description = "Email ou senha incorretos. Por favor, verifique seus dados e tente novamente.";
+                  break;
+              case 'auth/email-already-in-use':
+                  description = "Este email já está em uso. Se você já tem uma conta, tente fazer o login.";
+                  title = "Email já cadastrado";
+                  break;
+              case 'auth/weak-password':
+                  description = "A senha é muito fraca. Por favor, use uma senha com pelo menos 6 caracteres.";
+                  break;
+              case 'auth/invalid-email':
+                  description = "O formato do email é inválido. Por favor, verifique o email digitado.";
+                  break;
+              default:
+                  description = `Ocorreu um erro: ${error.message}`;
+                  break;
+          }
+      }
+      
+      toast({
+          variant: "destructive",
+          title: title,
+          description: description,
+      });
+  }
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
@@ -48,29 +82,29 @@ export default function LoginPage() {
         router.push('/');
     } catch (error: any) {
         console.error("Erro no login:", error);
-        toast({
-            variant: "destructive",
-            title: "Falha no Login",
-            description: "Email ou senha incorretos. Por favor, tente novamente.",
-        });
+        handleAuthError(error, 'login');
     } finally {
         setIsLoading(false);
     }
   };
   
-  // This is a temporary function for development to create the first user
   const handleSignUp = async () => {
       const data = form.getValues();
-      if (!data.email || !data.password) {
+      if (!form.trigger(['email', 'password'])) {
+          toast({ variant: "destructive", title: "Erro de Validação", description: "Por favor, corrija os erros no formulário."});
+          return;
+      }
+       if (!data.email || !data.password) {
           toast({ variant: "destructive", title: "Erro", description: "Preencha email e senha para criar uma conta."});
           return;
       }
       setIsLoading(true);
       try {
           await signUpUser(data.email, data.password, 'adm');
-          toast({ title: "Usuário Criado!", description: "Agora você pode fazer o login com essas credenciais."});
+          toast({ title: "Usuário Criado!", description: "Agora você pode fazer o login com essas credenciais.", className: "bg-green-600 text-white" });
       } catch (error: any) {
-          toast({ variant: "destructive", title: "Erro ao Criar Usuário", description: error.message });
+           console.error("Erro ao criar usuário:", error);
+          handleAuthError(error, 'signup');
       } finally {
           setIsLoading(false);
       }
