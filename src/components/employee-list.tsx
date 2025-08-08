@@ -187,6 +187,7 @@ export function EmployeeList({
                         </TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Setor</TableHead>
+                    <TableHead>Placa</TableHead>
                     <TableHead>Ramal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -208,6 +209,7 @@ export function EmployeeList({
                         </TableCell>
                         <TableCell className="font-medium">{employee.nome}</TableCell>
                         <TableCell>{employee.setor}</TableCell>
+                        <TableCell>{employee.placa || 'N/A'}</TableCell>
                         <TableCell>{employee.ramal || 'N/A'}</TableCell>
                         <TableCell>
                             <Badge variant={employee.status === 'entry' ? 'success' : 'destructive'} className="capitalize flex items-center gap-1.5 w-fit text-xs px-2 py-0.5">
