@@ -111,4 +111,3 @@ export function UserList({ users, onEdit, onDelete, currentUserId }: UserListPro
         </Card>
     );
 }
-
