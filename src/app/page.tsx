@@ -14,10 +14,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
-import { addEmployee, deleteEmployees, getEmployees, updateEmployee } from '@/services/employeeService';
+import { addEmployee, deleteEmployees, getEmployees, updateEmployee, addEmployeeWithId } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StorageIndicator } from '@/components/storage-indicator';
+import { Button } from '@/components/ui/button';
+import { UploadCloud } from 'lucide-react';
 
 
 export default function Home() {
@@ -71,6 +73,68 @@ export default function Home() {
   useEffect(() => {
     refreshData();
   }, [refreshData]);
+  
+  const handleMigrateData = async () => {
+    toast({
+      title: "Iniciando migração...",
+      description: "Lendo dados locais e enviando para a nuvem. Não feche esta janela.",
+    });
+
+    try {
+      // 1. Ler dados do localStorage
+      const localEmployeesJSON = localStorage.getItem('employees');
+      const localScansJSON = localStorage.getItem('scans');
+      const localEmployees: QrFormData[] = localEmployeesJSON ? JSON.parse(localEmployeesJSON) : [];
+      const localScans: AttendanceScan[] = localScansJSON ? JSON.parse(localScansJSON) : [];
+
+      if (localEmployees.length === 0 && localScans.length === 0) {
+        toast({
+          title: "Nenhum dado local encontrado",
+          description: "Nenhum dado do localStorage para migrar.",
+        });
+        return;
+      }
+
+      // 2. Migrar Funcionários
+      let migratedEmployeesCount = 0;
+      for (const employee of localEmployees) {
+        // Usamos o ID antigo como ID do documento no Firestore
+        await addEmployeeWithId(employee.id!, employee);
+        migratedEmployeesCount++;
+      }
+
+      // 3. Migrar Registros de Ponto
+      let migratedScansCount = 0;
+      for (const scan of localScans) {
+         // Firestore vai gerar um novo ID para o scan
+        await addScan(scan);
+        migratedScansCount++;
+      }
+
+      toast({
+        title: "Migração Concluída!",
+        description: `${migratedEmployeesCount} funcionários e ${migratedScansCount} registros de ponto foram salvos na nuvem.`,
+        className: 'bg-green-600 text-white'
+      });
+
+      // 4. Atualizar a tela com os dados da nuvem
+      await refreshData();
+      
+      // 5. (Opcional) Limpar dados locais após migração bem-sucedida
+      // localStorage.removeItem('employees');
+      // localStorage.removeItem('scans');
+
+
+    } catch (error) {
+      console.error("Erro durante a migração:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro na Migração",
+        description: "Ocorreu um erro ao migrar os dados. Verifique o console para mais detalhes.",
+      });
+    }
+  };
+
 
   const handleScan = async (decodedText: string) => {
     // 20 second cooldown for the same QR code
@@ -295,7 +359,13 @@ export default function Home() {
         description="Gerencie o ponto dos funcionários."
         activePage="employees"
       >
-        <QRGenerator onAddEmployee={handleAddEmployee} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleMigrateData}>
+            <UploadCloud className="mr-2 h-4 w-4" />
+            Migrar Dados Antigos
+          </Button>
+          <QRGenerator onAddEmployee={handleAddEmployee} />
+        </div>
       </AppHeader>
       
       <div className="mb-8">
@@ -374,3 +444,5 @@ export default function Home() {
     </>
   );
 }
+
+    

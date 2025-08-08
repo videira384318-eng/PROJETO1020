@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, getDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, getDoc, setDoc } from 'firebase/firestore';
 import type { QrFormData } from '@/components/qr-generator';
 
 const EMPLOYEES_COLLECTION = 'employees';
@@ -18,6 +18,11 @@ export const addEmployee = async (employeeData: Omit<QrFormData, 'id' | 'active'
     // Add the firestore-generated id to the document
     await updateDoc(docRef, { id: docRef.id });
     return docRef.id;
+};
+
+export const addEmployeeWithId = async (employeeId: string, employeeData: QrFormData): Promise<void> => {
+    const employeeDocRef = doc(db, EMPLOYEES_COLLECTION, employeeId);
+    await setDoc(employeeDocRef, employeeData);
 };
 
 export const updateEmployee = async (employeeId: string, employeeData: QrFormData): Promise<void> => {
@@ -71,3 +76,5 @@ export const clearEmployees = async (): Promise<void> => {
     // scansSnapshot.forEach(doc => batch.delete(doc.ref));
     // await batch.commit();
 };
+
+    
