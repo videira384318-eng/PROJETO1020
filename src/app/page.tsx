@@ -35,10 +35,10 @@ export default function Home() {
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
   
-  const calculateStorage = useCallback(() => {
+  const calculateStorage = useCallback((employeesData: QrFormData[], scansData: AttendanceScan[]) => {
     try {
       // This is now an estimate as data is on Firestore
-      const estimatedSize = JSON.stringify(employees).length + JSON.stringify(scans).length;
+      const estimatedSize = JSON.stringify(employeesData).length + JSON.stringify(scansData).length;
       const totalUsedMb = (estimatedSize / (1024 * 1024)).toFixed(2);
       const totalMb = 5; 
       const percentage = (parseFloat(totalUsedMb) / totalMb) * 100;
@@ -48,7 +48,7 @@ export default function Home() {
       console.error("Error calculating storage usage:", error);
       setStorageUsage({ used: 0, total: 5, percentage: 0 });
     }
-  }, [employees, scans]);
+  }, []);
 
   const refreshData = useCallback(async () => {
     setIsLoading(true);
@@ -57,7 +57,7 @@ export default function Home() {
       const allScans = await getScans();
       setEmployees(allEmployees);
       setScans(allScans);
-      calculateStorage();
+      calculateStorage(allEmployees, allScans);
     } catch (error) {
       console.error("Error refreshing data:", error);
       toast({
@@ -444,5 +444,9 @@ export default function Home() {
     </>
   );
 }
+
+    
+
+    
 
     
