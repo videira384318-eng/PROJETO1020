@@ -9,6 +9,8 @@ import { Home, Users, Truck, Settings, LogOut } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { signOutUser } from "@/services/authService";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { Badge } from "./ui/badge";
 
 
 interface AppHeaderProps {
@@ -21,6 +23,7 @@ interface AppHeaderProps {
 export function AppHeader({ title, description, activePage, children }: AppHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -38,6 +41,13 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
         });
     }
   }
+
+  const roleDisplayMap = {
+    adm: "Admin",
+    rh: "RH",
+    portaria: "Portaria",
+    supervisao: "Supervisão"
+  };
   
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -47,6 +57,11 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
       </div>
       <div className="flex flex-col items-start md:items-end gap-2">
         <div className="flex items-center gap-2">
+            {userProfile && (
+                <Badge variant="outline" className="text-sm">
+                    {roleDisplayMap[userProfile.role]}
+                </Badge>
+            )}
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
