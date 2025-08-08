@@ -1,12 +1,14 @@
 
 "use client";
 
-import { LogIn, LogOut, Trash2, Calendar as CalendarIcon } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { LogIn, LogOut, Trash2, Calendar as CalendarIcon, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { AttendanceScan } from '@/types';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +34,17 @@ function translateScanType(scanType: 'entry' | 'exit') {
 }
 
 export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCalendar, isCalendarOpen }: AttendanceLogProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredScans = useMemo(() => {
+    if (!searchTerm) {
+      return scans;
+    }
+    return scans.filter(scan =>
+      getEmployeeNameById(scan.employeeId).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [scans, searchTerm, getEmployeeNameById]);
+
 
   return (
     <Card>
@@ -39,12 +52,23 @@ export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCa
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <CardTitle className="font-headline">Histórico</CardTitle>
-                <CardDescription>Um registro em tempo real de todos os escaneamentos.</CardDescription>
+                <CardDescription>Um registro de todos os escaneamentos.</CardDescription>
             </div>
-            <Button onClick={onToggleCalendar} variant="outline" size="icon">
-                <CalendarIcon className="h-4 w-4" />
-                <span className="sr-only">{isCalendarOpen ? 'Fechar Calendário' : 'Abrir Calendário'}</span>
-            </Button>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar por nome..." 
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Button onClick={onToggleCalendar} variant="outline" size="icon">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span className="sr-only">{isCalendarOpen ? 'Fechar Calendário' : 'Abrir Calendário'}</span>
+                </Button>
+            </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -62,14 +86,14 @@ export function AttendanceLog({ scans, getEmployeeNameById, onDelete, onToggleCa
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {scans.length === 0 && (
+                {filteredScans.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    Nenhum registro ainda.
+                    {searchTerm ? 'Nenhum registro encontrado.' : 'Nenhum registro ainda.'}
                     </TableCell>
                 </TableRow>
                 )}
-                {scans.map((scan) => (
+                {filteredScans.map((scan) => (
                     <TableRow key={scan.scanId}>
                         <TableCell className="font-medium">{getEmployeeNameById(scan.employeeId)}</TableCell>
                         <TableCell className="text-muted-foreground">{new Date(scan.scanTime).toLocaleDateString()}</TableCell>
