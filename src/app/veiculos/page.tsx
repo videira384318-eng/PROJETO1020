@@ -34,7 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const vehicleFormSchema = z.object({
   id: z.string().optional(),
-  placa: z.string().min(1, "A placa é obrigatória."),
+  placa: z.string().min(1, "A placa é obrigatória.").toUpperCase(),
   condutor: z.string().min(1, "O nome do condutor é obrigatório."),
   portaria: z.enum(['p1', 'p2'], {
     required_error: "Selecione a portaria.",
@@ -66,18 +66,18 @@ export default function VeiculosPage() {
     },
   });
 
-  const refreshData = useCallback(() => {
+  const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const allVehicles = getVehicles();
-      const allLogs = getVehicleLog();
+      const [allVehicles, allLogs] = await Promise.all([getVehicles(), getVehicleLog()]);
       setVehicles(allVehicles);
       setVehicleLog(allLogs);
     } catch (error) {
+      console.error("Error refreshing data:", error);
       toast({
         variant: "destructive",
         title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do armazenamento local.",
+        description: "Não foi possível buscar os dados do Firestore.",
       });
     } finally {
       setIsLoading(false);
@@ -88,10 +88,10 @@ export default function VeiculosPage() {
     refreshData();
   }, [refreshData]);
 
-  const handleAddVehicle = (data: VehicleFormData) => {
+  const handleAddVehicle = async (data: VehicleFormData) => {
     try {
-        addVehicle(data);
-        refreshData();
+        await addVehicle(data);
+        await refreshData();
         toast({
           title: "Veículo Cadastrado!",
           description: `O veículo com placa ${data.placa} foi adicionado.`,
@@ -107,13 +107,13 @@ export default function VeiculosPage() {
     }
   };
   
-  const handleDeleteVehicle = (vehicleId: string) => {
+  const handleDeleteVehicle = async (vehicleId: string) => {
     try {
-        deleteVehicle(vehicleId);
-        refreshData();
+        await deleteVehicle(vehicleId);
+        await refreshData();
         toast({
           title: "Veículo Removido",
-          description: "O veículo foi removido da lista. Seu histórico foi mantido.",
+          description: "O veículo foi removido da lista e seu histórico foi mantido.",
         });
     } catch (e) {
         console.error("Erro ao remover veículo:", e);
@@ -129,10 +129,10 @@ export default function VeiculosPage() {
     setMovementVehicle(vehicle);
   }
   
-  const handleMovementSubmit = (data: MovementFormData) => {
+  const handleMovementSubmit = async (data: MovementFormData) => {
     if (!movementVehicle) return;
 
-    const lastLog = getLastVehicleLog(movementVehicle.id!);
+    const lastLog = await getLastVehicleLog(movementVehicle.id!);
     const newType = !lastLog || lastLog.type === 'exit' ? 'entry' : 'exit';
     const translatedType = newType === 'entry' ? 'entrada' : 'saída';
 
@@ -145,9 +145,9 @@ export default function VeiculosPage() {
     };
     
     try {
-        addVehicleLog(newLogEntry);
-        updateVehicle(movementVehicle.id!, data);
-        refreshData();
+        await addVehicleLog(newLogEntry);
+        await updateVehicle(movementVehicle.id!, data);
+        await refreshData();
         
         toast({
             title: "Movimentação Registrada!",
@@ -170,10 +170,10 @@ export default function VeiculosPage() {
     setEditingLogEntry(logEntry);
   };
   
-  const handleDeleteVehicleLog = (logId: string) => {
+  const handleDeleteVehicleLog = async (logId: string) => {
     try {
-        deleteVehicleLog(logId);
-        refreshData();
+        await deleteVehicleLog(logId);
+        await refreshData();
         toast({
           title: "Registro de Histórico Removido",
           description: "A movimentação foi removida do histórico.",
@@ -188,7 +188,7 @@ export default function VeiculosPage() {
     }
   }
 
-  const handleEditLogSubmit = (data: EditLogFormData) => {
+  const handleEditLogSubmit = async (data: EditLogFormData) => {
     if (!editingLogEntry) return;
 
     const newDate = new Date(data.date);
@@ -201,8 +201,8 @@ export default function VeiculosPage() {
     };
     
     try {
-        updateVehicleLog(editingLogEntry.logId, updatedLogEntry);
-        refreshData();
+        await updateVehicleLog(editingLogEntry.logId, updatedLogEntry);
+        await refreshData();
         toast({
             title: "Registro Atualizado!",
             description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,
@@ -287,7 +287,7 @@ export default function VeiculosPage() {
                         <FormItem>
                         <FormLabel>Placa</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: BRA2E19" {...field} />
+                            <Input placeholder="Ex: BRA2E19" {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>

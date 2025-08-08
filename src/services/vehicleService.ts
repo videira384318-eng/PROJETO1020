@@ -1,79 +1,104 @@
 
-"use client";
-
+import { db } from '@/lib/firebase';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import type { VehicleFormData, VehicleLogEntry } from '@/app/veiculos/page';
 
-const VEHICLES_KEY = 'vehicles';
-const VEHICLE_LOG_KEY = 'vehicle_log';
 
-// --- Local Storage Helpers ---
-const getFromStorage = <T>(key: string): T[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-};
+const VEHICLES_COLLECTION = 'vehicles';
+const VEHICLE_LOG_COLLECTION = 'vehicle_log';
 
-const setInStorage = <T>(key: string, data: T[]) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(key, JSON.stringify(data));
-};
+const vehiclesCollectionRef = collection(db, VEHICLES_COLLECTION);
+const vehicleLogCollectionRef = collection(db, VEHICLE_LOG_COLLECTION);
+
 
 // --- Vehicle Management ---
-export const addVehicle = (vehicleData: Omit<VehicleFormData, 'id'>): string => {
-    const vehicles = getFromStorage<VehicleFormData>(VEHICLES_KEY);
-    const newId = `vhc_${new Date().getTime()}_${Math.random()}`;
-    const newVehicle = { id: newId, ...vehicleData };
-    const updatedVehicles = [...vehicles, newVehicle];
-    setInStorage(VEHICLES_KEY, updatedVehicles);
-    return newId;
+export const addVehicle = async (vehicleData: Omit<VehicleFormData, 'id'>): Promise<string> => {
+    const docRef = await addDoc(vehiclesCollectionRef, vehicleData);
+    await updateDoc(docRef, { id: docRef.id });
+    return docRef.id;
 };
 
-export const updateVehicle = (vehicleId: string, vehicleData: Partial<VehicleFormData>): void => {
-    let vehicles = getFromStorage<VehicleFormData>(VEHICLES_KEY);
-    vehicles = vehicles.map(v => v.id === vehicleId ? { ...v, ...vehicleData } : v);
-    setInStorage(VEHICLES_KEY, vehicles);
+export const updateVehicle = async (vehicleId: string, vehicleData: Partial<VehicleFormData>): Promise<void> => {
+    const vehicleDocRef = doc(db, VEHICLES_COLLECTION, vehicleId);
+    await updateDoc(vehicleDocRef, vehicleData);
 };
 
-export const deleteVehicle = (vehicleId: string): void => {
-    let vehicles = getFromStorage<VehicleFormData>(VEHICLES_KEY);
-    vehicles = vehicles.filter(v => v.id !== vehicleId);
-    setInStorage(VEHICLES_KEY, vehicles);
+export const deleteVehicle = async (vehicleId: string): Promise<void> => {
+    // Also delete the logs for this vehicle
+    const batch = writeBatch(db);
+    const vehicleDocRef = doc(db, VEHICLES_COLLECTION, vehicleId);
+    batch.delete(vehicleDocRef);
+
+    const logsQuery = query(vehicleLogCollectionRef, where('id', '==', vehicleId));
+    const logsSnapshot = await getDocs(logsQuery);
+    logsSnapshot.forEach(logDoc => {
+        batch.delete(logDoc.ref);
+    });
+
+    await batch.commit();
 };
 
-export const getVehicles = (): VehicleFormData[] => {
-    return getFromStorage<VehicleFormData>(VEHICLES_KEY);
+export const getVehicles = async (): Promise<VehicleFormData[]> => {
+    const querySnapshot = await getDocs(vehiclesCollectionRef);
+    const vehicles: VehicleFormData[] = [];
+    querySnapshot.forEach((doc) => {
+        vehicles.push({ id: doc.id, ...doc.data() } as VehicleFormData);
+    });
+    return vehicles;
 };
 
 // --- Vehicle Log Management ---
-export const addVehicleLog = (logData: Omit<VehicleLogEntry, 'logId'>): string => {
-    const logs = getFromStorage<VehicleLogEntry>(VEHICLE_LOG_KEY);
-    const newId = `log_vhc_${new Date().getTime()}_${Math.random()}`;
-    const newLog = { logId: newId, ...logData };
-    const updatedLogs = [...logs, newLog];
-    setInStorage(VEHICLE_LOG_KEY, updatedLogs);
-    return newId;
+export const addVehicleLog = async (logData: Omit<VehicleLogEntry, 'logId'>): Promise<string> => {
+    const docRef = await addDoc(vehicleLogCollectionRef, {
+        ...logData,
+        timestamp: Timestamp.fromDate(new Date(logData.timestamp))
+    });
+    await updateDoc(docRef, { logId: docRef.id });
+    return docRef.id;
 };
 
-export const updateVehicleLog = (logId: string, logData: Partial<Omit<VehicleLogEntry, 'logId' | 'id'>>): void => {
-    let logs = getFromStorage<VehicleLogEntry>(VEHICLE_LOG_KEY);
-    logs = logs.map(l => l.logId === logId ? { ...l, ...logData } : l);
-    setInStorage(VEHICLE_LOG_KEY, logs);
+export const updateVehicleLog = async (logId: string, logData: Partial<Omit<VehicleLogEntry, 'logId' | 'id'>>): Promise<void> => {
+    const logDocRef = doc(db, VEHICLE_LOG_COLLECTION, logId);
+    const updateData = { ...logData } as any;
+    if (logData.timestamp) {
+        updateData.timestamp = Timestamp.fromDate(new Date(logData.timestamp));
+    }
+    await updateDoc(logDocRef, updateData);
 };
 
-export const deleteVehicleLog = (logId: string): void => {
-    let logs = getFromStorage<VehicleLogEntry>(VEHICLE_LOG_KEY);
-    logs = logs.filter(l => l.logId !== logId);
-    setInStorage(VEHICLE_LOG_KEY, logs);
+export const deleteVehicleLog = async (logId: string): Promise<void> => {
+    const logDocRef = doc(db, VEHICLE_LOG_COLLECTION, logId);
+    await deleteDoc(logDocRef);
 };
 
-export const getVehicleLog = (): VehicleLogEntry[] => {
-    return getFromStorage<VehicleLogEntry>(VEHICLE_LOG_KEY);
+export const getVehicleLog = async (): Promise<VehicleLogEntry[]> => {
+    const q = query(vehicleLogCollectionRef, orderBy('timestamp', 'desc'));
+    const querySnapshot = await getDocs(q);
+    const logs: VehicleLogEntry[] = [];
+    querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        logs.push({ 
+            ...data,
+            timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+        } as VehicleLogEntry);
+    });
+    return logs;
 };
 
-export const getLastVehicleLog = (vehicleId: string): VehicleLogEntry | null => {
-    const logs = getFromStorage<VehicleLogEntry>(VEHICLE_LOG_KEY);
-    const vehicleLogs = logs
-        .filter(log => log.id === vehicleId)
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    return vehicleLogs.length > 0 ? vehicleLogs[0] : null;
+export const getLastVehicleLog = async (vehicleId: string): Promise<VehicleLogEntry | null> => {
+    const q = query(
+        vehicleLogCollectionRef,
+        where('id', '==', vehicleId),
+        orderBy('timestamp', 'desc'),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
+    }
+    const data = querySnapshot.docs[0].data();
+    return {
+        ...data,
+        timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+    } as VehicleLogEntry
 };
