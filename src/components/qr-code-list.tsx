@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Users, Search, Printer } from 'lucide-react';
+import { Trash2, Users, Search, Printer, Lock } from 'lucide-react';
 import type { QrFormData } from './qr-generator';
 
 interface QrCodeListProps {
@@ -133,7 +133,7 @@ export function QrCodeList({ employees, onClear, disabled = false }: QrCodeListP
       <CardContent>
         {disabled ? (
              <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
-                <Users className="h-10 w-10 mb-4" />
+                <Lock className="h-10 w-10 mb-4" />
                 <p className="font-semibold">Acesso Negado</p>
                 <p className="text-sm">Seu perfil não pode visualizar ou imprimir QR Codes.</p>
             </div>

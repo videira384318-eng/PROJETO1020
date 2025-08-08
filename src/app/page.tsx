@@ -35,7 +35,7 @@ export default function Home() {
   const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   
   const calculateStorage = useCallback((employeesData: QrFormData[], scansData: AttendanceScan[]) => {
     try {
@@ -325,6 +325,9 @@ export default function Home() {
   
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
+  const canManageEmployees = userProfile?.role === 'adm' || userProfile?.role === 'rh';
+  const canViewQRCodes = userProfile?.role === 'adm';
+  const canScan = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
 
   if (isLoading || !currentUser) {
     return (
@@ -366,7 +369,7 @@ export default function Home() {
             <UploadCloud className="mr-2 h-4 w-4" />
             Migrar Dados Antigos
           </Button>
-          <QRGenerator onAddEmployee={handleAddEmployee} />
+          {canManageEmployees && <QRGenerator onAddEmployee={handleAddEmployee} />}
         </div>
       </AppHeader>
       
@@ -380,13 +383,13 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="flex flex-col gap-8 lg:col-span-1">
-            <QRScanner ref={qrScannerRef} onScan={handleScan} />
+            <QRScanner ref={qrScannerRef} onScan={handleScan} disabled={!canScan}/>
         </div>
         <div className="lg:col-span-2">
             <Tabs defaultValue="employees" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="employees">Funcionários</TabsTrigger>
-                    <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
+                    {canViewQRCodes && <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>}
                     <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
                 <TabsContent value="employees">
@@ -401,11 +404,14 @@ export default function Home() {
                     onToggleSelection={handleToggleEmployeeSelection}
                     onToggleSelectAll={handleToggleSelectAll}
                     onDeleteSelected={handleDeleteSelectedEmployees}
+                    canManage={canManageEmployees}
                     />
                 </TabsContent>
-                <TabsContent value="qrcodes">
-                    <QrCodeList employees={employees} onClear={handleClearEmployees} />
-                </TabsContent>
+                {canViewQRCodes && (
+                  <TabsContent value="qrcodes">
+                      <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canViewQRCodes}/>
+                  </TabsContent>
+                )}
                 <TabsContent value="history">
                     <div className="flex flex-col lg:flex-row gap-8">
                         {showCalendar && (

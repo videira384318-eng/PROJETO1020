@@ -39,6 +39,7 @@ interface EmployeeListProps {
   onToggleSelection: (employeeId: string) => void;
   onToggleSelectAll: () => void;
   onDeleteSelected: () => void;
+  canManage: boolean;
 }
 
 export function EmployeeList({ 
@@ -51,7 +52,8 @@ export function EmployeeList({
   numTotal,
   onToggleSelection,
   onToggleSelectAll,
-  onDeleteSelected
+  onDeleteSelected,
+  canManage
  }: EmployeeListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
@@ -102,7 +104,7 @@ export function EmployeeList({
                 <CardDescription>Visualize, gerencie e registre o ponto dos funcionários.</CardDescription>
             </div>
              <div className="flex items-center gap-2 w-full md:w-auto">
-                {numSelected > 0 && (
+                {canManage && numSelected > 0 && (
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
@@ -134,7 +136,7 @@ export function EmployeeList({
                         onKeyDown={handleKeyDown}
                     />
                 </div>
-                {employees.length > 0 && (
+                {canManage && employees.length > 0 && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" disabled={employees.length === 0}>
@@ -178,13 +180,13 @@ export function EmployeeList({
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-[40px]">
+                        {canManage && <TableHead className="w-[40px]">
                             <Checkbox 
                             checked={numTotal > 0 && numSelected === numTotal}
                             indeterminate={numSelected > 0 && numSelected < numTotal}
                             onCheckedChange={onToggleSelectAll}
                             />
-                        </TableHead>
+                        </TableHead>}
                     <TableHead>Nome</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Placa</TableHead>
@@ -200,13 +202,13 @@ export function EmployeeList({
                         data-state={selectedEmployees.includes(employee.id!) ? 'selected' : ''}
                         className="group"
                     >
-                        <TableCell onClick={stopPropagation}>
+                        {canManage && <TableCell onClick={stopPropagation}>
                             <Checkbox
                                 checked={selectedEmployees.includes(employee.id!)}
                                 onCheckedChange={() => onToggleSelection(employee.id!)}
                                 aria-label={`Selecionar ${employee.nome}`}
                             />
-                        </TableCell>
+                        </TableCell>}
                         <TableCell className="font-medium">{employee.nome}</TableCell>
                         <TableCell>{employee.setor}</TableCell>
                         <TableCell>{employee.placa || 'N/A'}</TableCell>
@@ -230,7 +232,7 @@ export function EmployeeList({
                                         <p>Registrar Ponto Manual</p>
                                     </TooltipContent>
                                 </Tooltip>
-                                <Tooltip>
+                                {canManage && <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button variant="ghost" size="icon" onClick={() => onEdit(employee)}>
                                             <Edit className="h-4 w-4" />
@@ -240,7 +242,7 @@ export function EmployeeList({
                                     <TooltipContent>
                                         <p>Editar Funcionário</p>
                                     </TooltipContent>
-                                </Tooltip>
+                                </Tooltip>}
                             </div>
                         </TableCell>
                     </TableRow>
