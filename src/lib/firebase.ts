@@ -1,3 +1,4 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
@@ -6,12 +7,13 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  "apiKey": "YOUR_API_KEY",
-  "authDomain": "YOUR_AUTH_DOMAIN",
-  "projectId": "YOUR_PROJECT_ID",
-  "storageBucket": "YOUR_STORAGE_BUCKET",
-  "messagingSenderId": "YOUR_MESSAGING_SENDER_ID",
-  "appId": "YOUR_APP_ID"
+  "projectId": "controle-de-acesso-zd058",
+  "appId": "1:760150993338:web:206cedb3fa7557c8029583",
+  "storageBucket": "controle-de-acesso-zd058.firebasestorage.app",
+  "apiKey": "AIzaSyALrLfhoIXcToFkwSWox6XDBOotwrDan94",
+  "authDomain": "controle-de-acesso-zd058.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "760150993338"
 };
 
 // Initialize Firebase
