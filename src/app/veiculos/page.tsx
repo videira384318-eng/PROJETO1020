@@ -88,7 +88,7 @@ export default function VeiculosPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (userProfile?.role === 'adm' || userProfile?.role === 'portaria') {
+    if (userProfile?.role === 'adm' || userProfile?.role === 'portaria' || userProfile?.role === 'supervisao') {
         refreshData();
     } else {
         setIsLoading(false);
@@ -242,6 +242,9 @@ export default function VeiculosPage() {
     });
   }, [vehicles, vehicleLog]);
 
+  const canManageVehicles = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
+  const isSupervisaoOnly = userProfile?.role === 'supervisao';
+
 
   if (isLoading || !currentUser) {
     return (
@@ -269,7 +272,7 @@ export default function VeiculosPage() {
     );
   }
   
-  if (userProfile?.role !== 'adm' && userProfile?.role !== 'portaria') {
+  if (!canManageVehicles && !isSupervisaoOnly) {
     return (
         <main className="container mx-auto p-4 md:p-8">
              <AppHeader
@@ -289,123 +292,132 @@ export default function VeiculosPage() {
         activePage="vehicles"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2"><Truck className="h-6 w-6"/> Novo Veículo</CardTitle>
-            <CardDescription>Preencha os dados abaixo para registrar.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleAddVehicle)} className="space-y-4">
-                <fieldset>
-                    <FormField
-                    control={form.control}
-                    name="placa"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Placa</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ex: BRA2E19" {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="condutor"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Condutor</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ex: João da Silva" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="portaria"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                        <FormLabel>Portaria Comum</FormLabel>
-                        <FormControl>
-                            <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex items-center space-x-4"
-                            >
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="p1" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                P1
-                                </FormLabel>
+      <div className={`grid grid-cols-1 ${isSupervisaoOnly ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8 items-start`}>
+        {canManageVehicles && (
+            <Card className="lg:col-span-1">
+            <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><Truck className="h-6 w-6"/> Novo Veículo</CardTitle>
+                <CardDescription>Preencha os dados abaixo para registrar.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleAddVehicle)} className="space-y-4">
+                    <fieldset>
+                        <FormField
+                        control={form.control}
+                        name="placa"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Placa</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: BRA2E19" {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                            </FormControl>
+                            <FormMessage />
                             </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="p2" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                P2
-                                </FormLabel>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="condutor"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Condutor</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: João da Silva" {...field} />
+                            </FormControl>
+                            <FormMessage />
                             </FormItem>
-                            </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                </fieldset>
-                <Button type="submit" className="w-full">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Salvar Veículo
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="portaria"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel>Portaria Comum</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex items-center space-x-4"
+                                >
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="p1" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                    P1
+                                    </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="p2" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                    P2
+                                    </FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    </fieldset>
+                    <Button type="submit" className="w-full">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Salvar Veículo
+                    </Button>
+                </form>
+                </Form>
+            </CardContent>
+            </Card>
+        )}
 
-        <div className="lg:col-span-2">
-            <Tabs defaultValue="vehicles">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="vehicles">Veículos Cadastrados</TabsTrigger>
+        <div className={isSupervisaoOnly ? 'lg:col-span-1' : 'lg:col-span-2'}>
+            <Tabs defaultValue={isSupervisaoOnly ? "history" : "vehicles"}>
+                <TabsList className={`grid w-full ${isSupervisaoOnly ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {!isSupervisaoOnly && <TabsTrigger value="vehicles">Veículos Cadastrados</TabsTrigger>}
                     <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="vehicles">
-                    <VehicleList 
-                        vehicles={vehiclesWithStatus}
-                        onDelete={handleDeleteVehicle}
-                        onVehicleClick={handleVehicleClick}
-                    />
-                </TabsContent>
+                 {!isSupervisaoOnly && (
+                    <TabsContent value="vehicles">
+                        <VehicleList 
+                            vehicles={vehiclesWithStatus}
+                            onDelete={handleDeleteVehicle}
+                            onVehicleClick={handleVehicleClick}
+                        />
+                    </TabsContent>
+                 )}
                  <TabsContent value="history">
                     <VehicleHistory
                         log={vehicleLog}
                         onEdit={handleEditLogEntry}
                         onDelete={handleDeleteVehicleLog}
+                        canManage={canManageVehicles}
                     />
                 </TabsContent>
             </Tabs>
         </div>
       </div>
       
-      <VehicleMovementDialog
-        isOpen={!!movementVehicle}
-        onClose={() => setMovementVehicle(null)}
-        vehicle={movementVehicle}
-        onSubmit={handleMovementSubmit}
-      />
-      
-      <EditVehicleLogDialog
-        isOpen={!!editingLogEntry}
-        onClose={() => setEditingLogEntry(null)}
-        logEntry={editingLogEntry}
-        onSubmit={handleEditLogSubmit}
-      />
+      {canManageVehicles && (
+        <>
+            <VehicleMovementDialog
+                isOpen={!!movementVehicle}
+                onClose={() => setMovementVehicle(null)}
+                vehicle={movementVehicle}
+                onSubmit={handleMovementSubmit}
+            />
+            
+            <EditVehicleLogDialog
+                isOpen={!!editingLogEntry}
+                onClose={() => setEditingLogEntry(null)}
+                logEntry={editingLogEntry}
+                onSubmit={handleEditLogSubmit}
+            />
+        </>
+      )}
 
     </main>
   );

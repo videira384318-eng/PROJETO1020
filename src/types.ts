@@ -11,7 +11,7 @@ export interface AttendanceScan {
   export interface UserProfile {
     uid: string;
     email: string;
-    role: 'adm' | 'rh' | 'portaria';
+    role: 'adm' | 'rh' | 'portaria' | 'supervisao';
     permissions: string[];
   }
   

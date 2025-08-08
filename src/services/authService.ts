@@ -14,7 +14,7 @@ import type { UserProfile } from "@/types";
 const auth = getAuth(app);
 const USERS_COLLECTION = 'usuarios';
 
-export const signUpUser = async (email: string, password: string, role: 'adm' | 'rh' | 'portaria'): Promise<User> => {
+export const signUpUser = async (email: string, password: string, role: 'adm' | 'rh' | 'portaria' | 'supervisao'): Promise<User> => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 

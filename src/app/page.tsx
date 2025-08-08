@@ -307,9 +307,13 @@ export default function Home() {
   
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
+  
+  // Permissions
   const canManageEmployees = userProfile?.role === 'adm' || userProfile?.role === 'rh';
   const canViewQRCodes = userProfile?.role === 'adm';
   const canScan = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
+  const canViewHistory = userProfile?.role === 'adm' || userProfile?.role === 'rh' || userProfile?.role === 'supervisao';
+  const isSupervisaoOnly = userProfile?.role === 'supervisao';
 
   if (isLoading || !currentUser) {
     return (
@@ -357,75 +361,84 @@ export default function Home() {
         </div>
       </AppHeader>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="flex flex-col gap-8 lg:col-span-1">
-            <QRScanner ref={qrScannerRef} onScan={handleScan} disabled={!canScan}/>
-        </div>
-        <div className="lg:col-span-2">
-            <Tabs defaultValue="employees" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="employees">Funcionários</TabsTrigger>
-                    <TabsTrigger value="qrcodes" disabled={!canViewQRCodes}>QR Codes</TabsTrigger>
-                    <TabsTrigger value="history">Histórico</TabsTrigger>
+      <div className={`grid grid-cols-1 ${isSupervisaoOnly ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8 items-start`}>
+        {!isSupervisaoOnly && (
+            <div className="flex flex-col gap-8 lg:col-span-1">
+                <QRScanner ref={qrScannerRef} onScan={handleScan} disabled={!canScan}/>
+            </div>
+        )}
+        <div className={isSupervisaoOnly ? 'lg:col-span-1' : 'lg:col-span-2'}>
+            <Tabs defaultValue={isSupervisaoOnly ? "history" : "employees"} className="w-full">
+                <TabsList className={`grid w-full ${isSupervisaoOnly ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                    {!isSupervisaoOnly && <TabsTrigger value="employees">Funcionários</TabsTrigger>}
+                    {!isSupervisaoOnly && <TabsTrigger value="qrcodes" disabled={!canViewQRCodes}>QR Codes</TabsTrigger>}
+                    {canViewHistory && <TabsTrigger value="history">Histórico</TabsTrigger>}
                 </TabsList>
-                <TabsContent value="employees">
-                    <EmployeeList 
-                    employees={employeesWithStatus} 
-                    onClear={handleClearEmployees} 
-                    onManualEntry={handleManualEntry}
-                    onEdit={handleEditClick}
-                    selectedEmployees={selectedEmployees}
-                    numSelected={numSelected}
-                    numTotal={numTotal}
-                    onToggleSelection={handleToggleEmployeeSelection}
-                    onToggleSelectAll={handleToggleSelectAll}
-                    onDeleteSelected={handleDeleteSelectedEmployees}
-                    canManage={canManageEmployees}
-                    />
-                </TabsContent>
                 
-                <TabsContent value="qrcodes">
-                    <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canViewQRCodes}/>
-                </TabsContent>
+                {!isSupervisaoOnly && (
+                    <TabsContent value="employees">
+                        <EmployeeList 
+                        employees={employeesWithStatus} 
+                        onClear={handleClearEmployees} 
+                        onManualEntry={handleManualEntry}
+                        onEdit={handleEditClick}
+                        selectedEmployees={selectedEmployees}
+                        numSelected={numSelected}
+                        numTotal={numTotal}
+                        onToggleSelection={handleToggleEmployeeSelection}
+                        onToggleSelectAll={handleToggleSelectAll}
+                        onDeleteSelected={handleDeleteSelectedEmployees}
+                        canManage={canManageEmployees}
+                        />
+                    </TabsContent>
+                )}
                 
-                <TabsContent value="history">
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        {showCalendar && (
-                            <div className="flex-shrink-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={selectedDate}
-                                    onSelect={(date) => {
-                                        setSelectedDate(date);
-                                        setShowCalendar(false);
-                                    }}
-                                    className="rounded-md border"
-                                    initialFocus
+                {!isSupervisaoOnly && (
+                    <TabsContent value="qrcodes">
+                        <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canViewQRCodes}/>
+                    </TabsContent>
+                )}
+                
+                {canViewHistory && (
+                    <TabsContent value="history">
+                        <div className="flex flex-col lg:flex-row gap-8">
+                            {showCalendar && (
+                                <div className="flex-shrink-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={selectedDate}
+                                        onSelect={(date) => {
+                                            setSelectedDate(date);
+                                            setShowCalendar(false);
+                                        }}
+                                        className="rounded-md border"
+                                        initialFocus
+                                    />
+                                </div>
+                            )}
+                            <div className="flex-grow w-full">
+                                <AttendanceLog 
+                                    scans={sortedScansForLog} 
+                                    getEmployeeNameById={getEmployeeNameById}
+                                    onDelete={handleDeleteScan}
+                                    onToggleCalendar={() => setShowCalendar(prev => !prev)}
+                                    isCalendarOpen={showCalendar}
+                                    canDelete={canManageEmployees}
                                 />
                             </div>
-                        )}
-                        <div className="flex-grow w-full">
-                            <AttendanceLog 
-                                scans={sortedScansForLog} 
-                                getEmployeeNameById={getEmployeeNameById}
-                                onDelete={handleDeleteScan}
-                                onToggleCalendar={() => setShowCalendar(prev => !prev)}
-                                isCalendarOpen={showCalendar}
-                                canDelete={canManageEmployees}
-                            />
                         </div>
-                    </div>
-                </TabsContent>
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
       </div>
     </main>
-    <EditEmployeeDialog 
+    {canManageEmployees && <EditEmployeeDialog 
       isOpen={!!editingEmployee}
       onClose={() => setEditingEmployee(null)}
       employee={editingEmployee}
       onSubmit={handleUpdateEmployee}
-    />
+    />}
     </>
   );
 }
