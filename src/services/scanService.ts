@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, deleteDoc, query, where, orderBy, limit, getDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, deleteDoc, query, where, orderBy, limit, getDoc, updateDoc } from 'firebase/firestore';
 import type { AttendanceScan } from '@/types';
 
 const SCANS_COLLECTION = 'scans';
