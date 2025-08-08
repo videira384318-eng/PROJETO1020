@@ -107,6 +107,23 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+            {userProfile?.role === 'adm' && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button asChild variant={activePage === 'management' ? "default" : "outline"} size="icon">
+                                <Link href="/management">
+                                    <Settings className="h-5 w-5" />
+                                    <span className="sr-only">Página de Gerenciamento</span>
+                                </Link>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Gerenciamento</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
             <ThemeToggle />
             <TooltipProvider>
                  <Tooltip>
