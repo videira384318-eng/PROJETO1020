@@ -1,11 +1,12 @@
 {
-  "name": "Controle de Ponto QR",
-  "short_name": "PontoQR",
-  "description": "Aplicativo para controle de ponto por QR Code",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#FFFFFF",
   "theme_color": "#FFFFFF",
+  "background_color": "#FFFFFF",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "name": "Controle de Ponto QR",
+  "short_name": "Ponto QR",
+  "description": "Aplicativo para controle de ponto por QR Code.",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
