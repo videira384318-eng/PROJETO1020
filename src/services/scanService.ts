@@ -28,17 +28,9 @@ export const getScans = async (): Promise<AttendanceScan[]> => {
 };
 
 export const getLastScanForEmployee = async (employeeId: string): Promise<AttendanceScan | null> => {
-    const q = query(
-        scansCollectionRef,
-        where('employeeId', '==', employeeId),
-        orderBy('scanTime', 'desc'),
-        limit(1)
-    );
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-        return null;
-    }
-    return querySnapshot.docs[0].data() as AttendanceScan;
+    const allScans = await getScans();
+    const lastScan = allScans.find(scan => scan.employeeId === employeeId);
+    return lastScan || null;
 };
 
 export const deleteScan = async (scanId: string): Promise<void> => {
