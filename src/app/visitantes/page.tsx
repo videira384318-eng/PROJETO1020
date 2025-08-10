@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReEntryDialog, type ReEntryFormData } from '@/components/re-entry-dialog';
+import { Calendar } from "@/components/ui/calendar";
+import { isSameDay } from 'date-fns';
 import {
     addVisitor,
     updateVisitor,
@@ -56,6 +58,8 @@ export default function VisitantesPage() {
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [reEntryVisitor, setReEntryVisitor] = useState<VisitorFormData | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
   const { currentUser, userProfile } = useAuth();
 
@@ -274,6 +278,21 @@ export default function VisitantesPage() {
 
     return Object.values(latestVisitorRecord);
   }, [visitors]);
+
+  const sortedVisitorsForLog = useMemo(() => {
+    const filteredVisitors = selectedDate 
+      ? visitors.filter(visitor => {
+          const visitDate = visitor.entryTime || visitor.createdAt;
+          return visitDate && isSameDay(new Date(visitDate), selectedDate)
+      })
+      : visitors;
+
+    return filteredVisitors.sort((a,b) => {
+        const timeA = a.exitTime || a.entryTime || a.createdAt;
+        const timeB = b.exitTime || b.entryTime || b.createdAt;
+        return new Date(timeB!).getTime() - new Date(timeA!).getTime();
+    });
+  }, [visitors, selectedDate]);
   
   const numSelected = selectedVisitors.length;
   const numTotal = currentVisitors.length;
@@ -495,11 +514,31 @@ export default function VisitantesPage() {
                     </TabsContent>
                 )}
                  <TabsContent value="history">
-                    <VisitorHistory
-                        visitors={visitors}
-                        onDelete={handleDeleteVisitorLog}
-                        canManage={canManageVisitors}
-                    />
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {showCalendar && (
+                            <div className="flex-shrink-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={(date) => {
+                                        setSelectedDate(date);
+                                        setShowCalendar(false);
+                                    }}
+                                    className="rounded-md border"
+                                    initialFocus
+                                />
+                            </div>
+                        )}
+                        <div className="flex-grow w-full">
+                            <VisitorHistory
+                                visitors={sortedVisitorsForLog}
+                                onDelete={handleDeleteVisitorLog}
+                                canManage={canManageVisitors}
+                                onToggleCalendar={() => setShowCalendar(prev => !prev)}
+                                isCalendarOpen={showCalendar}
+                            />
+                        </div>
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>

@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Search, History, Users, Trash2 } from 'lucide-react';
+import { Search, History, Users, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { VisitorFormData } from '@/app/visitantes/page';
 import { Badge } from './ui/badge';
@@ -25,31 +25,25 @@ interface VisitorHistoryProps {
   visitors: VisitorFormData[];
   onDelete: (visitId: string) => void;
   canManage: boolean;
+  onToggleCalendar: () => void;
+  isCalendarOpen: boolean;
 }
 
-export function VisitorHistory({ visitors, onDelete, canManage }: VisitorHistoryProps) {
+export function VisitorHistory({ visitors, onDelete, canManage, onToggleCalendar, isCalendarOpen }: VisitorHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
-
-  const sortedVisitors = useMemo(() => {
-    return [...visitors].sort((a, b) => {
-        const timeA = a.exitTime || a.entryTime || a.createdAt;
-        const timeB = b.exitTime || b.entryTime || b.createdAt;
-        return new Date(timeB!).getTime() - new Date(timeA!).getTime();
-    });
-  }, [visitors]);
 
   const filteredVisitors = useMemo(() => {
     if (!searchTerm) {
-      return sortedVisitors;
+      return visitors;
     }
-    return sortedVisitors.filter(visitor =>
+    return visitors.filter(visitor =>
       visitor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.rg.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (visitor.placa && visitor.placa.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [sortedVisitors, searchTerm]);
+  }, [visitors, searchTerm]);
   
   const getStatusBadge = (status: VisitorFormData['status']) => {
     switch (status) {
@@ -63,21 +57,27 @@ export function VisitorHistory({ visitors, onDelete, canManage }: VisitorHistory
   }
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <CardTitle className="font-headline flex items-center gap-2"><History className="w-6 h-6"/> Histórico de Visitas</CardTitle>
                 <CardDescription>Consulte todos os registros de entrada e saída.</CardDescription>
             </div>
-            <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Pesquisar no histórico..." 
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar no histórico..." 
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                 <Button onClick={onToggleCalendar} variant="outline" size="icon">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span className="sr-only">{isCalendarOpen ? 'Fechar Calendário' : 'Abrir Calendário'}</span>
+                </Button>
             </div>
         </div>
       </CardHeader>
@@ -92,7 +92,7 @@ export function VisitorHistory({ visitors, onDelete, canManage }: VisitorHistory
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
                 <Search className="h-10 w-10 mb-4" />
                 <p className="font-semibold">Nenhum resultado encontrado</p>
-                <p className="text-sm">Tente uma busca diferente.</p>
+                <p className="text-sm">Tente uma busca diferente ou ajuste a data.</p>
             </div>
         ) : (
           <div className="border rounded-md">
