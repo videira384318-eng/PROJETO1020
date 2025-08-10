@@ -56,7 +56,7 @@ export function VisitorList({
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedVisitors = useMemo(() => {
-    // Show visitors who are 'inside' or 'registered' first, then 'exited'
+    // Show visitors who are 'inside' first, then 'exited'
     return [...visitors].sort((a, b) => {
         const statusOrder = { 'inside': 1, 'exited': 2 };
         const statusA = statusOrder[a.status!] || 3;
@@ -64,23 +64,28 @@ export function VisitorList({
         if (statusA !== statusB) {
             return statusA - statusB;
         }
-        return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+        // For visitors with the same status, sort by most recent
+        const timeA = a.entryTime || a.createdAt || 0;
+        const timeB = b.entryTime || b.createdAt || 0;
+        return new Date(timeB).getTime() - new Date(timeA).getTime()
     });
   }, [visitors]);
 
-  const filteredVisitors = useMemo(() => {
-    if (!searchTerm) {
-      return sortedVisitors;
+  const displayedVisitors = useMemo(() => {
+    // If there's a search term, search across all sorted visitors
+    if (searchTerm) {
+       return sortedVisitors.filter(visitor =>
+            visitor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            visitor.rg.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            visitor.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            visitor.motivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (visitor.placa && visitor.placa.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
     }
-    return sortedVisitors.filter(visitor =>
-      visitor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.rg.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.motivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (visitor.placa && visitor.placa.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // By default, only show visitors who are inside
+    return sortedVisitors.filter(v => v.status === 'inside');
   }, [sortedVisitors, searchTerm]);
   
   const getStatusBadge = (status: VisitorFormData['status']) => {
@@ -170,11 +175,11 @@ export function VisitorList({
             <p className="font-semibold">Nenhum visitante cadastrado</p>
             <p className="text-sm">Use o formulário para adicionar o primeiro.</p>
           </div>
-        ) : filteredVisitors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
+        ) : displayedVisitors.length === 0 ? (
+             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
                 <Search className="h-10 w-10 mb-4" />
                 <p className="font-semibold">Nenhum resultado encontrado</p>
-                <p className="text-sm">Tente uma busca diferente.</p>
+                <p className="text-sm">{searchTerm ? 'Tente um termo diferente.' : 'Nenhum visitante está atualmente dentro da empresa.'}</p>
             </div>
         ) : (
           <div className="border rounded-md text-xs">
@@ -202,7 +207,7 @@ export function VisitorList({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredVisitors.map((visitor) => (
+                    {displayedVisitors.map((visitor) => (
                          <TableRow 
                             key={visitor.id}
                             data-state={selectedVisitors.includes(visitor.personId!) ? 'selected' : ''}
