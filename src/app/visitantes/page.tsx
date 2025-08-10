@@ -58,7 +58,7 @@ export default function VisitantesPage() {
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [reEntryVisitor, setReEntryVisitor] = useState<VisitorFormData | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
   const { currentUser, userProfile } = useAuth();

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PlusCircle, Truck } from 'lucide-react';
+import { PlusCircle, Truck, Calendar as CalendarIcon } from 'lucide-react';
 import { VehicleList, type VehicleWithStatus } from '@/components/vehicle-list';
 import { VehicleHistory } from '@/components/vehicle-history';
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,8 @@ import { AppHeader } from '@/components/app-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VehicleMovementDialog, type MovementFormData } from '@/components/vehicle-movement-dialog';
 import { EditVehicleLogDialog, type EditLogFormData } from '@/components/edit-vehicle-log-dialog';
+import { Calendar } from "@/components/ui/calendar";
+import { isSameDay } from 'date-fns';
 import { 
     addVehicle, 
     deleteVehicle, 
@@ -56,6 +58,8 @@ export default function VeiculosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [movementVehicle, setMovementVehicle] = useState<VehicleWithStatus | null>(null);
   const [editingLogEntry, setEditingLogEntry] = useState<VehicleLogEntry | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
   const { currentUser, userProfile } = useAuth();
 
@@ -242,6 +246,15 @@ export default function VeiculosPage() {
     });
   }, [vehicles, vehicleLog]);
 
+  const sortedVehiclesForLog = useMemo(() => {
+    const filteredLog = selectedDate
+        ? vehicleLog.filter(log => isSameDay(new Date(log.timestamp), selectedDate))
+        : vehicleLog;
+    
+    return filteredLog.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [vehicleLog, selectedDate]);
+
+
   const canManageVehicles = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
   const isSupervisaoOnly = userProfile?.role === 'supervisao';
 
@@ -390,12 +403,32 @@ export default function VeiculosPage() {
                     </TabsContent>
                  )}
                  <TabsContent value="history">
-                    <VehicleHistory
-                        log={vehicleLog}
-                        onEdit={handleEditLogEntry}
-                        onDelete={handleDeleteVehicleLog}
-                        canManage={canManageVehicles}
-                    />
+                    <div className="flex flex-col lg:flex-row gap-8">
+                         {showCalendar && (
+                            <div className="flex-shrink-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={(date) => {
+                                        setSelectedDate(date);
+                                        setShowCalendar(false);
+                                    }}
+                                    className="rounded-md border"
+                                    initialFocus
+                                />
+                            </div>
+                        )}
+                        <div className="flex-grow w-full">
+                            <VehicleHistory
+                                log={sortedVehiclesForLog}
+                                onEdit={handleEditLogEntry}
+                                onDelete={handleDeleteVehicleLog}
+                                canManage={canManageVehicles}
+                                onToggleCalendar={() => setShowCalendar(prev => !prev)}
+                                isCalendarOpen={showCalendar}
+                            />
+                        </div>
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>

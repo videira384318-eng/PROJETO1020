@@ -28,7 +28,7 @@ export default function Home() {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [editingEmployee, setEditingEmployee] = useState<QrFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
 
@@ -287,7 +287,7 @@ export default function Home() {
 
   const sortedScansForLog = useMemo(() => {
     const filteredScans = selectedDate 
-      ? scans.filter(scan => isSameDay(new Date(scan.scanTime), selectedDate))
+      ? scans.filter(scan => isSameDay(new Date(scan.scanTime), selectedDate!))
       : scans;
 
     return filteredScans.sort((a,b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());

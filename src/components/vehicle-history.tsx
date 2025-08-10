@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Search, History, Truck, LogIn, LogOut, Pencil, Trash2 } from 'lucide-react';
+import { Search, History, Truck, LogIn, LogOut, Pencil, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { VehicleLogEntry } from '@/app/veiculos/page';
 import { Badge } from './ui/badge';
@@ -33,28 +33,26 @@ interface VehicleHistoryProps {
   onEdit: (logEntry: VehicleLogEntry) => void;
   onDelete: (logId: string) => void;
   canManage: boolean;
+  onToggleCalendar: () => void;
+  isCalendarOpen: boolean;
 }
 
 function translateScanType(scanType: 'entry' | 'exit') {
   return scanType === 'entry' ? 'Entrada' : 'Saída';
 }
 
-export function VehicleHistory({ log, onEdit, onDelete, canManage }: VehicleHistoryProps) {
+export function VehicleHistory({ log, onEdit, onDelete, canManage, onToggleCalendar, isCalendarOpen }: VehicleHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
-
-  const sortedLog = useMemo(() => {
-    return [...log].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [log]);
 
   const filteredLog = useMemo(() => {
     if (!searchTerm) {
-      return sortedLog;
+      return log;
     }
-    return sortedLog.filter(entry =>
+    return log.filter(entry =>
       entry.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.condutor.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [sortedLog, searchTerm]);
+  }, [log, searchTerm]);
 
   return (
     <Card>
@@ -64,14 +62,20 @@ export function VehicleHistory({ log, onEdit, onDelete, canManage }: VehicleHist
                 <CardTitle className="font-headline flex items-center gap-2"><History className="w-6 h-6"/> Histórico de Movimentação</CardTitle>
                 <CardDescription>Consulte e edite todos os registros de entrada e saída.</CardDescription>
             </div>
-            <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Pesquisar no histórico..." 
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar no histórico..." 
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                 <Button onClick={onToggleCalendar} variant="outline" size="icon">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span className="sr-only">{isCalendarOpen ? 'Fechar Calendário' : 'Abrir Calendário'}</span>
+                </Button>
             </div>
         </div>
       </CardHeader>
@@ -86,7 +90,7 @@ export function VehicleHistory({ log, onEdit, onDelete, canManage }: VehicleHist
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
                 <Search className="h-10 w-10 mb-4" />
                 <p className="font-semibold">Nenhum resultado encontrado</p>
-                <p className="text-sm">Tente uma busca diferente.</p>
+                <p className="text-sm">Tente uma busca diferente ou ajuste a data.</p>
             </div>
         ) : (
           <div className="border rounded-md">
