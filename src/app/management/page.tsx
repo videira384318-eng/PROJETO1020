@@ -32,9 +32,11 @@ export default function ManagementPage() {
     const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
     const { toast } = useToast();
 
+    const canManageUsers = userProfile?.role === 'adm' || userProfile?.role === 'rh';
+
     const refreshUsers = useCallback(async () => {
         setIsLoading(true);
-        if (userProfile?.role !== 'adm') {
+        if (!canManageUsers) {
             setIsLoading(false);
             return;
         }
@@ -51,7 +53,7 @@ export default function ManagementPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [userProfile?.role, toast]);
+    }, [canManageUsers, toast]);
 
     useEffect(() => {
         refreshUsers();
@@ -100,7 +102,7 @@ export default function ManagementPage() {
     }
 
 
-    if (userProfile?.role !== 'adm') {
+    if (!canManageUsers) {
         return (
             <main className="container mx-auto p-4 md:p-8">
                 <AppHeader
@@ -181,6 +183,7 @@ export default function ManagementPage() {
                 onClose={() => setEditingUser(null)}
                 user={editingUser}
                 onSubmit={handleUpdateUserRole}
+                currentUserRole={userProfile?.role}
             />
         </main>
     );

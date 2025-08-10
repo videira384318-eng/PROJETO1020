@@ -32,9 +32,10 @@ interface EditUserDialogProps {
   onClose: () => void;
   user: UserProfile | null;
   onSubmit: (uid: string, role: UserProfile['role']) => void;
+  currentUserRole?: UserProfile['role'];
 }
 
-export function EditUserDialog({ isOpen, onClose, user, onSubmit }: EditUserDialogProps) {
+export function EditUserDialog({ isOpen, onClose, user, onSubmit, currentUserRole }: EditUserDialogProps) {
   const form = useForm<EditUserFormData>({
     resolver: zodResolver(editUserFormSchema),
   });
@@ -61,6 +62,8 @@ export function EditUserDialog({ isOpen, onClose, user, onSubmit }: EditUserDial
 
   if (!user) return null;
 
+  const isCurrentUserAdmin = currentUserRole === 'adm';
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -78,7 +81,7 @@ export function EditUserDialog({ isOpen, onClose, user, onSubmit }: EditUserDial
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Perfil de Acesso</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isCurrentUserAdmin}>
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione um perfil" />
@@ -91,13 +94,16 @@ export function EditUserDialog({ isOpen, onClose, user, onSubmit }: EditUserDial
                                 <SelectItem value="supervisao">Supervisão</SelectItem>
                             </SelectContent>
                         </Select>
+                        {!isCurrentUserAdmin && (
+                            <p className="text-xs text-muted-foreground">Somente um Admin pode alterar o perfil de um usuário.</p>
+                        )}
                         <FormMessage />
                         </FormItem>
                     )}
                 />
 
                 <DialogFooter className="pt-4 sm:justify-start">
-                     <Button type="submit">
+                     <Button type="submit" disabled={!isCurrentUserAdmin}>
                         <Save className="mr-2 h-4 w-4" />
                         Salvar Alterações
                     </Button>
