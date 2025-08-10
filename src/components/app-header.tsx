@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, Users, Truck, Settings, LogOut } from "lucide-react";
+import { Home, Users, Truck, Settings, LogOut, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { signOutUser } from "@/services/authService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "./ui/badge";
+import { useEffect, useState } from "react";
 
 
 interface AppHeaderProps {
@@ -24,6 +25,34 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
   const router = useRouter();
   const { toast } = useToast();
   const { userProfile } = useAuth();
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setInstallPrompt(null);
+      });
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -57,6 +86,12 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
       </div>
       <div className="flex flex-col items-start md:items-end gap-2">
         <div className="flex items-center gap-2">
+            {installPrompt && (
+                <Button onClick={handleInstallClick}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar App
+                </Button>
+            )}
             {userProfile && (
                 <Badge variant="outline" className="text-sm">
                     {roleDisplayMap[userProfile.role]}

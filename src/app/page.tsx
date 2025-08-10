@@ -18,7 +18,7 @@ import { addEmployee, deleteEmployees, getEmployees, updateEmployee, addEmployee
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, Download } from 'lucide-react';
+import { UploadCloud } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 
@@ -31,39 +31,11 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showCalendar, setShowCalendar] = useState(false);
   const [lastScan, setLastScan] = useState<{data: string, time: number} | null>(null);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
   const { currentUser, userProfile } = useAuth();
   
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = () => {
-    if (installPrompt) {
-      installPrompt.prompt();
-      installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-        } else {
-          console.log('User dismissed the install prompt');
-        }
-        setInstallPrompt(null);
-      });
-    }
-  };
-
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -380,12 +352,6 @@ export default function Home() {
         activePage="employees"
       >
         <div className="flex items-center gap-2">
-            {installPrompt && (
-                <Button onClick={handleInstallClick}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Baixar App
-                </Button>
-            )}
           {userProfile?.role === 'adm' && (
             <Button variant="outline" onClick={handleMigrateData}>
               <UploadCloud className="mr-2 h-4 w-4" />
