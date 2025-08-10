@@ -146,22 +146,30 @@ export default function ManagementPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <Card className="lg:col-span-1">
                     <CardHeader>
-                        <CardTitle>Adicionar Novo Usuário</CardTitle>
+                        <CardTitle>Como Criar um Usuário</CardTitle>
                         <CardDescription>
-                            Para garantir a segurança, novos usuários devem ser criados diretamente no painel do Firebase.
+                            Siga os passos abaixo para adicionar um novo usuário e definir seu perfil de acesso.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ol className="list-decimal list-inside space-y-2 text-sm">
-                            <li>Clique no botão abaixo para abrir o painel de Autenticação.</li>
-                            <li>Clique em "Adicionar usuário".</li>
-                            <li>Preencha o email e senha.</li>
-                            <li>Após criar, o usuário aparecerá nesta lista e você poderá definir seu perfil.</li>
+                        <ol className="list-decimal list-inside space-y-3 text-sm">
+                            <li>
+                                <strong>Crie a autenticação no Firebase:</strong><br/>
+                                Clique no botão azul abaixo para abrir o painel de Autenticação em uma nova aba. Lá, clique em "Adicionar usuário", e preencha o email e uma senha para ele.
+                            </li>
+                             <li>
+                                <strong>Defina o perfil no sistema:</strong><br/>
+                                Volte para esta tela. O novo usuário aparecerá na "Lista de Usuários" com o perfil "Portaria" por padrão.
+                            </li>
+                            <li>
+                                <strong>Ajuste o perfil (se necessário):</strong><br/>
+                                Clique no ícone de lápis (<Pencil className="inline h-3 w-3" />) ao lado do novo usuário para mudar seu perfil para RH, Supervisão, etc. (Apenas Admins podem fazer isso).
+                            </li>
                         </ol>
-                        <Button asChild className="w-full mt-4">
+                        <Button asChild className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
                             <a href="https://console.firebase.google.com/project/controle-de-acesso-zd058/authentication/users" target="_blank" rel="noopener noreferrer">
-                                <PlusCircle />
-                                Adicionar Usuário no Firebase
+                                <PlusCircle className="mr-2"/>
+                                1. Adicionar Usuário no Firebase
                                 <ExternalLink className="ml-auto"/>
                             </a>
                         </Button>
@@ -188,3 +196,4 @@ export default function ManagementPage() {
         </main>
     );
 }
+
