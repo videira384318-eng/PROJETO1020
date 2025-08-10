@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { UserList } from '@/components/user-list';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ExternalLink } from 'lucide-react';
+import { PlusCircle, ExternalLink, Pencil } from 'lucide-react';
 import { getUsers, updateUserRole, deleteUser } from '@/services/userService';
 import type { UserProfile } from '@/types';
 import { useToast } from '@/hooks/use-toast';
