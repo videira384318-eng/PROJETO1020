@@ -47,9 +47,21 @@ export const onAuthUserStateChanged = (callback: (user: User | null, profile: Us
             if (docSnap.exists()) {
                 callback(user, docSnap.data() as UserProfile);
             } else {
-                // Profile doesn't exist, something is wrong
-                console.error("No user profile found for UID:", user.uid);
-                callback(user, null);
+                // Profile doesn't exist, create a default one
+                console.warn("No user profile found for UID:", user.uid, "Creating a default profile.");
+                const defaultProfile: UserProfile = {
+                    uid: user.uid,
+                    email: user.email!,
+                    role: 'portaria', // Assign a default, least-privileged role
+                    permissions: [],
+                };
+                try {
+                    await setDoc(userDocRef, defaultProfile);
+                    callback(user, defaultProfile);
+                } catch (error) {
+                    console.error("Failed to create default user profile:", error);
+                    callback(user, null); // Failed to create profile
+                }
             }
         } else {
             // User is signed out
