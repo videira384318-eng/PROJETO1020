@@ -12,8 +12,8 @@ const scansCollectionRef = collection(db, SCANS_COLLECTION);
 
 // --- Employee Management ---
 export const addEmployee = async (employeeData: Omit<QrFormData, 'id'>): Promise<string> => {
-    // New employees are active by default
-    const newEmployee = { ...employeeData, active: employeeData.active ?? true };
+    // New employees are active by default. This resolves the 'undefined' error.
+    const newEmployee = { ...employeeData, active: true };
     const docRef = await addDoc(employeesCollectionRef, newEmployee);
     // Add the firestore-generated id to the document
     await updateDoc(docRef, { id: docRef.id });
