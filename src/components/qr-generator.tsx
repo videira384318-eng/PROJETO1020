@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -31,7 +32,7 @@ const qrFormSchema = z.object({
 export type QrFormData = z.infer<typeof qrFormSchema>;
 
 interface QRGeneratorProps {
-    onAddEmployee: (data: Omit<QrFormData, 'id' | 'active'>) => void;
+    onAddEmployee: (data: Omit<QrFormData, 'id'>) => void;
 }
 
 export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
@@ -49,7 +50,8 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
   });
 
   const handleGenerate = (data: QrFormData) => {
-    const { id, active, ...employeeData } = data;
+    // Correctly pass all form data except the optional 'id'
+    const { id, ...employeeData } = data;
     onAddEmployee(employeeData);
     form.reset();
     setIsOpen(false);
