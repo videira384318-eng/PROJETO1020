@@ -43,7 +43,11 @@ export function EditEmployeeDialog({ isOpen, onClose, employee, onSubmit }: Edit
 
   useEffect(() => {
     if (employee) {
-        form.reset(employee);
+        // Ensure 'active' field has a default value if it's missing for older records
+        form.reset({
+            ...employee,
+            active: employee.active ?? true,
+        });
     }
   }, [employee, form]);
 

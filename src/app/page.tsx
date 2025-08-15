@@ -175,7 +175,7 @@ export default function Home() {
     }
   };
   
-  const handleAddEmployee = async (employeeData: Omit<QrFormData, 'id' | 'active'>) => {
+  const handleAddEmployee = async (employeeData: QrFormData) => {
     const employeeExists = employees.some(
       (e) => e.nome.trim().toLowerCase() === employeeData.nome.trim().toLowerCase()
     );

@@ -32,7 +32,7 @@ const qrFormSchema = z.object({
 export type QrFormData = z.infer<typeof qrFormSchema>;
 
 interface QRGeneratorProps {
-    onAddEmployee: (data: Omit<QrFormData, 'id'>) => void;
+    onAddEmployee: (data: QrFormData) => void;
 }
 
 export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
@@ -50,9 +50,7 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
   });
 
   const handleGenerate = (data: QrFormData) => {
-    // Correctly pass all form data except the optional 'id'
-    const { id, ...employeeData } = data;
-    onAddEmployee(employeeData);
+    onAddEmployee(data);
     form.reset();
     setIsOpen(false);
   };
