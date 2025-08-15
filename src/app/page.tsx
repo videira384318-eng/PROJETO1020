@@ -36,29 +36,22 @@ export default function Home() {
   const qrScannerRef = useRef<QRScannerRef>(null);
   const { currentUser, userProfile } = useAuth();
   
-  const refreshData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const allEmployees = await getEmployees();
-      const allScans = await getScans();
-      setEmployees(allEmployees);
-      setScans(allScans);
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar dados",
-        description: "Não foi possível buscar os dados do Firestore.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
-  
+    setIsLoading(true);
+    // Set up real-time listeners
+    const unsubscribeEmployees = getEmployees(setEmployees);
+    const unsubscribeScans = getScans(setScans);
+
+    // Initial loading is done, subsequent updates will be real-time
+    setIsLoading(false);
+
+    // Cleanup listeners on component unmount
+    return () => {
+      unsubscribeEmployees();
+      unsubscribeScans();
+    };
+  }, []);
+
   const handleMigrateData = async () => {
     toast({
       title: "Iniciando migração...",
@@ -101,11 +94,8 @@ export default function Home() {
         description: `${migratedEmployeesCount} funcionários e ${migratedScansCount} registros de ponto foram salvos na nuvem.`,
         className: 'bg-green-600 text-white'
       });
-
-      // 4. Atualizar a tela com os dados da nuvem
-      await refreshData();
       
-      // 5. (Opcional) Limpar dados locais após migração bem-sucedida
+      // 4. (Opcional) Limpar dados locais após migração bem-sucedida
       // localStorage.removeItem('employees');
       // localStorage.removeItem('scans');
 
@@ -173,7 +163,6 @@ export default function Home() {
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
       
-      await refreshData();
       qrScannerRef.current?.stopScanner();
 
     } catch (error) {
@@ -205,7 +194,6 @@ export default function Home() {
         title: "Funcionário Adicionado!",
         description: `${employeeData.nome} foi adicionado(a) à lista.`
     });
-    await refreshData();
   }
 
   const handleUpdateEmployee = async (employeeData: QrFormData) => {
@@ -215,7 +203,6 @@ export default function Home() {
         description: `Os dados de ${employeeData.nome} foram atualizados.`
     });
     setEditingEmployee(null);
-    await refreshData();
   }
   
   const handleClearEmployees = async () => {
@@ -230,7 +217,6 @@ export default function Home() {
     //     title: "Lista Limpa",
     //     description: "Todos os funcionários e seus registros foram removidos.",
     // });
-    // await refreshData();
   }
 
   const handleDeleteSelectedEmployees = async () => {
@@ -241,7 +227,6 @@ export default function Home() {
         title: "Funcionários Removidos",
         description: `Os ${count} funcionário(s) selecionado(s) e seus registros foram removidos.`,
     });
-    await refreshData();
   };
 
   const handleToggleEmployeeSelection = (employeeId: string) => {
@@ -267,7 +252,6 @@ export default function Home() {
         title: "Registro Excluído",
         description: "O registro de ponto foi removido do histórico.",
     });
-    await refreshData();
   }
   
   const handleManualEntry = (employee: QrFormData) => {

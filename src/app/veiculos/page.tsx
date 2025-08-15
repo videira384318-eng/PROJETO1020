@@ -73,36 +73,25 @@ export default function VeiculosPage() {
     },
   });
 
-  const refreshData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [allVehicles, allLogs] = await Promise.all([getVehicles(), getVehicleLog()]);
-      setVehicles(allVehicles);
-      setVehicleLog(allLogs);
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do Firestore.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
     if (userProfile?.role === 'adm' || userProfile?.role === 'portaria' || userProfile?.role === 'supervisao') {
-        refreshData();
+        setIsLoading(true);
+        const unsubscribeVehicles = getVehicles(setVehicles);
+        const unsubscribeVehicleLog = getVehicleLog(setVehicleLog);
+        setIsLoading(false);
+
+        return () => {
+            unsubscribeVehicles();
+            unsubscribeVehicleLog();
+        };
     } else {
         setIsLoading(false);
     }
-  }, [refreshData, userProfile]);
+  }, [userProfile]);
 
   const handleAddVehicle = async (data: VehicleFormData) => {
     try {
         await addVehicle(data);
-        await refreshData();
         toast({
           title: "Veículo Cadastrado!",
           description: `O veículo com placa ${data.placa} foi adicionado.`,
@@ -121,7 +110,6 @@ export default function VeiculosPage() {
   const handleDeleteVehicle = async (vehicleId: string) => {
     try {
         await deleteVehicle(vehicleId);
-        await refreshData();
         toast({
           title: "Veículo Removido",
           description: "O veículo foi removido da lista e seu histórico foi mantido.",
@@ -158,7 +146,6 @@ export default function VeiculosPage() {
     try {
         await addVehicleLog(newLogEntry);
         await updateVehicle(movementVehicle.id!, data);
-        await refreshData();
         
         toast({
             title: "Movimentação Registrada!",
@@ -184,7 +171,6 @@ export default function VeiculosPage() {
   const handleDeleteVehicleLog = async (logId: string) => {
     try {
         await deleteVehicleLog(logId);
-        await refreshData();
         toast({
           title: "Registro de Histórico Removido",
           description: "A movimentação foi removida do histórico.",
@@ -213,7 +199,6 @@ export default function VeiculosPage() {
     
     try {
         await updateVehicleLog(editingLogEntry.logId, updatedLogEntry);
-        await refreshData();
         toast({
             title: "Registro Atualizado!",
             description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,

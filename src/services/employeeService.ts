@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import type { QrFormData } from '@/components/qr-generator';
 
 const EMPLOYEES_COLLECTION = 'employees';
@@ -30,14 +30,23 @@ export const updateEmployee = async (employeeId: string, employeeData: QrFormDat
     await updateDoc(employeeDocRef, employeeData);
 };
 
-export const getEmployees = async (): Promise<QrFormData[]> => {
-    const querySnapshot = await getDocs(employeesCollectionRef);
-    const employees: QrFormData[] = [];
-    querySnapshot.forEach((doc) => {
-        employees.push({ id: doc.id, ...doc.data() } as QrFormData);
+export const getEmployees = (callback: (employees: QrFormData[]) => void): (() => void) => {
+    const q = query(employeesCollectionRef);
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const employees: QrFormData[] = [];
+        querySnapshot.forEach((doc) => {
+            employees.push({ id: doc.id, ...doc.data() } as QrFormData);
+        });
+        callback(employees);
+    }, (error) => {
+        console.error("Erro ao buscar funcionários em tempo real:", error);
+        callback([]);
     });
-    return employees;
+
+    return unsubscribe;
 };
+
 
 export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
     if (employeeIds.length === 0) return;

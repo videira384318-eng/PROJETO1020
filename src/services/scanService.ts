@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, deleteDoc, query, where, orderBy, limit, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, deleteDoc, query, where, orderBy, limit, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import type { AttendanceScan } from '@/types';
 
 const SCANS_COLLECTION = 'scans';
@@ -17,20 +17,32 @@ export const addScan = async (scanData: Omit<AttendanceScan, 'scanId' | 'id'>): 
     return newId;
 };
 
-export const getScans = async (): Promise<AttendanceScan[]> => {
+export const getScans = (callback: (scans: AttendanceScan[]) => void): (() => void) => {
     const q = query(scansCollectionRef, orderBy('scanTime', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const scans: AttendanceScan[] = [];
-    querySnapshot.forEach((doc) => {
-        scans.push(doc.data() as AttendanceScan);
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const scans: AttendanceScan[] = [];
+        querySnapshot.forEach((doc) => {
+            scans.push(doc.data() as AttendanceScan);
+        });
+        callback(scans);
+    }, (error) => {
+        console.error("Erro ao buscar registros em tempo real:", error);
+        callback([]);
     });
-    return scans;
+
+    return unsubscribe;
 };
 
+
 export const getLastScanForEmployee = async (employeeId: string): Promise<AttendanceScan | null> => {
-    const allScans = await getScans();
-    const lastScan = allScans.find(scan => scan.employeeId === employeeId);
-    return lastScan || null;
+    const q = query(scansCollectionRef, where('employeeId', '==', employeeId), orderBy('scanTime', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+    return querySnapshot.docs[0].data() as AttendanceScan;
 };
 
 export const deleteScan = async (scanId: string): Promise<void> => {

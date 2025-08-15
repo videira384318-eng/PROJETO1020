@@ -77,31 +77,17 @@ export default function VisitantesPage() {
     },
   });
 
-  const refreshData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const allVisitors = await getVisitors();
-      setVisitors(allVisitors);
-    } catch (error) {
-       console.error("Error refreshing data:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao Carregar Dados",
-        description: "Não foi possível buscar os dados do Firestore.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-
   useEffect(() => {
     if (userProfile?.role === 'adm' || userProfile?.role === 'portaria' || userProfile?.role === 'supervisao') {
-        refreshData();
+        setIsLoading(true);
+        const unsubscribe = getVisitors(setVisitors);
+        setIsLoading(false);
+        
+        return () => unsubscribe();
     } else {
         setIsLoading(false);
     }
-  }, [refreshData, userProfile]);
+  }, [userProfile]);
 
   const handleAddVisitor = async (data: VisitorFormData) => {
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
@@ -115,7 +101,6 @@ export default function VisitantesPage() {
     };
     try {
         await addVisitor(newVisitor);
-        await refreshData();
         toast({
           title: "Visitante Cadastrado e Entrada Registrada!",
           description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
@@ -135,7 +120,6 @@ export default function VisitantesPage() {
     try {
         await deleteVisitorsByPersonIds(selectedVisitors);
         setSelectedVisitors([]);
-        await refreshData();
         toast({
             title: "Visitantes Removidos",
             description: `Os ${selectedVisitors.length} visitante(s) selecionado(s) foram removidos.`,
@@ -170,7 +154,6 @@ export default function VisitantesPage() {
     try {
         await deleteVisitorByPersonId(personId);
         setSelectedVisitors(prev => prev.filter(id => id !== personId));
-        await refreshData();
         toast({
           title: "Visitante Removido",
           description: "O visitante e todo o seu histórico foram removidos.",
@@ -199,7 +182,6 @@ export default function VisitantesPage() {
     };
     try {
         await addVisitor(newVisit);
-        await refreshData();
         toast({
             title: "Nova Entrada Registrada!",
             description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
@@ -221,7 +203,6 @@ export default function VisitantesPage() {
             status: 'exited',
             exitTime: new Date().toISOString()
         });
-        await refreshData();
         toast({
           title: "Saída Registrada!",
           description: `A saída do visitante foi registrada com sucesso.`,
@@ -247,7 +228,6 @@ export default function VisitantesPage() {
   const handleDeleteVisitorLog = async (visitId: string) => {
     try {
         await deleteVisitorLog(visitId);
-        await refreshData();
         toast({
           title: "Registro de Histórico Removido",
           description: "A visita foi removida do histórico.",

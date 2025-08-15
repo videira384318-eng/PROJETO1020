@@ -34,30 +34,17 @@ export default function ManagementPage() {
 
     const canManageUsers = userProfile?.role === 'adm' || userProfile?.role === 'rh';
 
-    const refreshUsers = useCallback(async () => {
-        setIsLoading(true);
+    useEffect(() => {
         if (!canManageUsers) {
             setIsLoading(false);
             return;
         }
-        try {
-            const userList = await getUsers();
-            setUsers(userList);
-        } catch (error) {
-            console.error("Erro ao buscar usuários:", error);
-            toast({
-                variant: "destructive",
-                title: "Erro ao Carregar",
-                description: "Não foi possível buscar a lista de usuários.",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [canManageUsers, toast]);
+        setIsLoading(true);
+        const unsubscribe = getUsers(setUsers);
+        setIsLoading(false);
 
-    useEffect(() => {
-        refreshUsers();
-    }, [refreshUsers]);
+        return () => unsubscribe();
+    }, [canManageUsers]);
     
     const handleEditUser = (user: UserProfile) => {
         setEditingUser(user);
@@ -70,7 +57,6 @@ export default function ManagementPage() {
                 title: "Usuário Atualizado!",
                 description: `O perfil do usuário foi alterado para ${role}.`,
             });
-            await refreshUsers();
         } catch (error) {
             console.error("Erro ao atualizar perfil:", error);
             toast({
@@ -90,7 +76,6 @@ export default function ManagementPage() {
                 title: "Perfil Removido!",
                 description: "O perfil do usuário foi removido do sistema. Lembre-se de removê-lo também do painel de Autenticação do Firebase.",
             });
-            await refreshUsers();
         } catch (error) {
             console.error("Erro ao remover usuário:", error);
             toast({
@@ -196,4 +181,3 @@ export default function ManagementPage() {
         </main>
     );
 }
-

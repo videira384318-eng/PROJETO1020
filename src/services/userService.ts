@@ -2,19 +2,27 @@
 "use server";
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
 const USERS_COLLECTION = 'usuarios';
 const usersCollectionRef = collection(db, USERS_COLLECTION);
 
-export const getUsers = async (): Promise<UserProfile[]> => {
-    const querySnapshot = await getDocs(usersCollectionRef);
-    const users: UserProfile[] = [];
-    querySnapshot.forEach((doc) => {
-        users.push(doc.data() as UserProfile);
+export const getUsers = (callback: (users: UserProfile[]) => void): (() => void) => {
+    const q = query(usersCollectionRef);
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const users: UserProfile[] = [];
+        querySnapshot.forEach((doc) => {
+            users.push(doc.data() as UserProfile);
+        });
+        callback(users.sort((a, b) => a.email.localeCompare(b.email)));
+    }, (error) => {
+        console.error("Erro ao buscar usuários em tempo real:", error);
+        callback([]);
     });
-    return users.sort((a, b) => a.email.localeCompare(b.email));
+
+    return unsubscribe;
 };
 
 export const updateUserRole = async (uid: string, role: UserProfile['role']): Promise<void> => {

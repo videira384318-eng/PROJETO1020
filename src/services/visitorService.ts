@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, Timestamp, onSnapshot } from 'firebase/firestore';
 import type { VisitorFormData } from '@/app/visitantes/page';
 
 const VISITORS_COLLECTION = 'visitors';
@@ -41,21 +41,29 @@ export const updateVisitor = async (visitorId: string, visitorData: Partial<Visi
 };
 
 
-export const getVisitors = async (): Promise<VisitorFormData[]> => {
-    const querySnapshot = await getDocs(visitorsCollectionRef);
-    const visitors: VisitorFormData[] = [];
-    querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        visitors.push({ 
-            ...data,
-            id: doc.id,
-            // Convert Timestamps to ISO strings
-            createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate().toISOString() : undefined,
-            entryTime: data.entryTime ? (data.entryTime as Timestamp).toDate().toISOString() : undefined,
-            exitTime: data.exitTime ? (data.exitTime as Timestamp).toDate().toISOString() : undefined,
-        } as VisitorFormData);
+export const getVisitors = (callback: (visitors: VisitorFormData[]) => void): (() => void) => {
+    const q = query(visitorsCollectionRef);
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const visitors: VisitorFormData[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            visitors.push({ 
+                ...data,
+                id: doc.id,
+                // Convert Timestamps to ISO strings
+                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate().toISOString() : undefined,
+                entryTime: data.entryTime ? (data.entryTime as Timestamp).toDate().toISOString() : undefined,
+                exitTime: data.exitTime ? (data.exitTime as Timestamp).toDate().toISOString() : undefined,
+            } as VisitorFormData);
+        });
+        callback(visitors);
+    }, (error) => {
+        console.error("Erro ao buscar visitantes em tempo real:", error);
+        callback([]);
     });
-    return visitors;
+
+    return unsubscribe;
 };
 
 export const deleteVisitorByPersonId = async (personId: string): Promise<void> => {
