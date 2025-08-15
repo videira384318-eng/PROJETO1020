@@ -36,13 +36,20 @@ export const getScans = (callback: (scans: AttendanceScan[]) => void): (() => vo
 
 
 export const getLastScanForEmployee = async (employeeId: string): Promise<AttendanceScan | null> => {
-    const q = query(scansCollectionRef, where('employeeId', '==', employeeId), orderBy('scanTime', 'desc'), limit(1));
+    // Modified query to avoid composite index requirement.
+    // Filtering is done by Firestore, ordering is done client-side.
+    const q = query(scansCollectionRef, where('employeeId', '==', employeeId));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
         return null;
     }
-    return querySnapshot.docs[0].data() as AttendanceScan;
+
+    // Sort documents on the client-side to find the most recent one.
+    const scans = querySnapshot.docs.map(doc => doc.data() as AttendanceScan);
+    scans.sort((a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime());
+    
+    return scans[0];
 };
 
 export const deleteScan = async (scanId: string): Promise<void> => {
@@ -58,3 +65,4 @@ export const deleteScansForEmployee = async (employeeId: string): Promise<void> 
     const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
 };
+
