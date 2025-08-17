@@ -1,11 +1,11 @@
 {
   "name": "Controle de Ponto QR",
   "short_name": "Ponto QR",
-  "description": "Controle de Ponto, Veículos e Visitantes.",
+  "description": "Controle de Ponto, Visitantes e Veículos",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#231F47",
+  "theme_color": "#3B82F6",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
