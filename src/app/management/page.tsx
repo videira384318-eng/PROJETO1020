@@ -152,7 +152,7 @@ export default function ManagementPage() {
                             </li>
                         </ol>
                         <Button asChild className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
-                            <a href="https://console.firebase.google.com/project/controle-de-acesso-zd058/authentication/users" target="_blank" rel="noopener noreferrer">
+                            <a href="https://console.firebase.google.com/project/_/authentication/users" target="_blank" rel="noopener noreferrer">
                                 <PlusCircle className="mr-2"/>
                                 1. Adicionar Usuário no Firebase
                                 <ExternalLink className="ml-auto"/>
@@ -181,3 +181,4 @@ export default function ManagementPage() {
         </main>
     );
 }
+
