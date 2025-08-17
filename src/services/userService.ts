@@ -1,11 +1,21 @@
 
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
 const USERS_COLLECTION = 'usuarios';
 const usersCollectionRef = collection(db, USERS_COLLECTION);
+
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+    const userDocRef = doc(db, USERS_COLLECTION, uid);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as UserProfile;
+    }
+    return null;
+}
+
 
 export const getUsers = (callback: (users: UserProfile[]) => void): (() => void) => {
     const q = query(usersCollectionRef);
