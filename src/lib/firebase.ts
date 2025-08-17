@@ -6,6 +6,8 @@ import { getFirestore } from "firebase/firestore";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
+// This structure ensures that Next.js correctly reads the environment variables
+// both during the build process on Vercel and in local development.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -16,6 +18,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+// This check prevents re-initializing the app on every hot-reload
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 
