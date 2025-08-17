@@ -11,14 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { signInUser, signUpUser } from '@/services/authService';
+import { signInUser } from '@/services/authService';
 import { Loader2, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import { FirebaseError } from 'firebase/app';
 
 const loginFormSchema = z.object({
   email: z.string().email("Por favor, insira um email válido."),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
+  password: z.string().min(1, "A senha é obrigatória."),
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
@@ -36,8 +36,8 @@ export default function LoginPage() {
     },
   });
   
-  const handleAuthError = (error: any, type: 'login' | 'signup') => {
-      let title = type === 'login' ? "Falha no Login" : "Erro ao Criar Usuário";
+  const handleAuthError = (error: any) => {
+      let title = "Falha no Login";
       let description = "Ocorreu um erro inesperado. Por favor, tente novamente.";
 
       if (error instanceof FirebaseError) {
@@ -46,13 +46,6 @@ export default function LoginPage() {
               case 'auth/wrong-password':
               case 'auth/invalid-credential':
                   description = "Email ou senha incorretos. Por favor, verifique seus dados e tente novamente.";
-                  break;
-              case 'auth/email-already-in-use':
-                  description = "Este email já está em uso. Se você já tem uma conta, tente fazer o login.";
-                  title = "Email já cadastrado";
-                  break;
-              case 'auth/weak-password':
-                  description = "A senha é muito fraca. Por favor, use uma senha com pelo menos 6 caracteres.";
                   break;
               case 'auth/invalid-email':
                   description = "O formato do email é inválido. Por favor, verifique o email digitado.";
@@ -82,33 +75,11 @@ export default function LoginPage() {
         router.push('/');
     } catch (error: any) {
         console.error("Erro no login:", error);
-        handleAuthError(error, 'login');
+        handleAuthError(error);
     } finally {
         setIsLoading(false);
     }
   };
-  
-  const handleSignUp = async () => {
-      const data = form.getValues();
-      if (!form.trigger(['email', 'password'])) {
-          toast({ variant: "destructive", title: "Erro de Validação", description: "Por favor, corrija os erros no formulário."});
-          return;
-      }
-       if (!data.email || !data.password) {
-          toast({ variant: "destructive", title: "Erro", description: "Preencha email e senha para criar uma conta."});
-          return;
-      }
-      setIsLoading(true);
-      try {
-          await signUpUser(data.email, data.password, 'adm');
-          toast({ title: "Usuário Criado!", description: "Agora você pode fazer o login com essas credenciais.", className: "bg-green-600 text-white" });
-      } catch (error: any) {
-           console.error("Erro ao criar usuário:", error);
-          handleAuthError(error, 'signup');
-      } finally {
-          setIsLoading(false);
-      }
-  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -151,17 +122,24 @@ export default function LoginPage() {
                     </FormItem>
                     )}
                 />
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pt-2">
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? <Loader2 className="animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
                         Entrar
                     </Button>
-                    <Button type="button" variant="outline" className="w-full" onClick={handleSignUp} disabled={isLoading}>
-                        Criar Usuário Admin (Dev)
-                    </Button>
                 </div>
                 </form>
             </Form>
+            </CardContent>
+        </Card>
+         <Card className="w-full max-w-sm mt-4 text-sm">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-base">Não tem um login?</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground">
+                    Para criar um novo usuário, o administrador do sistema deve adicioná-lo através do <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">painel do Firebase</a> e depois definir as permissões na tela de Gerenciamento do aplicativo.
+                </p>
             </CardContent>
         </Card>
     </main>
