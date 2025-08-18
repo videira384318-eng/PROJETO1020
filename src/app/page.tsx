@@ -35,6 +35,7 @@ export default function Home() {
   const qrScannerRef = useRef<QRScannerRef>(null);
 
   const fetchData = useCallback(async () => {
+    setIsLoading(true);
     try {
         const [employeesData, scansData] = await Promise.all([
             getEmployees(),
@@ -123,10 +124,12 @@ export default function Home() {
     }
 
     try {
+      // Sempre busca a lista mais recente de funcionários para garantir a validação correta
+      const currentEmployees = await getEmployees();
       const scannedData: QrFormData = JSON.parse(decodedText);
       const { nome, setor, placa, ramal, id: employeeId, active } = scannedData;
       
-      const employeeExists = employees.some(e => e.id === employeeId);
+      const employeeExists = currentEmployees.some(e => e.id === employeeId);
       if (!employeeExists) {
         throw new Error('Funcionário não encontrado na lista.');
       }
@@ -412,5 +415,3 @@ export default function Home() {
     </>
   );
 }
-
-    
