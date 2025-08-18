@@ -1,3 +1,4 @@
+
 export interface AttendanceScan {
     id: string; // Document ID from LocalStorage
     scanId: string;
@@ -15,3 +16,24 @@ export interface AttendanceScan {
     permissions: string[];
   }
   
+  export interface Vehicle {
+    id: string;
+    plate: string;
+    model: string;
+    driverName: string;
+    company: string;
+    entryTimestamp: string;
+    exitTimestamp: string | null;
+    status: 'entered' | 'exited';
+  }
+
+  export interface Visitor {
+    id: string;
+    name: string;
+    document: string;
+    company: string;
+    reason: string;
+    entryTimestamp: string;
+    exitTimestamp: string | null;
+    status: 'entered' | 'exited';
+  }
