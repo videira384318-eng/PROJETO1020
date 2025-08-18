@@ -75,7 +75,6 @@ export default function VisitantesPage() {
   });
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
     try {
         const visitorsData = await getVisitors();
         setVisitors(visitorsData);
@@ -525,3 +524,5 @@ export default function VisitantesPage() {
     </main>
   );
 }
+
+    

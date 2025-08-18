@@ -35,7 +35,6 @@ export default function Home() {
   const qrScannerRef = useRef<QRScannerRef>(null);
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
     try {
         const [employeesData, scansData] = await Promise.all([
             getEmployees(),
@@ -413,3 +412,5 @@ export default function Home() {
     </>
   );
 }
+
+    

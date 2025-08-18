@@ -72,7 +72,6 @@ export default function VeiculosPage() {
   });
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
     try {
         const [vehiclesData, vehicleLogData] = await Promise.all([
             getVehicles(),
@@ -432,3 +431,5 @@ export default function VeiculosPage() {
     </main>
   );
 }
+
+    
