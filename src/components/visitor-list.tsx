@@ -123,6 +123,9 @@ export function VisitorList({
                 </TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Empresa</TableHead>
+                <TableHead>RG</TableHead>
+                <TableHead>CPF</TableHead>
+                <TableHead>Placa</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead>Motivo</TableHead>
                 <TableHead>Status</TableHead>
@@ -132,7 +135,7 @@ export function VisitorList({
             <TableBody>
               {filteredVisitors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante cadastrado.'}
                   </TableCell>
                 </TableRow>
@@ -148,6 +151,9 @@ export function VisitorList({
                     </TableCell>
                     <TableCell className="font-medium">{visitor.name || 'N/A'}</TableCell>
                     <TableCell>{visitor.company || 'N/A'}</TableCell>
+                    <TableCell>{visitor.rg || 'N/A'}</TableCell>
+                    <TableCell>{visitor.cpf || 'N/A'}</TableCell>
+                    <TableCell>{visitor.status === 'entered' ? visitor.plate : 'N/A'}</TableCell>
                     <TableCell>{visitor.status === 'entered' ? visitor.responsible : 'N/A'}</TableCell>
                     <TableCell>{visitor.status === 'entered' ? visitor.reason : 'N/A'}</TableCell>
                     <TableCell>
