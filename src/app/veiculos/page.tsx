@@ -72,10 +72,11 @@ export default function VeiculosPage() {
   });
 
   useEffect(() => {
-    setIsLoading(true);
-    const unsubscribeVehicles = getVehicles(setVehicles);
+    const unsubscribeVehicles = getVehicles((vehicles) => {
+        setVehicles(vehicles);
+        setIsLoading(false);
+    });
     const unsubscribeVehicleLog = getVehicleLog(setVehicleLog);
-    setIsLoading(false);
 
     return () => {
         unsubscribeVehicles();

@@ -35,13 +35,12 @@ export default function Home() {
   const qrScannerRef = useRef<QRScannerRef>(null);
   
   useEffect(() => {
-    setIsLoading(true);
     // Set up real-time listeners
-    const unsubscribeEmployees = getEmployees(setEmployees);
+    const unsubscribeEmployees = getEmployees((employees) => {
+        setEmployees(employees);
+        setIsLoading(false);
+    });
     const unsubscribeScans = getScans(setScans);
-
-    // Initial loading is done, subsequent updates will be real-time
-    setIsLoading(false);
 
     // Cleanup listeners on component unmount
     return () => {
@@ -414,5 +413,3 @@ export default function Home() {
     </>
   );
 }
-
-    

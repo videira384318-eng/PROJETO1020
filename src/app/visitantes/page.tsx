@@ -76,9 +76,10 @@ export default function VisitantesPage() {
   });
 
   useEffect(() => {
-    setIsLoading(true);
-    const unsubscribe = getVisitors(setVisitors);
-    setIsLoading(false);
+    const unsubscribe = getVisitors((visitors) => {
+        setVisitors(visitors);
+        setIsLoading(false);
+    });
     
     return () => unsubscribe();
   }, []);
