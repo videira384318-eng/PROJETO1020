@@ -46,11 +46,12 @@ export function VehicleList({
     return vehicles
       .filter(vehicle => {
         const matchesFilter = filter === 'all' || vehicle.status === 'entered';
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
         const matchesSearch = !searchTerm || 
-          vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.company.toLowerCase().includes(searchTerm.toLowerCase());
+          (vehicle.plate || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+          (vehicle.model || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+          (vehicle.driverName || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+          (vehicle.company || '').toLowerCase().includes(lowerCaseSearchTerm);
         return matchesFilter && matchesSearch;
       })
       .sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
@@ -183,4 +184,5 @@ export function VehicleList({
     </Card>
   );
 }
+
 
