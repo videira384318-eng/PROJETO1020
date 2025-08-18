@@ -2,29 +2,21 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, Users, Truck, Settings, LogOut, Download } from "lucide-react";
+import { Home, Users, Truck, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { signOutUser } from "@/services/authService";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
-import { Badge } from "./ui/badge";
 import { useEffect, useState } from "react";
 
 
 interface AppHeaderProps {
     title: string;
     description: string;
-    activePage: 'employees' | 'visitors' | 'vehicles' | 'management';
+    activePage: 'employees' | 'visitors' | 'vehicles';
     children?: React.ReactNode;
 }
 
 export function AppHeader({ title, description, activePage, children }: AppHeaderProps) {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { userProfile } = useAuth();
   const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -53,30 +45,6 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
       });
     }
   };
-
-  const handleSignOut = async () => {
-    try {
-        await signOutUser();
-        toast({
-            title: "Você saiu com sucesso.",
-            description: "Redirecionando para a página de login.",
-        });
-        router.push('/login');
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Erro ao sair",
-            description: "Não foi possível fazer o logout. Tente novamente.",
-        });
-    }
-  }
-
-  const roleDisplayMap = {
-    adm: "Admin",
-    rh: "RH",
-    portaria: "Portaria",
-    supervisao: "Supervisão"
-  };
   
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -91,11 +59,6 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     <Download className="mr-2 h-4 w-4" />
                     Baixar App
                 </Button>
-            )}
-            {userProfile && (
-                <Badge variant="outline" className="text-sm">
-                    {roleDisplayMap[userProfile.role]}
-                </Badge>
             )}
             <TooltipProvider>
                 <Tooltip>
@@ -142,37 +105,7 @@ export function AppHeader({ title, description, activePage, children }: AppHeade
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
-            {userProfile?.role === 'adm' && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button asChild variant={activePage === 'management' ? "default" : "outline"} size="icon">
-                                <Link href="/management">
-                                    <Settings className="h-5 w-5" />
-                                    <span className="sr-only">Página de Gerenciamento</span>
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Gerenciamento</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
             <ThemeToggle />
-            <TooltipProvider>
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant={"destructive"} size="icon" onClick={handleSignOut}>
-                            <LogOut className="h-5 w-5" />
-                            <span className="sr-only">Sair</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Sair</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
         </div>
         {children}
       </div>

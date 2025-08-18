@@ -19,7 +19,6 @@ import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/service
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { UploadCloud } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 
 
 export default function Home() {
@@ -34,7 +33,6 @@ export default function Home() {
 
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
-  const { currentUser, userProfile } = useAuth();
   
   useEffect(() => {
     setIsLoading(true);
@@ -293,14 +291,13 @@ export default function Home() {
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
   
-  // Permissions
-  const canManageEmployees = userProfile?.role === 'adm' || userProfile?.role === 'rh';
-  const canViewQRCodes = userProfile?.role === 'adm';
-  const canScan = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
-  const canViewHistory = userProfile?.role === 'adm' || userProfile?.role === 'rh' || userProfile?.role === 'supervisao';
-  const isSupervisaoOnly = userProfile?.role === 'supervisao';
+  // Permissions are now all true since login is removed
+  const canManageEmployees = true;
+  const canViewQRCodes = true;
+  const canScan = true;
+  const canViewHistory = true;
 
-  if (isLoading || !currentUser) {
+  if (isLoading) {
     return (
         <main className="container mx-auto p-4 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -336,31 +333,26 @@ export default function Home() {
         activePage="employees"
       >
         <div className="flex items-center gap-2">
-          {userProfile?.role === 'adm' && (
             <Button variant="outline" onClick={handleMigrateData}>
               <UploadCloud className="mr-2 h-4 w-4" />
               Migrar Dados Antigos
             </Button>
-          )}
-          {canManageEmployees && <QRGenerator onAddEmployee={handleAddEmployee} />}
+          <QRGenerator onAddEmployee={handleAddEmployee} />
         </div>
       </AppHeader>
       
-      <div className={`grid grid-cols-1 ${isSupervisaoOnly ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8 items-start`}>
-        {!isSupervisaoOnly && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="flex flex-col gap-8 lg:col-span-1">
                 <QRScanner ref={qrScannerRef} onScan={handleScan} disabled={!canScan}/>
             </div>
-        )}
-        <div className={isSupervisaoOnly ? 'lg:col-span-1' : 'lg:col-span-2'}>
-            <Tabs defaultValue={isSupervisaoOnly ? "history" : "employees"} className="w-full">
-                <TabsList className={`grid w-full ${isSupervisaoOnly ? 'grid-cols-1' : 'grid-cols-3'}`}>
-                    {!isSupervisaoOnly && <TabsTrigger value="employees">Funcionários</TabsTrigger>}
-                    {!isSupervisaoOnly && <TabsTrigger value="qrcodes" disabled={!canViewQRCodes}>QR Codes</TabsTrigger>}
-                    {canViewHistory && <TabsTrigger value="history">Histórico</TabsTrigger>}
+        <div className="lg:col-span-2">
+            <Tabs defaultValue="employees" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="employees">Funcionários</TabsTrigger>
+                    <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
+                    <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
                 
-                {!isSupervisaoOnly && (
                     <TabsContent value="employees">
                         <EmployeeList 
                         employees={employeesWithStatus} 
@@ -376,15 +368,11 @@ export default function Home() {
                         canManage={canManageEmployees}
                         />
                     </TabsContent>
-                )}
                 
-                {!isSupervisaoOnly && (
                     <TabsContent value="qrcodes">
                         <QrCodeList employees={employees} onClear={handleClearEmployees} disabled={!canViewQRCodes}/>
                     </TabsContent>
-                )}
                 
-                {canViewHistory && (
                     <TabsContent value="history">
                         <div className="flex flex-col lg:flex-row gap-8">
                             {showCalendar && (
@@ -413,17 +401,16 @@ export default function Home() {
                             </div>
                         </div>
                     </TabsContent>
-                )}
             </Tabs>
         </div>
       </div>
     </main>
-    {canManageEmployees && <EditEmployeeDialog 
+    <EditEmployeeDialog 
       isOpen={!!editingEmployee}
       onClose={() => setEditingEmployee(null)}
       employee={editingEmployee}
       onSubmit={handleUpdateEmployee}
-    />}
+    />
     </>
   );
 }

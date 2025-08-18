@@ -32,7 +32,6 @@ import {
     getLastVehicleLog
 } from '@/services/vehicleService';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/context/AuthContext';
 
 
 const vehicleFormSchema = z.object({
@@ -61,7 +60,6 @@ export default function VeiculosPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
-  const { currentUser, userProfile } = useAuth();
 
 
   const form = useForm<VehicleFormData>({
@@ -74,20 +72,16 @@ export default function VeiculosPage() {
   });
 
   useEffect(() => {
-    if (userProfile?.role === 'adm' || userProfile?.role === 'portaria' || userProfile?.role === 'supervisao') {
-        setIsLoading(true);
-        const unsubscribeVehicles = getVehicles(setVehicles);
-        const unsubscribeVehicleLog = getVehicleLog(setVehicleLog);
-        setIsLoading(false);
+    setIsLoading(true);
+    const unsubscribeVehicles = getVehicles(setVehicles);
+    const unsubscribeVehicleLog = getVehicleLog(setVehicleLog);
+    setIsLoading(false);
 
-        return () => {
-            unsubscribeVehicles();
-            unsubscribeVehicleLog();
-        };
-    } else {
-        setIsLoading(false);
-    }
-  }, [userProfile]);
+    return () => {
+        unsubscribeVehicles();
+        unsubscribeVehicleLog();
+    };
+  }, []);
 
   const handleAddVehicle = async (data: VehicleFormData) => {
     try {
@@ -240,11 +234,9 @@ export default function VeiculosPage() {
   }, [vehicleLog, selectedDate]);
 
 
-  const canManageVehicles = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
-  const isSupervisaoOnly = userProfile?.role === 'supervisao';
+  const canManageVehicles = true;
 
-
-  if (isLoading || !currentUser) {
+  if (isLoading) {
     return (
         <main className="container mx-auto p-4 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -270,18 +262,6 @@ export default function VeiculosPage() {
     );
   }
   
-  if (!canManageVehicles && !isSupervisaoOnly) {
-    return (
-        <main className="container mx-auto p-4 md:p-8">
-             <AppHeader
-                title="Acesso Negado"
-                description="Você não tem permissão para ver esta página."
-                activePage="vehicles"
-            />
-        </main>
-    )
-  }
-
   return (
     <main className="container mx-auto p-4 md:p-8">
        <AppHeader
@@ -290,8 +270,7 @@ export default function VeiculosPage() {
         activePage="vehicles"
       />
 
-      <div className={`grid grid-cols-1 ${isSupervisaoOnly ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8 items-start`}>
-        {canManageVehicles && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <Card className="lg:col-span-1">
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><Truck className="h-6 w-6"/> Novo Veículo</CardTitle>
@@ -370,15 +349,13 @@ export default function VeiculosPage() {
                 </Form>
             </CardContent>
             </Card>
-        )}
 
-        <div className={isSupervisaoOnly ? 'lg:col-span-1' : 'lg:col-span-2'}>
-            <Tabs defaultValue={isSupervisaoOnly ? "history" : "vehicles"}>
-                <TabsList className={`grid w-full ${isSupervisaoOnly ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                    {!isSupervisaoOnly && <TabsTrigger value="vehicles">Veículos Cadastrados</TabsTrigger>}
+        <div className="lg:col-span-2">
+            <Tabs defaultValue="vehicles">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="vehicles">Veículos Cadastrados</TabsTrigger>
                     <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
-                 {!isSupervisaoOnly && (
                     <TabsContent value="vehicles">
                         <VehicleList 
                             vehicles={vehiclesWithStatus}
@@ -386,7 +363,6 @@ export default function VeiculosPage() {
                             onVehicleClick={handleVehicleClick}
                         />
                     </TabsContent>
-                 )}
                  <TabsContent value="history">
                     <div className="flex flex-col lg:flex-row gap-8">
                          {showCalendar && (
@@ -419,7 +395,6 @@ export default function VeiculosPage() {
         </div>
       </div>
       
-      {canManageVehicles && (
         <>
             <VehicleMovementDialog
                 isOpen={!!movementVehicle}
@@ -435,7 +410,6 @@ export default function VeiculosPage() {
                 onSubmit={handleEditLogSubmit}
             />
         </>
-      )}
 
     </main>
   );

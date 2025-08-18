@@ -3,7 +3,6 @@ import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Controle de Ponto QR',
@@ -30,7 +29,6 @@ export default function RootLayout({
         <link rel="icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
             <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -40,7 +38,6 @@ export default function RootLayout({
                 {children}
                 <Toaster />
             </ThemeProvider>
-        </AuthProvider>
       </body>
     </html>
   );

@@ -28,7 +28,6 @@ import {
     getVisitors
 } from '@/services/visitorService';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/context/AuthContext';
 
 
 const visitorFormSchema = z.object({
@@ -61,7 +60,6 @@ export default function VisitantesPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
-  const { currentUser, userProfile } = useAuth();
 
   const form = useForm<VisitorFormData>({
     resolver: zodResolver(visitorFormSchema),
@@ -78,16 +76,12 @@ export default function VisitantesPage() {
   });
 
   useEffect(() => {
-    if (userProfile?.role === 'adm' || userProfile?.role === 'portaria' || userProfile?.role === 'supervisao') {
-        setIsLoading(true);
-        const unsubscribe = getVisitors(setVisitors);
-        setIsLoading(false);
-        
-        return () => unsubscribe();
-    } else {
-        setIsLoading(false);
-    }
-  }, [userProfile]);
+    setIsLoading(true);
+    const unsubscribe = getVisitors(setVisitors);
+    setIsLoading(false);
+    
+    return () => unsubscribe();
+  }, []);
 
   const handleAddVisitor = async (data: VisitorFormData) => {
     const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
@@ -276,10 +270,9 @@ export default function VisitantesPage() {
   
   const numSelected = selectedVisitors.length;
   const numTotal = currentVisitors.length;
-  const canManageVisitors = userProfile?.role === 'adm' || userProfile?.role === 'portaria';
-  const isSupervisaoOnly = userProfile?.role === 'supervisao';
+  const canManageVisitors = true;
 
-  if (isLoading || !currentUser) {
+  if (isLoading) {
     return (
         <main className="container mx-auto p-4 md:p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -304,18 +297,6 @@ export default function VisitantesPage() {
         </main>
     );
   }
-  
-  if (!canManageVisitors && !isSupervisaoOnly) {
-    return (
-        <main className="container mx-auto p-4 md:p-8">
-             <AppHeader
-                title="Acesso Negado"
-                description="Você não tem permissão para ver esta página."
-                activePage="visitors"
-            />
-        </main>
-    )
-  }
 
   return (
     <main className="container mx-auto p-4 md:p-8">
@@ -325,8 +306,7 @@ export default function VisitantesPage() {
         activePage="visitors"
       />
 
-      <div className={`grid grid-cols-1 ${isSupervisaoOnly ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8 items-start`}>
-        {canManageVisitors && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <Card className="lg:col-span-1">
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><Users className="h-6 w-6"/> Novo Visitante</CardTitle>
@@ -470,15 +450,13 @@ export default function VisitantesPage() {
                 </Form>
             </CardContent>
             </Card>
-        )}
 
-        <div className={isSupervisaoOnly ? 'lg:col-span-1' : 'lg:col-span-2'}>
-            <Tabs defaultValue={isSupervisaoOnly ? "history" : "visitors"}>
-                <TabsList className={`grid w-full ${isSupervisaoOnly ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                    {!isSupervisaoOnly && <TabsTrigger value="visitors">Visitantes</TabsTrigger>}
+        <div className="lg:col-span-2">
+            <Tabs defaultValue="visitors">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="visitors">Visitantes</TabsTrigger>
                     <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
-                {!isSupervisaoOnly && (
                     <TabsContent value="visitors">
                         <VisitorList 
                             visitors={currentVisitors} 
@@ -492,7 +470,6 @@ export default function VisitantesPage() {
                             onDeleteSelected={handleDeleteSelectedVisitors}
                         />
                     </TabsContent>
-                )}
                  <TabsContent value="history">
                     <div className="flex flex-col lg:flex-row gap-8">
                         {showCalendar && (
@@ -524,12 +501,12 @@ export default function VisitantesPage() {
         </div>
       </div>
       
-      {canManageVisitors && <ReEntryDialog 
+      <ReEntryDialog 
         isOpen={!!reEntryVisitor}
         onClose={() => setReEntryVisitor(null)}
         visitor={reEntryVisitor}
         onSubmit={handleReEntrySubmit}
-      />}
+      />
     </main>
   );
 }
