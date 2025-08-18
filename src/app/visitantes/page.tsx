@@ -75,7 +75,7 @@ export default function VisitantesPage() {
   });
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
+    if (!isLoading) setIsLoading(true);
     try {
         const visitorsData = await getVisitors();
         setVisitors(visitorsData);
@@ -89,7 +89,8 @@ export default function VisitantesPage() {
     } finally {
         setIsLoading(false);
     }
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   useEffect(() => {
     fetchData();

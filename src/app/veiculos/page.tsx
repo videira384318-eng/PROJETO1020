@@ -72,7 +72,7 @@ export default function VeiculosPage() {
   });
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
+    if (!isLoading) setIsLoading(true);
     try {
         const [vehiclesData, vehicleLogData] = await Promise.all([
             getVehicles(),
@@ -90,7 +90,8 @@ export default function VeiculosPage() {
     } finally {
         setIsLoading(false);
     }
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchData();
