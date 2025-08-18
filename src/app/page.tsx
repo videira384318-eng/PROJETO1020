@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
-import { addEmployee, deleteEmployees, getEmployees, updateEmployee, addEmployeeWithId, getEmployeeById } from '@/services/employeeService';
+import { addEmployee, deleteEmployees, getEmployees, updateEmployee, getEmployeeById, addEmployeeWithId } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -418,3 +418,5 @@ export default function Home() {
     </>
   );
 }
+
+    
