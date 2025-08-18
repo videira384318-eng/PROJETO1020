@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -44,6 +44,7 @@ interface VisitorEntryDialogProps {
 
 export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm<z.infer<typeof visitorFormSchema>>({
     resolver: zodResolver(visitorFormSchema),
@@ -63,6 +64,22 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
     form.reset();
     setIsOpen(false);
   };
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const formElements = formRef.current?.elements;
+      if (!formElements) return;
+
+      const currentElement = e.target as HTMLElement;
+      const currentIndex = Array.prototype.indexOf.call(formElements, currentElement);
+      
+      const nextElement = formElements[currentIndex + 1] as HTMLElement;
+      if (nextElement) {
+        nextElement.focus();
+      }
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -72,15 +89,15 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
           Registrar Visitante
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline">Registrar Entrada de Visitante</DialogTitle>
           <DialogDescription>
-            Preencha os dados do visitante.
+            Preencha os dados do visitante. Pressione Enter para ir ao próximo campo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form ref={formRef} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                 control={form.control}
@@ -89,7 +106,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: Maria dos Santos" {...field} />
+                        <Input placeholder="Ex: Maria dos Santos" {...field} onKeyDown={handleKeyDown}/>
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -102,7 +119,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     <FormItem>
                     <FormLabel>Empresa</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: Empresa Y" {...field} />
+                        <Input placeholder="Ex: Empresa Y" {...field} onKeyDown={handleKeyDown} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -115,7 +132,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     <FormItem>
                     <FormLabel>RG</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: 12.345.678-9" {...field} />
+                        <Input placeholder="Ex: 12.345.678-9" {...field} onKeyDown={handleKeyDown} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -128,7 +145,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     <FormItem>
                     <FormLabel>CPF</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: 123.456.789-00" {...field} />
+                        <Input placeholder="Ex: 123.456.789-00" {...field} onKeyDown={handleKeyDown}/>
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -141,7 +158,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     <FormItem>
                     <FormLabel>Placa (Opcional)</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: BRA2E19" {...field} />
+                        <Input placeholder="Ex: BRA2E19" {...field} onKeyDown={handleKeyDown}/>
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -154,7 +171,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     <FormItem>
                     <FormLabel>Responsável</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: João da Silva (TI)" {...field} />
+                        <Input placeholder="Ex: João da Silva (TI)" {...field} onKeyDown={handleKeyDown}/>
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -168,7 +185,7 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                 <FormItem>
                   <FormLabel>Motivo da Visita</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Reunião com o setor de compras" {...field} />
+                    <Input placeholder="Ex: Reunião com o setor de compras" {...field} onKeyDown={handleKeyDown} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
