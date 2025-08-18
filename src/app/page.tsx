@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
-import { addEmployee, deleteEmployees, getEmployees, updateEmployee, getEmployeeById, addEmployeeWithId } from '@/services/employeeService';
+import { addEmployee, deleteEmployees, getEmployees, updateEmployee, getEmployeeById } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ export default function Home() {
   const handleMigrateData = async () => {
     toast({
       title: "Iniciando migração...",
-      description: "Lendo dados locais e enviando para a nuvem. Não feche esta janela.",
+      description: "Lendo dados antigos e enviando para a nuvem. Não feche esta janela.",
     });
 
     try {
@@ -83,7 +83,8 @@ export default function Home() {
       // 2. Migrar Funcionários
       let migratedEmployeesCount = 0;
       for (const employee of localEmployees) {
-        await addEmployeeWithId(employee.id!, employee);
+        // Usa a função addEmployee que agora usa setDoc com o ID fornecido
+        await addEmployee(employee);
         migratedEmployeesCount++;
       }
 
@@ -310,11 +311,7 @@ export default function Home() {
                     <Skeleton className="h-4 w-96" />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Skeleton className="h-10 w-10" />
-                    <Skeleton className="h-10 w-10" />
-                    <Skeleton className="h-10 w-10" />
-                    <Skeleton className="h-10 w-10" />
-                     <Skeleton className="h-10 w-40" />
+                    <Skeleton className="h-10 w-40" />
                 </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -334,7 +331,6 @@ export default function Home() {
       <AppHeader
         title="Controle de Ponto QR"
         description="Gerencie o ponto dos funcionários."
-        activePage="employees"
       >
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleMigrateData}>
@@ -418,5 +414,3 @@ export default function Home() {
     </>
   );
 }
-
-    
