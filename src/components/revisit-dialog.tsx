@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { User, LogIn } from 'lucide-react';
-import type { Visitor } from '@/types';
+import type { VisitorWithStatus, RevisitFormData } from '@/types';
 
 const revisitFormSchema = z.object({
   plate: z.string().optional(),
@@ -29,12 +29,11 @@ const revisitFormSchema = z.object({
   }),
 });
 
-export type RevisitFormData = z.infer<typeof revisitFormSchema>;
 
 interface RevisitDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  visitor: Visitor | null;
+  visitor: VisitorWithStatus | null;
   onSubmit: (data: RevisitFormData) => void;
 }
 
@@ -44,22 +43,28 @@ export function RevisitDialog({ isOpen, onClose, visitor, onSubmit }: RevisitDia
   const form = useForm<RevisitFormData>({
     resolver: zodResolver(revisitFormSchema),
     defaultValues: {
-      plate: '',
-      responsible: '',
-      reason: '',
-      parkingLot: 'P1',
-    },
+        plate: '',
+        responsible: '',
+        reason: '',
+        parkingLot: 'P1',
+    }
   });
 
   useEffect(() => {
-    if (isOpen) {
-      form.reset(); // Clear form on open
+    if (visitor) {
+      // Pre-fill the form with the last visit's data
+      form.reset({
+        plate: visitor.plate || '',
+        responsible: visitor.responsible || '',
+        reason: visitor.reason || '',
+        parkingLot: 'P1', // Default to P1 for a new visit
+      });
     }
-  }, [isOpen, form]);
+  }, [visitor, form, isOpen]); // Rerun when dialog opens
 
   const handleSubmit = (data: RevisitFormData) => {
     onSubmit(data);
-    onClose();
+    onClose(); // This will also trigger the useEffect to reset the form next time
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -92,7 +97,7 @@ export function RevisitDialog({ isOpen, onClose, visitor, onSubmit }: RevisitDia
         <DialogHeader>
           <DialogTitle className="font-headline">Registrar Nova Visita</DialogTitle>
           <DialogDescription>
-            Confirme os detalhes da visita para <span className="font-semibold">{visitor.name}</span>.
+            Confirme os detalhes da visita para <span className="font-semibold">{visitor.name} ({visitor.company})</span>.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

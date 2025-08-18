@@ -1,4 +1,5 @@
 
+
 export interface AttendanceScan {
     id: string; // Document ID from LocalStorage
     scanId: string;
@@ -52,8 +53,32 @@ export interface AttendanceScan {
       visitorCompany: string;
   }
 
-  // Type for combining visitor with their latest visit status
+  // Type for combining visitor with their latest visit status and info
   export interface VisitorWithStatus extends Visitor {
       status: 'entered' | 'exited';
       lastVisitId?: string;
+      // Last visit info to pre-fill forms
+      plate?: string;
+      responsible?: string;
+      reason?: string;
+  }
+
+  // Type for the new visitor form (permanent + first visit)
+  export interface NewVisitorFormData {
+    name: string;
+    company: string;
+    rg: string;
+    cpf: string;
+    plate?: string;
+    responsible: string;
+    reason: string;
+    parkingLot: 'P1' | 'P2';
+  }
+
+  // Type for the revisit form
+  export interface RevisitFormData {
+    plate?: string;
+    responsible: string;
+    reason: string;
+    parkingLot: 'P1' | 'P2';
   }

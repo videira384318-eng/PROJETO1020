@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Visitor, VisitLog, VisitorWithStatus } from '@/types';
+import type { Visitor, VisitLog, VisitorWithStatus, NewVisitorFormData, RevisitFormData } from '@/types';
 import { AppHeader } from '@/components/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VisitorList } from '@/components/visitor-list';
@@ -10,7 +10,7 @@ import { VisitorEntryDialog } from '@/components/visitor-entry-dialog';
 import { addVisitor, getVisitors, deleteVisitors, getVisitor, updateVisitor } from '@/services/visitorService';
 import { addVisitLog, getVisits, updateVisitLog, getLastVisitForVisitor } from '@/services/visitLogService';
 import { useToast } from "@/hooks/use-toast";
-import { RevisitDialog, type RevisitFormData } from '@/components/revisit-dialog';
+import { RevisitDialog } from '@/components/revisit-dialog';
 
 export default function VisitantesPage() {
   const [visitors, setVisitors] = useState<VisitorWithStatus[]>([]);
@@ -30,12 +30,16 @@ export default function VisitantesPage() {
               return {
                   ...visitor,
                   status: lastVisit?.status ?? 'exited',
-                  lastVisitId: lastVisit?.id
+                  lastVisitId: lastVisit?.id,
+                  // Carry over last visit details for pre-filling revisit form
+                  plate: lastVisit?.plate,
+                  responsible: lastVisit?.responsible,
+                  reason: lastVisit?.reason,
               };
           })
       );
 
-      setVisitors(visitorsWithStatus);
+      setVisitors(visitorsWithStatus.sort((a,b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error("Failed to fetch visitors:", error);
       toast({
@@ -52,17 +56,38 @@ export default function VisitantesPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleAddVisitor = async (visitorData: Omit<Visitor, 'id'>) => {
+  const handleAddVisitor = async (formData: NewVisitorFormData) => {
     try {
-      await addVisitor(visitorData);
+      // 1. Create the permanent visitor record
+      const visitorData: Omit<Visitor, 'id'> = {
+        name: formData.name,
+        company: formData.company,
+        rg: formData.rg,
+        cpf: formData.cpf,
+      };
+      const newVisitorId = await addVisitor(visitorData);
+
+      // 2. Create the first visit log for this visitor
+      const visitLogData = {
+          visitorId: newVisitorId,
+          visitorName: formData.name,
+          visitorCompany: formData.company,
+          plate: formData.plate,
+          responsible: formData.responsible,
+          reason: formData.reason,
+          parkingLot: formData.parkingLot,
+      };
+      await addVisitLog(visitLogData);
+
+
       toast({
-        title: "Visitante Cadastrado!",
-        description: `${visitorData.name} foi adicionado(a) com sucesso.`,
+        title: "Visitante Cadastrado e Entrada Registrada!",
+        description: `${formData.name} foi cadastrado(a) e sua entrada foi registrada.`,
         className: 'bg-green-600 text-white'
       });
       fetchData();
     } catch (error) {
-      console.error("Error adding visitor:", error);
+      console.error("Error adding visitor and first visit:", error);
       toast({
         variant: "destructive",
         title: "Erro ao cadastrar visitante",
@@ -78,7 +103,10 @@ export default function VisitantesPage() {
             visitorId: revisitingVisitor.id,
             visitorName: revisitingVisitor.name,
             visitorCompany: revisitingVisitor.company,
-            ...formData,
+            plate: formData.plate,
+            responsible: formData.responsible,
+            reason: formData.reason,
+            parkingLot: formData.parkingLot,
         });
 
         toast({
@@ -144,9 +172,16 @@ export default function VisitantesPage() {
   };
 
   const handleRevisitClick = async (visitorId: string) => {
-      const visitorData = await getVisitor(visitorId);
+      // We already have the visitor data with last visit info in the `visitors` state
+      const visitorData = visitors.find(v => v.id === visitorId);
       if (visitorData) {
           setRevisitingVisitor(visitorData);
+      } else {
+          // Fallback if not found in state
+          const visitorFromDB = await getVisitor(visitorId);
+          if (visitorFromDB) {
+              setRevisitingVisitor(visitorFromDB);
+          }
       }
   }
 
