@@ -75,18 +75,18 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="plate"
+              name="driverName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Placa</FormLabel>
+                  <FormLabel>Nome do Motorista</FormLabel>
                   <FormControl>
-                    <Input placeholder="ABC-1234" {...field} />
+                    <Input placeholder="Ex: João da Silva" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
               name="model"
               render={({ field }) => (
@@ -101,12 +101,12 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
             />
             <FormField
               control={form.control}
-              name="driverName"
+              name="plate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Motorista</FormLabel>
+                  <FormLabel>Placa</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: João da Silva" {...field} />
+                    <Input placeholder="ABC-1234" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
