@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, Timestamp, onSnapshot } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, Timestamp } from 'firebase/firestore';
 import type { VisitorFormData } from '@/app/visitantes/page';
 
 const VISITORS_COLLECTION = 'visitors';
@@ -23,7 +23,6 @@ export const updateVisitor = async (visitorId: string, visitorData: Partial<Visi
     const visitorDocRef = doc(db, VISITORS_COLLECTION, visitorId);
     const updateData = { ...visitorData } as any;
 
-    // Convert date strings to Timestamps if they exist
     if (visitorData.createdAt) {
         updateData.createdAt = Timestamp.fromDate(new Date(visitorData.createdAt));
     }
@@ -35,35 +34,26 @@ export const updateVisitor = async (visitorId: string, visitorData: Partial<Visi
     } else if (visitorData.hasOwnProperty('exitTime')) {
         updateData.exitTime = null;
     }
-
-
+    
     await updateDoc(visitorDocRef, updateData);
 };
 
 
-export const getVisitors = (callback: (visitors: VisitorFormData[]) => void): (() => void) => {
+export const getVisitors = async (): Promise<VisitorFormData[]> => {
     const q = query(visitorsCollectionRef);
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const visitors: VisitorFormData[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            visitors.push({ 
-                ...data,
-                id: doc.id,
-                // Convert Timestamps to ISO strings
-                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate().toISOString() : undefined,
-                entryTime: data.entryTime ? (data.entryTime as Timestamp).toDate().toISOString() : undefined,
-                exitTime: data.exitTime ? (data.exitTime as Timestamp).toDate().toISOString() : undefined,
-            } as VisitorFormData);
-        });
-        callback(visitors);
-    }, (error) => {
-        console.error("Erro ao buscar visitantes em tempo real:", error);
-        callback([]);
+    const querySnapshot = await getDocs(q);
+    const visitors: VisitorFormData[] = [];
+    querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        visitors.push({ 
+            ...data,
+            id: doc.id,
+            createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate().toISOString() : undefined,
+            entryTime: data.entryTime ? (data.entryTime as Timestamp).toDate().toISOString() : undefined,
+            exitTime: data.exitTime ? (data.exitTime as Timestamp).toDate().toISOString() : undefined,
+        } as VisitorFormData);
     });
-
-    return unsubscribe;
+    return visitors;
 };
 
 export const deleteVisitorByPersonId = async (personId: string): Promise<void> => {

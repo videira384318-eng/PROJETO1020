@@ -71,18 +71,30 @@ export default function VeiculosPage() {
     },
   });
 
-  useEffect(() => {
-    const unsubscribeVehicles = getVehicles((vehicles) => {
-        setVehicles(vehicles);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const [vehiclesData, vehicleLogData] = await Promise.all([
+            getVehicles(),
+            getVehicleLog()
+        ]);
+        setVehicles(vehiclesData);
+        setVehicleLog(vehicleLogData);
+    } catch (error) {
+        console.error("Failed to fetch vehicle data:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao carregar dados",
+            description: "Não foi possível buscar os dados de veículos.",
+        });
+    } finally {
         setIsLoading(false);
-    });
-    const unsubscribeVehicleLog = getVehicleLog(setVehicleLog);
+    }
+  }, [toast]);
 
-    return () => {
-        unsubscribeVehicles();
-        unsubscribeVehicleLog();
-    };
-  }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleAddVehicle = async (data: VehicleFormData) => {
     try {
@@ -92,6 +104,7 @@ export default function VeiculosPage() {
           description: `O veículo com placa ${data.placa} foi adicionado.`,
         });
         form.reset();
+        await fetchData();
     } catch(e) {
         console.error("Erro ao adicionar veículo:", e);
         toast({
@@ -109,6 +122,7 @@ export default function VeiculosPage() {
           title: "Veículo Removido",
           description: "O veículo foi removido da lista e seu histórico foi mantido.",
         });
+        await fetchData();
     } catch (e) {
         console.error("Erro ao remover veículo:", e);
         toast({
@@ -149,6 +163,7 @@ export default function VeiculosPage() {
         });
         
         setMovementVehicle(null);
+        await fetchData();
     } catch (e) {
          console.error("Erro ao registrar movimentação:", e);
         toast({
@@ -170,6 +185,7 @@ export default function VeiculosPage() {
           title: "Registro de Histórico Removido",
           description: "A movimentação foi removida do histórico.",
         });
+        await fetchData();
     } catch(e) {
         console.error("Erro ao remover registro do histórico:", e);
         toast({
@@ -199,6 +215,7 @@ export default function VeiculosPage() {
             description: `O registro do veículo ${editingLogEntry.placa} foi atualizado.`,
         });
         setEditingLogEntry(null);
+        await fetchData();
     } catch(e) {
         console.error("Erro ao atualizar registro:", e);
         toast({
@@ -217,7 +234,7 @@ export default function VeiculosPage() {
       
       return {
         ...vehicle,
-        status: lastLog ? lastLog.type : 'exit', // Default to 'exit' if no log
+        status: lastLog ? lastLog.type : 'exit', 
       };
     }).sort((a, b) => {
        if (a.placa < b.placa) return -1;

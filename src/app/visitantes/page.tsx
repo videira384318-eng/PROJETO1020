@@ -32,7 +32,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const visitorFormSchema = z.object({
   id: z.string().optional(),
-  // Add a unique identifier for the person, not the visit
   personId: z.string().optional(),
   nome: z.string().min(1, "O nome é obrigatório."),
   rg: z.string().min(1, "O RG é obrigatório."),
@@ -75,17 +74,29 @@ export default function VisitantesPage() {
     },
   });
 
-  useEffect(() => {
-    const unsubscribe = getVisitors((visitors) => {
-        setVisitors(visitors);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const visitorsData = await getVisitors();
+        setVisitors(visitorsData);
+    } catch (error) {
+        console.error("Failed to fetch visitors data:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao carregar dados",
+            description: "Não foi possível buscar os dados de visitantes.",
+        });
+    } finally {
         setIsLoading(false);
-    });
-    
-    return () => unsubscribe();
-  }, []);
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleAddVisitor = async (data: VisitorFormData) => {
-    const personId = `person_${data.cpf || data.rg}`; // Use CPF or RG to identify a person
+    const personId = `person_${data.cpf || data.rg}`; 
     const newVisitor: Omit<VisitorFormData, 'id'> = {
       ...data,
       personId: personId,
@@ -101,6 +112,7 @@ export default function VisitantesPage() {
           description: `${data.nome} foi adicionado(a) e sua entrada registrada.`,
         });
         form.reset();
+        await fetchData();
     } catch (e) {
         console.error("Erro ao adicionar visitante:", e);
         toast({
@@ -119,6 +131,7 @@ export default function VisitantesPage() {
             title: "Visitantes Removidos",
             description: `Os ${selectedVisitors.length} visitante(s) selecionado(s) foram removidos.`,
         });
+        await fetchData();
     } catch(e) {
         console.error("Erro ao remover visitantes:", e);
         toast({
@@ -153,6 +166,7 @@ export default function VisitantesPage() {
           title: "Visitante Removido",
           description: "O visitante e todo o seu histórico foram removidos.",
         });
+        await fetchData();
     } catch(e) {
          console.error("Erro ao remover visitante:", e);
          toast({
@@ -167,12 +181,12 @@ export default function VisitantesPage() {
     if (!reEntryVisitor) return;
 
     const newVisit: Omit<VisitorFormData, 'id'> = {
-        ...reEntryVisitor, // Spread base data from the last visit
-        ...data, // Spread new data from the form
+        ...reEntryVisitor, 
+        ...data,
         personId: reEntryVisitor.personId,
         status: 'inside',
         entryTime: new Date().toISOString(),
-        exitTime: undefined, // Clear exit time for the new visit
+        exitTime: undefined,
         createdAt: new Date().toISOString(),
     };
     try {
@@ -181,7 +195,8 @@ export default function VisitantesPage() {
             title: "Nova Entrada Registrada!",
             description: `Uma nova entrada para ${reEntryVisitor.nome} foi registrada.`,
         });
-        setReEntryVisitor(null); // Close the dialog
+        setReEntryVisitor(null);
+        await fetchData();
     } catch (e) {
         console.error("Erro ao registrar nova entrada:", e);
         toast({
@@ -202,6 +217,7 @@ export default function VisitantesPage() {
           title: "Saída Registrada!",
           description: `A saída do visitante foi registrada com sucesso.`,
         });
+        await fetchData();
     } catch (e) {
         console.error("Erro ao registrar saída:", e);
         toast({
@@ -227,6 +243,7 @@ export default function VisitantesPage() {
           title: "Registro de Histórico Removido",
           description: "A visita foi removida do histórico.",
         });
+        await fetchData();
     } catch(e) {
          console.error("Erro ao remover registro do histórico:", e);
         toast({
@@ -237,15 +254,12 @@ export default function VisitantesPage() {
     }
   };
   
-  // This list will contain only the latest record for each person, to be shown in the "current" list.
   const currentVisitors = useMemo(() => {
     const latestVisitorRecord: Record<string, VisitorFormData> = {};
 
-    // Sort visitors by time to process the most recent ones last
     const sorted = [...visitors].sort((a,b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
 
     for (const visitor of sorted) {
-      // Use personId if it exists, otherwise fallback to id for older records
       if (visitor.personId) {
         latestVisitorRecord[visitor.personId] = visitor;
       }

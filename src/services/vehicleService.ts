@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, orderBy, limit, getDoc, Timestamp, onSnapshot } from 'firebase/firestore';
+import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, writeBatch, query, where, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import type { VehicleFormData, VehicleLogEntry } from '@/app/veiculos/page';
 
 
@@ -24,7 +24,6 @@ export const updateVehicle = async (vehicleId: string, vehicleData: Partial<Vehi
 };
 
 export const deleteVehicle = async (vehicleId: string): Promise<void> => {
-    // Also delete the logs for this vehicle
     const batch = writeBatch(db);
     const vehicleDocRef = doc(db, VEHICLES_COLLECTION, vehicleId);
     batch.delete(vehicleDocRef);
@@ -38,21 +37,14 @@ export const deleteVehicle = async (vehicleId: string): Promise<void> => {
     await batch.commit();
 };
 
-export const getVehicles = (callback: (vehicles: VehicleFormData[]) => void): (() => void) => {
+export const getVehicles = async (): Promise<VehicleFormData[]> => {
     const q = query(vehiclesCollectionRef);
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const vehicles: VehicleFormData[] = [];
-        querySnapshot.forEach((doc) => {
-            vehicles.push({ id: doc.id, ...doc.data() } as VehicleFormData);
-        });
-        callback(vehicles);
-    }, (error) => {
-        console.error("Erro ao buscar veículos em tempo real:", error);
-        callback([]);
+    const querySnapshot = await getDocs(q);
+    const vehicles: VehicleFormData[] = [];
+    querySnapshot.forEach((doc) => {
+        vehicles.push({ id: doc.id, ...doc.data() } as VehicleFormData);
     });
-
-    return unsubscribe;
+    return vehicles;
 };
 
 // --- Vehicle Log Management ---
@@ -79,25 +71,18 @@ export const deleteVehicleLog = async (logId: string): Promise<void> => {
     await deleteDoc(logDocRef);
 };
 
-export const getVehicleLog = (callback: (logs: VehicleLogEntry[]) => void): (() => void) => {
+export const getVehicleLog = async (): Promise<VehicleLogEntry[]> => {
     const q = query(vehicleLogCollectionRef, orderBy('timestamp', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const logs: VehicleLogEntry[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            logs.push({ 
-                ...data,
-                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
-            } as VehicleLogEntry);
-        });
-        callback(logs);
-    }, (error) => {
-        console.error("Erro ao buscar histórico de veículos em tempo real:", error);
-        callback([]);
+    const querySnapshot = await getDocs(q);
+    const logs: VehicleLogEntry[] = [];
+    querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        logs.push({ 
+            ...data,
+            timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+        } as VehicleLogEntry);
     });
-
-    return unsubscribe;
+    return logs;
 };
 
 

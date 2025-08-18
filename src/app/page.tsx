@@ -33,21 +33,31 @@ export default function Home() {
 
   const { toast } = useToast();
   const qrScannerRef = useRef<QRScannerRef>(null);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const [employeesData, scansData] = await Promise.all([
+            getEmployees(),
+            getScans()
+        ]);
+        setEmployees(employeesData);
+        setScans(scansData);
+    } catch (error) {
+        console.error("Failed to fetch data:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao carregar dados",
+            description: "Não foi possível buscar os dados do Firestore. Verifique as regras de segurança e a conexão.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
   
   useEffect(() => {
-    // Set up real-time listeners
-    const unsubscribeEmployees = getEmployees((employees) => {
-        setEmployees(employees);
-        setIsLoading(false);
-    });
-    const unsubscribeScans = getScans(setScans);
-
-    // Cleanup listeners on component unmount
-    return () => {
-      unsubscribeEmployees();
-      unsubscribeScans();
-    };
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   const handleMigrateData = async () => {
     toast({
@@ -73,7 +83,6 @@ export default function Home() {
       // 2. Migrar Funcionários
       let migratedEmployeesCount = 0;
       for (const employee of localEmployees) {
-        // Usamos o ID antigo como ID do documento no Firestore
         await addEmployeeWithId(employee.id!, employee);
         migratedEmployeesCount++;
       }
@@ -81,7 +90,6 @@ export default function Home() {
       // 3. Migrar Registros de Ponto
       let migratedScansCount = 0;
       for (const scan of localScans) {
-         // Firestore vai gerar um novo ID para o scan
         await addScan(scan);
         migratedScansCount++;
       }
@@ -92,10 +100,7 @@ export default function Home() {
         className: 'bg-green-600 text-white'
       });
       
-      // 4. (Opcional) Limpar dados locais após migração bem-sucedida
-      // localStorage.removeItem('employees');
-      // localStorage.removeItem('scans');
-
+      await fetchData();
 
     } catch (error) {
       console.error("Erro durante a migração:", error);
@@ -109,7 +114,6 @@ export default function Home() {
 
 
   const handleScan = async (decodedText: string) => {
-    // 20 second cooldown for the same QR code
     if (lastScan && lastScan.data === decodedText && (Date.now() - lastScan.time) < 20000) {
         toast({
             variant: "destructive",
@@ -128,7 +132,6 @@ export default function Home() {
         throw new Error('Funcionário não encontrado na lista.');
       }
       
-      // Check if QR code is active
       if (active === false) {
           toast({
             variant: "destructive",
@@ -161,6 +164,7 @@ export default function Home() {
       });
       
       qrScannerRef.current?.stopScanner();
+      await fetchData();
 
     } catch (error) {
       console.error("Falha ao processar o escaneamento:", error);
@@ -191,6 +195,7 @@ export default function Home() {
         title: "Funcionário Adicionado!",
         description: `${employeeData.nome} foi adicionado(a) à lista.`
     });
+    await fetchData();
   }
 
   const handleUpdateEmployee = async (employeeData: QrFormData) => {
@@ -200,20 +205,14 @@ export default function Home() {
         description: `Os dados de ${employeeData.nome} foram atualizados.`
     });
     setEditingEmployee(null);
+    await fetchData();
   }
   
   const handleClearEmployees = async () => {
-    // This is a very destructive action, consider adding an additional confirm
-    // await clearEmployees(); // clearEmployees service needs to be implemented for Firestore
     toast({
         title: "Ação não implementada",
         description: "Limpar todos os funcionários ainda não é suportado com Firestore.",
     });
-    // setSelectedEmployees([]);
-    // toast({
-    //     title: "Lista Limpa",
-    //     description: "Todos os funcionários e seus registros foram removidos.",
-    // });
   }
 
   const handleDeleteSelectedEmployees = async () => {
@@ -224,6 +223,7 @@ export default function Home() {
         title: "Funcionários Removidos",
         description: `Os ${count} funcionário(s) selecionado(s) e seus registros foram removidos.`,
     });
+    await fetchData();
   };
 
   const handleToggleEmployeeSelection = (employeeId: string) => {
@@ -249,6 +249,7 @@ export default function Home() {
         title: "Registro Excluído",
         description: "O registro de ponto foi removido do histórico.",
     });
+    await fetchData();
   }
   
   const handleManualEntry = (employee: QrFormData) => {
@@ -282,7 +283,7 @@ export default function Home() {
       
       return {
         ...employee,
-        status: lastScanForEmployee ? lastScanForEmployee.scanType : 'exit', // Default to 'exit' if no scans
+        status: lastScanForEmployee ? lastScanForEmployee.scanType : 'exit',
       };
     });
   }, [employees, scans]);
@@ -290,7 +291,6 @@ export default function Home() {
   const numSelected = selectedEmployees.length;
   const numTotal = employees.length;
   
-  // Permissions are now all true since login is removed
   const canManageEmployees = true;
   const canViewQRCodes = true;
   const canScan = true;
