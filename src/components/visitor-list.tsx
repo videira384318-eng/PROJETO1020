@@ -58,7 +58,7 @@ export function VisitorList({
           
         return matchesSearch;
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [visitors, searchTerm]);
 
    const numSelected = selectedVisitors.length;
