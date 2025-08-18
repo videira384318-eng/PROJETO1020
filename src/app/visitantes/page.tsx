@@ -39,7 +39,7 @@ export default function VisitantesPage() {
           })
       );
 
-      setVisitors(visitorsWithStatus.sort((a,b) => a.name.localeCompare(b.name)));
+      setVisitors(visitorsWithStatus.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
     } catch (error) {
       console.error("Failed to fetch visitors:", error);
       toast({
