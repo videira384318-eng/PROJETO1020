@@ -146,10 +146,10 @@ export function VisitorList({
                             aria-label={`Selecionar ${visitor.name}`}
                         />
                     </TableCell>
-                    <TableCell className="font-medium">{visitor.name}</TableCell>
-                    <TableCell>{visitor.company}</TableCell>
-                    <TableCell>{visitor.rg}</TableCell>
-                    <TableCell>{visitor.cpf}</TableCell>
+                    <TableCell className="font-medium">{visitor.name || 'N/A'}</TableCell>
+                    <TableCell>{visitor.company || 'N/A'}</TableCell>
+                    <TableCell>{visitor.rg || 'N/A'}</TableCell>
+                    <TableCell>{visitor.cpf || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={visitor.status === 'entered' ? 'success' : 'destructive'} className="capitalize">
                         {visitor.status === 'entered' ? 'Presente' : 'Ausente'}
