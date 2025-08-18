@@ -45,15 +45,20 @@ export function VisitorList({
   const filteredVisitors = useMemo(() => {
     return visitors
       .filter(visitor => {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
         const matchesFilter = filter === 'all' || visitor.status === 'entered';
-        const matchesSearch = !searchTerm ||
-          visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (visitor.rg && visitor.rg.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (visitor.cpf && visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (visitor.plate && visitor.plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (visitor.responsible && visitor.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          visitor.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          visitor.reason.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (!searchTerm) return matchesFilter;
+
+        const matchesSearch = 
+          (visitor.name && visitor.name.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          (visitor.rg && visitor.rg.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          (visitor.cpf && visitor.cpf.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          (visitor.plate && visitor.plate.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          (visitor.responsible && visitor.responsible.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          (visitor.company && visitor.company.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          (visitor.reason && visitor.reason.toLowerCase().includes(lowerCaseSearchTerm));
+          
         return matchesFilter && matchesSearch;
       })
       .sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
@@ -194,3 +199,4 @@ export function VisitorList({
     </Card>
   );
 }
+
