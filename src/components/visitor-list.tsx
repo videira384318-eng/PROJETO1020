@@ -5,8 +5,8 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Search, LogOut, LogIn } from 'lucide-react';
-import type { VisitorWithStatus } from '@/types';
+import { Trash2, Search, LogOut, LogIn, Edit } from 'lucide-react';
+import type { Visitor, VisitorWithStatus } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from './ui/checkbox';
@@ -27,6 +27,7 @@ interface VisitorListProps {
   visitors: VisitorWithStatus[];
   onExit: (visitorId: string) => void;
   onRevisit: (visitorId: string) => void;
+  onEdit: (visitor: Visitor) => void;
   selectedVisitors: string[];
   onToggleSelection: (visitorId: string) => void;
   onToggleSelectAll: (filteredVisitors: VisitorWithStatus[]) => void;
@@ -37,6 +38,7 @@ export function VisitorList({
     visitors, 
     onExit,
     onRevisit,
+    onEdit,
     selectedVisitors,
     onToggleSelection,
     onToggleSelectAll,
@@ -136,7 +138,7 @@ export function VisitorList({
                 </TableRow>
               ) : (
                 filteredVisitors.map((visitor) => (
-                  <TableRow key={visitor.id} data-state={selectedVisitors.includes(visitor.id) ? 'selected' : ''}>
+                  <TableRow key={visitor.id} data-state={selectedVisitors.includes(visitor.id) ? 'selected' : ''} className="group">
                     <TableCell>
                         <Checkbox
                             checked={selectedVisitors.includes(visitor.id)}
@@ -154,6 +156,7 @@ export function VisitorList({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end">
                        {visitor.status === 'exited' ? (
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -180,6 +183,18 @@ export function VisitorList({
                             </TooltipContent>
                         </Tooltip>
                       )}
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => onEdit(visitor)}>
+                                  <Edit className="h-4 w-4" />
+                                  <span className="sr-only">Editar</span>
+                              </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                              <p>Editar Cadastro do Visitante</p>
+                          </TooltipContent>
+                      </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

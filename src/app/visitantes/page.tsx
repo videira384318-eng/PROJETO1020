@@ -11,6 +11,7 @@ import { addVisitor, getVisitors, deleteVisitors, getVisitor, updateVisitor } fr
 import { addVisitLog, getVisits, updateVisitLog, getLastVisitForVisitor } from '@/services/visitLogService';
 import { useToast } from "@/hooks/use-toast";
 import { RevisitDialog } from '@/components/revisit-dialog';
+import { EditVisitorDialog } from '@/components/edit-visitor-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VisitLogHistory } from '@/components/visit-log-history';
 
@@ -20,6 +21,7 @@ export default function VisitantesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [revisitingVisitor, setRevisitingVisitor] = useState<Visitor | null>(null);
+  const [editingVisitor, setEditingVisitor] = useState<Visitor | null>(null);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -101,6 +103,24 @@ export default function VisitantesPage() {
       });
     }
   };
+  
+  const handleUpdateVisitor = async (visitorData: Visitor) => {
+    try {
+        await updateVisitor(visitorData.id, visitorData);
+        toast({
+            title: "Visitante Atualizado!",
+            description: `Os dados de ${visitorData.name} foram atualizados.`
+        });
+        setEditingVisitor(null);
+        fetchData();
+    } catch (error) {
+        console.error("Error updating visitor:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao atualizar visitante",
+        });
+    }
+  };
 
   const handleRegisterVisit = async (formData: RevisitFormData) => {
     if (!revisitingVisitor) return;
@@ -177,6 +197,10 @@ export default function VisitantesPage() {
         });
     }
   };
+  
+   const handleEditClick = (visitor: Visitor) => {
+    setEditingVisitor(visitor);
+  };
 
   const handleRevisitClick = async (visitorId: string) => {
       // We already have the visitor data with last visit info in the `visitors` state
@@ -245,6 +269,7 @@ export default function VisitantesPage() {
                     visitors={visitors}
                     onRevisit={handleRevisitClick}
                     onExit={handleExitVisitor}
+                    onEdit={handleEditClick}
                     selectedVisitors={selectedVisitors}
                     onToggleSelection={handleToggleVisitorSelection}
                     onToggleSelectAll={handleToggleSelectAll}
@@ -262,6 +287,12 @@ export default function VisitantesPage() {
         onClose={() => setRevisitingVisitor(null)}
         visitor={revisitingVisitor}
         onSubmit={handleRegisterVisit}
+    />
+    <EditVisitorDialog
+        isOpen={!!editingVisitor}
+        onClose={() => setEditingVisitor(null)}
+        visitor={editingVisitor}
+        onSubmit={handleUpdateVisitor}
     />
     </>
   );
