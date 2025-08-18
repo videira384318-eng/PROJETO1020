@@ -57,6 +57,7 @@ export function VisitLogHistory({ visits }: VisitLogHistoryProps) {
                 <TableRow>
                     <TableHead>Visitante</TableHead>
                     <TableHead>Empresa</TableHead>
+                    <TableHead>Placa</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Motivo</TableHead>
                     <TableHead>Pátio</TableHead>
@@ -68,7 +69,7 @@ export function VisitLogHistory({ visits }: VisitLogHistoryProps) {
             <TableBody>
                 {filteredVisits.length === 0 ? (
                     <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                         {searchTerm ? 'Nenhum registro encontrado.' : 'Nenhum registro de visita ainda.'}
                         </TableCell>
                     </TableRow>
@@ -77,6 +78,7 @@ export function VisitLogHistory({ visits }: VisitLogHistoryProps) {
                         <TableRow key={visit.id}>
                             <TableCell className="font-medium">{visit.visitorName}</TableCell>
                             <TableCell>{visit.visitorCompany}</TableCell>
+                            <TableCell>{visit.plate || 'N/A'}</TableCell>
                             <TableCell>{visit.responsible}</TableCell>
                             <TableCell>{visit.reason}</TableCell>
                             <TableCell>{visit.parkingLot}</TableCell>
