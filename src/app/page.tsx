@@ -35,8 +35,7 @@ export default function Home() {
   const qrScannerRef = useRef<QRScannerRef>(null);
 
   const fetchData = useCallback(async () => {
-    // A verificação de isLoading impede buscas múltiplas
-    if (!isLoading) setIsLoading(true);
+    setIsLoading(true);
     try {
         const [employeesData, scansData] = await Promise.all([
             getEmployees(),
@@ -54,8 +53,7 @@ export default function Home() {
     } finally {
         setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [toast]);
   
   useEffect(() => {
     fetchData();
