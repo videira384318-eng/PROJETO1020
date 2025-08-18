@@ -3,6 +3,7 @@ import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
+import { MainNav } from '@/components/main-nav';
 
 export const metadata: Metadata = {
   title: 'Controle de Ponto QR',
@@ -35,8 +36,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
             >
-                {children}
-                <Toaster />
+                <div className="flex flex-col min-h-screen">
+                    <MainNav />
+                    <div className="flex-grow">
+                        {children}
+                    </div>
+                    <Toaster />
+                </div>
             </ThemeProvider>
       </body>
     </html>
