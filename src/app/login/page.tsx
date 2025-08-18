@@ -50,8 +50,14 @@ export default function LoginPage() {
               case 'auth/invalid-email':
                   description = "O formato do email é inválido. Por favor, verifique o email digitado.";
                   break;
+              case 'auth/too-many-requests':
+                  description = "Acesso temporariamente bloqueado devido a muitas tentativas. Tente novamente mais tarde.";
+                  break;
+              case 'auth/network-request-failed':
+                  description = "Falha de conexão. Verifique sua internet e tente novamente.";
+                  break;
               default:
-                  description = `Ocorreu um erro: ${error.message}`;
+                  description = `Ocorreu um erro: ${error.message} (código: ${error.code})`;
                   break;
           }
       }
@@ -67,7 +73,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
         await signInUser(data.email, data.password);
-        // Redirect to the authenticating page instead of root
         router.push('/authenticating'); 
     } catch (error: any) {
         console.error("Erro no login:", error);
