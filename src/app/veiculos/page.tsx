@@ -1,32 +1,57 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Vehicle } from '@/types';
+import { useState, useEffect, useCallback } from 'react';
+import type { Vehicle, VehicleLog, VehicleWithStatus, NewVehicleFormData, ReEnterVehicleFormData } from '@/types';
 import { AppHeader } from '@/components/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VehicleList } from '@/components/vehicle-list';
 import { VehicleEntryDialog } from '@/components/vehicle-entry-dialog';
-import { addVehicle, getVehicles, updateVehicle, deleteVehicles } from '@/services/vehicleService';
+import { ReEnterVehicleDialog } from '@/components/re-enter-vehicle-dialog';
+import { VehicleLogHistory } from '@/components/vehicle-log-history';
+import { addVehicle, getVehicles, deleteVehicles } from '@/services/vehicleService';
+import { addVehicleLog, getVehicleLogs, updateVehicleLog, getLastLogForVehicle } from '@/services/vehicleLogService';
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 export default function VeiculosPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleWithStatus[]>([]);
+  const [vehicleLogs, setVehicleLogs] = useState<VehicleLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
+  const [reenteringVehicle, setReenteringVehicle] = useState<VehicleWithStatus | null>(null);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const vehiclesData = await getVehicles();
-      setVehicles(vehiclesData);
+      const [vehiclesData, logsData] = await Promise.all([
+          getVehicles(),
+          getVehicleLogs()
+      ]);
+      
+      const vehiclesWithStatus: VehicleWithStatus[] = await Promise.all(
+          vehiclesData.map(async (vehicle) => {
+              const lastLog = await getLastLogForVehicle(vehicle.id);
+              return {
+                  ...vehicle,
+                  status: lastLog?.status ?? 'exited',
+                  lastLogId: lastLog?.id,
+                  driverName: lastLog?.driverName,
+                  parkingLot: lastLog?.parkingLot
+              };
+          })
+      );
+
+      setVehicles(vehiclesWithStatus.sort((a, b) => a.plate.localeCompare(b.plate)));
+      setVehicleLogs(logsData);
     } catch (error) {
-      console.error("Failed to fetch vehicles:", error);
+      console.error("Failed to fetch data:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao carregar veículos",
-        description: "Não foi possível buscar os dados de veículos.",
+        title: "Erro ao carregar dados",
+        description: "Não foi possível buscar os dados de veículos ou de histórico.",
       });
     } finally {
       setIsLoading(false);
@@ -37,42 +62,88 @@ export default function VeiculosPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleAddVehicle = async (vehicleData: Omit<Vehicle, 'id' | 'status' | 'entryTimestamp' | 'exitTimestamp'>) => {
+  const handleAddVehicle = async (formData: NewVehicleFormData) => {
     try {
-      await addVehicle(vehicleData);
+      // 1. Create the permanent vehicle record
+      const vehicleData: Omit<Vehicle, 'id'> = {
+        plate: formData.plate,
+        model: formData.model,
+      };
+      const newVehicleId = await addVehicle(vehicleData);
+
+      // 2. Create the first log for this vehicle
+      await addVehicleLog({
+          vehicleId: newVehicleId,
+          vehiclePlate: formData.plate,
+          vehicleModel: formData.model,
+          driverName: formData.driverName,
+          parkingLot: formData.parkingLot,
+      });
+
       toast({
-        title: "Veículo Registrado!",
-        description: `A entrada de ${vehicleData.model} (${vehicleData.plate}) foi registrada.`,
+        title: "Veículo Cadastrado e Entrada Registrada!",
+        description: `O veículo ${formData.plate} foi cadastrado e sua entrada foi registrada.`,
         className: 'bg-green-600 text-white'
       });
       fetchData();
     } catch (error) {
-      console.error("Error adding vehicle:", error);
+      console.error("Error adding vehicle and first log:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao registrar veículo",
+        title: "Erro ao cadastrar veículo",
       });
     }
   };
 
+  const handleReEnterVehicle = async (formData: ReEnterVehicleFormData) => {
+    if (!reenteringVehicle) return;
+
+    try {
+        await addVehicleLog({
+            vehicleId: reenteringVehicle.id,
+            vehiclePlate: reenteringVehicle.plate,
+            vehicleModel: reenteringVehicle.model,
+            driverName: formData.driverName,
+            parkingLot: formData.parkingLot,
+        });
+
+        toast({
+            title: "Entrada Registrada!",
+            description: `A nova entrada do veículo ${reenteringVehicle.plate} foi registrada.`,
+            className: 'bg-green-600 text-white'
+        });
+        setReenteringVehicle(null);
+        fetchData();
+
+    } catch (error) {
+        console.error("Error adding vehicle log:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao registrar entrada",
+        });
+    }
+  };
+
+
   const handleExitVehicle = async (vehicleId: string) => {
      try {
-      const vehicle = vehicles.find(v => v.id === vehicleId);
-      if (vehicle) {
-        await updateVehicle(vehicleId, { 
-          ...vehicle, 
-          status: 'exited', 
-          exitTimestamp: new Date().toISOString() 
-        });
-        toast({
-          title: "Saída Registrada!",
-          description: `A saída do veículo ${vehicle.plate} foi registrada.`,
-           className: 'bg-red-600 text-white',
-        });
-        fetchData();
-      }
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        if (vehicle && vehicle.lastLogId) {
+            await updateVehicleLog(vehicle.lastLogId, {
+                status: 'exited',
+                exitTimestamp: new Date().toISOString()
+            });
+            toast({
+              title: "Saída Registrada!",
+              description: `A saída do veículo ${vehicle.plate} foi registrada.`,
+              className: 'bg-red-600 text-white',
+            });
+            fetchData();
+        } else {
+             throw new Error("Última movimentação não encontrada para registrar a saída.");
+        }
     } catch (error) {
-       console.error("Error updating vehicle:", error);
+       console.error("Error updating vehicle exit:", error);
        toast({
         variant: "destructive",
         title: "Erro ao registrar saída",
@@ -87,7 +158,7 @@ export default function VeiculosPage() {
       setSelectedVehicles([]);
       toast({
           title: "Veículos Removidos",
-          description: `Os ${count} veículo(s) selecionado(s) foram removidos.`,
+          description: `Os ${count} veículo(s) selecionado(s) e seus históricos foram removidos.`,
       });
       fetchData();
     } catch (error) {
@@ -98,6 +169,10 @@ export default function VeiculosPage() {
         });
     }
   };
+  
+  const handleReEnterClick = (vehicle: VehicleWithStatus) => {
+      setReenteringVehicle(vehicle);
+  }
 
   const handleToggleVehicleSelection = (vehicleId: string) => {
     setSelectedVehicles(prev => 
@@ -106,8 +181,8 @@ export default function VeiculosPage() {
       : [...prev, vehicleId]
     );
   };
-
-  const handleToggleSelectAll = (filteredVehicles: Vehicle[]) => {
+  
+  const handleToggleSelectAll = (filteredVehicles: VehicleWithStatus[]) => {
     if (selectedVehicles.length === filteredVehicles.length) {
       setSelectedVehicles([]);
     } else {
@@ -133,21 +208,42 @@ export default function VeiculosPage() {
   }
 
   return (
+    <>
     <main className="container mx-auto p-4 md:p-8">
       <AppHeader
         title="Controle de Veículos"
-        description="Gerencie a entrada e saída de veículos."
+        description="Gerencie o cadastro e o fluxo de veículos."
       >
         <VehicleEntryDialog onSubmit={handleAddVehicle} />
       </AppHeader>
-      <VehicleList
-        vehicles={vehicles}
-        onExit={handleExitVehicle}
-        selectedVehicles={selectedVehicles}
-        onToggleSelection={handleToggleVehicleSelection}
-        onToggleSelectAll={handleToggleSelectAll}
-        onDeleteSelected={handleDeleteSelectedVehicles}
-      />
+
+      <Tabs defaultValue="vehicles" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="vehicles">Veículos</TabsTrigger>
+                <TabsTrigger value="history">Histórico</TabsTrigger>
+            </TabsList>
+            <TabsContent value="vehicles">
+                <VehicleList
+                    vehicles={vehicles}
+                    onReEnter={handleReEnterClick}
+                    onExit={handleExitVehicle}
+                    selectedVehicles={selectedVehicles}
+                    onToggleSelection={handleToggleVehicleSelection}
+                    onToggleSelectAll={handleToggleSelectAll}
+                    onDeleteSelected={handleDeleteSelectedVehicles}
+                />
+            </TabsContent>
+            <TabsContent value="history">
+                <VehicleLogHistory logs={vehicleLogs} />
+            </TabsContent>
+        </Tabs>
     </main>
+    <ReEnterVehicleDialog
+      isOpen={!!reenteringVehicle}
+      onClose={() => setReenteringVehicle(null)}
+      vehicle={reenteringVehicle}
+      onSubmit={handleReEnterVehicle}
+    />
+    </>
   );
 }

@@ -5,8 +5,8 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Car, Search, LogIn, LogOut } from 'lucide-react';
-import type { Vehicle } from '@/types';
+import { Trash2, Search, LogOut, LogIn } from 'lucide-react';
+import type { VehicleWithStatus } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from './ui/checkbox';
@@ -21,55 +21,62 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface VehicleListProps {
-  vehicles: Vehicle[];
+  vehicles: VehicleWithStatus[];
   onExit: (vehicleId: string) => void;
+  onReEnter: (vehicle: VehicleWithStatus) => void;
   selectedVehicles: string[];
   onToggleSelection: (vehicleId: string) => void;
-  onToggleSelectAll: (filteredVehicles: Vehicle[]) => void;
+  onToggleSelectAll: (filteredVehicles: VehicleWithStatus[]) => void;
   onDeleteSelected: () => void;
 }
 
 export function VehicleList({ 
     vehicles, 
     onExit,
+    onReEnter,
     selectedVehicles,
     onToggleSelection,
     onToggleSelectAll,
     onDeleteSelected,
 }: VehicleListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState<'inside' | 'all'>('inside');
 
   const filteredVehicles = useMemo(() => {
-    return vehicles
-      .filter(vehicle => {
-        const matchesFilter = filter === 'all' || vehicle.status === 'entered';
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        const matchesSearch = !searchTerm || 
-          (vehicle.plate || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-          (vehicle.model || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-          (vehicle.driverName || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-          (vehicle.parkingLot || '').toLowerCase().includes(lowerCaseSearchTerm);
-        return matchesFilter && matchesSearch;
-      })
-      .sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
-  }, [vehicles, searchTerm, filter]);
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
-  const numSelected = selectedVehicles.length;
+    // If there is a search term, filter all vehicles
+    if (lowerCaseSearchTerm) {
+      return vehicles
+        .filter(vehicle => 
+          (vehicle.plate || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+          (vehicle.model || '').toLowerCase().includes(lowerCaseSearchTerm)
+        )
+        .sort((a, b) => (a.plate || '').localeCompare(b.plate || ''));
+    }
+
+    // By default (no search term), show only vehicles that are 'entered'
+    return vehicles
+      .filter(vehicle => vehicle.status === 'entered')
+      .sort((a, b) => (a.plate || '').localeCompare(b.plate || ''));
+  }, [vehicles, searchTerm]);
+
+
+   const numSelected = selectedVehicles.length;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <CardTitle className="font-headline">Veículos no Pátio</CardTitle>
-            <CardDescription>Visualize e gerencie os veículos presentes.</CardDescription>
+            <CardTitle className="font-headline">Veículos Cadastrados</CardTitle>
+            <CardDescription>Gerencie veículos e registre novas movimentações.</CardDescription>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
             {numSelected > 0 && (
-                <AlertDialog>
+                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -80,7 +87,7 @@ export function VehicleList({
                         <AlertDialogHeader>
                         <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} registro(s) de veículo(s) selecionado(s).
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} veículo(s) selecionado(s) e todo o seu histórico de movimentações.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -93,29 +100,18 @@ export function VehicleList({
             <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Pesquisar veículo..."
+                placeholder="Pesquisar por placa ou modelo..."
                 className="pl-9"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-             <Button 
-                variant={filter === 'inside' ? 'secondary' : 'outline'}
-                onClick={() => setFilter('inside')}
-            >
-                No Pátio
-            </Button>
-            <Button 
-                variant={filter === 'all' ? 'secondary' : 'outline'}
-                onClick={() => setFilter('all')}
-            >
-                Histórico
-            </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="border rounded-md">
+          <TooltipProvider>
           <Table>
             <TableHeader>
               <TableRow>
@@ -130,55 +126,72 @@ export function VehicleList({
                 <TableHead>Modelo</TableHead>
                 <TableHead>Motorista</TableHead>
                 <TableHead>Pátio</TableHead>
-                <TableHead>Entrada</TableHead>
-                 <TableHead>Saída</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredVehicles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
-                    {searchTerm ? 'Nenhum veículo encontrado.' : 'Nenhum veículo registrado.'}
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    {searchTerm ? 'Nenhum veículo encontrado.' : 'Nenhum veículo presente no pátio.'}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredVehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id} data-state={selectedVehicles.includes(vehicle.id) ? 'selected' : ''}>
-                     <TableCell>
+                  <TableRow key={vehicle.id} data-state={selectedVehicles.includes(vehicle.id) ? 'selected' : ''} className="group">
+                    <TableCell>
                         <Checkbox
                             checked={selectedVehicles.includes(vehicle.id)}
                             onCheckedChange={() => onToggleSelection(vehicle.id)}
                             aria-label={`Selecionar ${vehicle.plate}`}
                         />
                     </TableCell>
-                    <TableCell className="font-mono">{vehicle.plate}</TableCell>
-                    <TableCell>{vehicle.model}</TableCell>
-                    <TableCell>{vehicle.driverName}</TableCell>
-                    <TableCell>{vehicle.parkingLot}</TableCell>
-                    <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString()}</TableCell>
-                    <TableCell>
-                        {vehicle.exitTimestamp ? new Date(vehicle.exitTimestamp).toLocaleString() : 'N/A'}
-                    </TableCell>
+                    <TableCell className="font-mono">{vehicle.plate || 'N/A'}</TableCell>
+                    <TableCell>{vehicle.model || 'N/A'}</TableCell>
+                    <TableCell>{vehicle.status === 'entered' ? (vehicle.driverName || 'N/A') : 'N/A'}</TableCell>
+                    <TableCell>{vehicle.status === 'entered' ? (vehicle.parkingLot || 'N/A') : 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={vehicle.status === 'entered' ? 'success' : 'destructive'} className="capitalize">
-                        {vehicle.status === 'entered' ? 'No Pátio' : 'Saiu'}
+                        {vehicle.status === 'entered' ? 'No Pátio' : 'Ausente'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {vehicle.status === 'entered' && (
-                        <Button variant="destructive" size="sm" onClick={() => onExit(vehicle.id)}>
-                          <LogOut className="mr-2 h-4 w-4"/>
-                          Registrar Saída
-                        </Button>
+                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end">
+                       {vehicle.status === 'exited' ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => onReEnter(vehicle)}>
+                                    <LogIn className="mr-2 h-4 w-4"/>
+                                    Registrar Entrada
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Registrar uma nova entrada para este veículo.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        
+                      ) : (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="destructive" size="sm" onClick={() => onExit(vehicle.id)}>
+                                    <LogOut className="mr-2 h-4 w-4"/>
+                                    Registrar Saída
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Registrar a saída para a movimentação atual.</p>
+                            </TooltipContent>
+                        </Tooltip>
                       )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>

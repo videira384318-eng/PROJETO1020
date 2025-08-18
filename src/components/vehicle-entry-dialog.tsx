@@ -20,9 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Car, PlusCircle } from 'lucide-react';
-import type { Vehicle } from '@/types';
+import type { NewVehicleFormData } from '@/types';
 
-const vehicleFormSchema = z.object({
+const newVehicleFormSchema = z.object({
   plate: z.string().min(7, "A placa deve ter no mínimo 7 caracteres.").max(8, "A placa deve ter no máximo 8 caracteres."),
   model: z.string().min(1, "O modelo é obrigatório."),
   driverName: z.string().min(1, "O nome do motorista é obrigatório."),
@@ -31,17 +31,15 @@ const vehicleFormSchema = z.object({
   }),
 });
 
-type VehicleFormData = Omit<Vehicle, 'id' | 'status' | 'entryTimestamp' | 'exitTimestamp'>;
-
 interface VehicleEntryDialogProps {
-  onSubmit: (data: VehicleFormData) => void;
+  onSubmit: (data: NewVehicleFormData) => void;
 }
 
 export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<VehicleFormData>({
-    resolver: zodResolver(vehicleFormSchema),
+  const form = useForm<NewVehicleFormData>({
+    resolver: zodResolver(newVehicleFormSchema),
     defaultValues: {
       plate: '',
       model: '',
@@ -50,7 +48,7 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
     },
   });
 
-  const handleSubmit = (data: VehicleFormData) => {
+  const handleSubmit = (data: NewVehicleFormData) => {
     onSubmit(data);
     form.reset();
     setIsOpen(false);
@@ -61,32 +59,32 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Registrar Veículo
+          Novo Veículo
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">Registrar Entrada de Veículo</DialogTitle>
+          <DialogTitle className="font-headline">Cadastrar Novo Veículo</DialogTitle>
           <DialogDescription>
-            Preencha os dados do veículo e do motorista.
+            Preencha os dados do veículo e da primeira movimentação.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="driverName"
+              name="plate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Motorista</FormLabel>
+                  <FormLabel>Placa</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: João da Silva" {...field} />
+                    <Input placeholder="ABC-1234" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="model"
               render={({ field }) => (
@@ -101,12 +99,12 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
             />
             <FormField
               control={form.control}
-              name="plate"
+              name="driverName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Placa</FormLabel>
+                  <FormLabel>Nome do Motorista</FormLabel>
                   <FormControl>
-                    <Input placeholder="ABC-1234" {...field} />
+                    <Input placeholder="Ex: João da Silva" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -149,7 +147,7 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
             <DialogFooter className="pt-4 sm:justify-start">
               <Button type="submit">
                 <Car className="mr-2 h-4 w-4" />
-                Confirmar Entrada
+                Salvar e Registrar Entrada
               </Button>
               <DialogClose asChild>
                 <Button type="button" variant="ghost">

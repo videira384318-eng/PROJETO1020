@@ -17,15 +17,48 @@ export interface AttendanceScan {
     permissions: string[];
   }
   
+  // Cadastro permanente do veículo
   export interface Vehicle {
     id: string;
     plate: string;
     model: string;
+  }
+  
+  // Registro de uma movimentação individual do veículo
+  export interface VehicleLog {
+      id: string;
+      vehicleId: string; // link to Vehicle.id
+      driverName: string;
+      parkingLot: 'P1' | 'P2';
+      entryTimestamp: string;
+      exitTimestamp: string | null;
+      status: 'entered' | 'exited';
+      // Include vehicle info for easier display
+      vehiclePlate: string;
+      vehicleModel: string;
+  }
+
+  // Type for combining vehicle with its latest log status
+  export interface VehicleWithStatus extends Vehicle {
+      status: 'entered' | 'exited';
+      lastLogId?: string;
+      // Last log info to display in list
+      driverName?: string;
+      parkingLot?: 'P1' | 'P2';
+  }
+
+  // Type for the new vehicle form (permanent + first log)
+  export interface NewVehicleFormData {
+    plate: string;
+    model: string;
     driverName: string;
     parkingLot: 'P1' | 'P2';
-    entryTimestamp: string;
-    exitTimestamp: string | null;
-    status: 'entered' | 'exited';
+  }
+
+  // Type for the re-entry form
+  export interface ReEnterVehicleFormData {
+    driverName: string;
+    parkingLot: 'P1' | 'P2';
   }
 
   // Cadastro permanente do visitante
