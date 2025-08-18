@@ -46,12 +46,12 @@ export const deleteVisitors = async (visitorIds: string[]): Promise<void> => {
     const batch = writeBatch(db);
 
     for (const id of visitorIds) {
-        // Delete the visitor document
+        // Delete only the visitor document, keeping the visit history.
         const visitorDocRef = doc(db, VISITORS_COLLECTION, id);
         batch.delete(visitorDocRef);
 
-        // Delete all associated visit logs
-        await deleteVisitsForVisitor(id, batch);
+        // The line that deleted visit history has been removed.
+        // await deleteVisitsForVisitor(id, batch);
     }
 
     await batch.commit();
