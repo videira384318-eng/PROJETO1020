@@ -44,6 +44,16 @@ export const getEmployees = async (): Promise<QrFormData[]> => {
     return employees;
 };
 
+export const getEmployeeById = async (employeeId: string): Promise<QrFormData | null> => {
+    if (!employeeId) return null;
+    const employeeDocRef = doc(db, EMPLOYEES_COLLECTION, employeeId);
+    const docSnap = await getDoc(employeeDocRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as QrFormData;
+    }
+    return null;
+}
+
 
 export const deleteEmployees = async (employeeIds: string[]): Promise<void> => {
     if (employeeIds.length === 0) return;

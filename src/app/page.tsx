@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { isSameDay } from 'date-fns';
 import { AppHeader } from '@/components/app-header';
-import { addEmployee, deleteEmployees, getEmployees, updateEmployee, addEmployeeWithId } from '@/services/employeeService';
+import { addEmployee, deleteEmployees, getEmployees, updateEmployee, addEmployeeWithId, getEmployeeById } from '@/services/employeeService';
 import { addScan, deleteScan, getScans, getLastScanForEmployee } from '@/services/scanService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -124,17 +124,20 @@ export default function Home() {
     }
 
     try {
-      // Sempre busca a lista mais recente de funcionários para garantir a validação correta
-      const currentEmployees = await getEmployees();
-      const scannedData: QrFormData = JSON.parse(decodedText);
-      const { nome, setor, placa, ramal, id: employeeId, active } = scannedData;
+      const scannedJson = JSON.parse(decodedText);
+      const employeeId = scannedJson?.id;
       
-      const employeeExists = currentEmployees.some(e => e.id === employeeId);
-      if (!employeeExists) {
-        throw new Error('Funcionário não encontrado na lista.');
+      if (!employeeId) {
+          throw new Error('ID do funcionário não encontrado no QR Code.');
       }
       
-      if (active === false) {
+      const existingEmployee = await getEmployeeById(employeeId);
+      
+      if (!existingEmployee) {
+        throw new Error('Funcionário não encontrado no banco de dados.');
+      }
+      
+      if (existingEmployee.active === false) {
           toast({
             variant: "destructive",
             title: "QR Code Inativo",
@@ -149,11 +152,11 @@ export default function Home() {
       const translatedType = newScanType === 'entry' ? 'entrada' : 'saída';
       
       const newScan: Omit<AttendanceScan, 'scanId' | 'id'> = {
-        employeeId: employeeId!,
+        employeeId: employeeId,
         scanTime: new Date().toISOString(),
         scanType: newScanType,
-        placa: placa || 'N/A',
-        ramal: ramal || 'N/A'
+        placa: existingEmployee.placa || 'N/A',
+        ramal: existingEmployee.ramal || 'N/A'
       };
 
       await addScan(newScan);
@@ -161,7 +164,7 @@ export default function Home() {
       
       toast({
         title: "Escaneamento Concluído!",
-        description: `Registrada ${translatedType} para ${nome} (${setor}).`,
+        description: `Registrada ${translatedType} para ${existingEmployee.nome} (${existingEmployee.setor}).`,
         className: newScanType === 'entry' ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
       });
       
