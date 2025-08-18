@@ -47,21 +47,26 @@ export function VisitorList({
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredVisitors = useMemo(() => {
-    return visitors
-      .filter(visitor => {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        if (!searchTerm) return true;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
-        const matchesSearch = 
+    // If there is a search term, filter all visitors
+    if (lowerCaseSearchTerm) {
+      return visitors
+        .filter(visitor => 
           (visitor.name && visitor.name.toLowerCase().includes(lowerCaseSearchTerm)) ||
           (visitor.rg && visitor.rg.toLowerCase().includes(lowerCaseSearchTerm)) ||
           (visitor.cpf && visitor.cpf.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (visitor.company && visitor.company.toLowerCase().includes(lowerCaseSearchTerm));
-          
-        return matchesSearch;
-      })
+          (visitor.company && visitor.company.toLowerCase().includes(lowerCaseSearchTerm))
+        )
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    // By default (no search term), show only visitors that are 'entered'
+    return visitors
+      .filter(visitor => visitor.status === 'entered')
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [visitors, searchTerm]);
+
 
    const numSelected = selectedVisitors.length;
 
@@ -136,7 +141,7 @@ export function VisitorList({
               {filteredVisitors.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
-                    {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante cadastrado.'}
+                    {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante presente no momento.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -153,9 +158,9 @@ export function VisitorList({
                     <TableCell>{visitor.company || 'N/A'}</TableCell>
                     <TableCell>{visitor.rg || 'N/A'}</TableCell>
                     <TableCell>{visitor.cpf || 'N/A'}</TableCell>
-                    <TableCell>{visitor.status === 'entered' ? visitor.plate : 'N/A'}</TableCell>
-                    <TableCell>{visitor.status === 'entered' ? visitor.responsible : 'N/A'}</TableCell>
-                    <TableCell>{visitor.status === 'entered' ? visitor.reason : 'N/A'}</TableCell>
+                    <TableCell>{visitor.status === 'entered' ? (visitor.plate || 'N/A') : 'N/A'}</TableCell>
+                    <TableCell>{visitor.status === 'entered' ? (visitor.responsible || 'N/A') : 'N/A'}</TableCell>
+                    <TableCell>{visitor.status === 'entered' ? (visitor.reason || 'N/A') : 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={visitor.status === 'entered' ? 'success' : 'destructive'} className="capitalize">
                         {visitor.status === 'entered' ? 'Presente' : 'Ausente'}
