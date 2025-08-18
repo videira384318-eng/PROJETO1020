@@ -11,12 +11,18 @@ const employeesCollectionRef = collection(db, EMPLOYEES_COLLECTION);
 const scansCollectionRef = collection(db, SCANS_COLLECTION);
 
 // --- Employee Management ---
+
+// This new function will use setDoc to enforce the ID from the client.
 export const addEmployee = async (employeeData: QrFormData): Promise<string> => {
+    if (!employeeData.id) {
+        throw new Error("Employee ID is missing.");
+    }
+    const employeeDocRef = doc(db, EMPLOYEES_COLLECTION, employeeData.id);
     const newEmployee = { ...employeeData, active: employeeData.active ?? true };
-    const docRef = await addDoc(employeesCollectionRef, newEmployee);
-    await updateDoc(docRef, { id: docRef.id });
-    return docRef.id;
+    await setDoc(employeeDocRef, newEmployee);
+    return employeeData.id;
 };
+
 
 export const addEmployeeWithId = async (employeeId: string, employeeData: QrFormData): Promise<void> => {
     const employeeDocRef = doc(db, EMPLOYEES_COLLECTION, employeeId);

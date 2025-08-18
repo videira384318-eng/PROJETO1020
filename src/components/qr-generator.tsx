@@ -31,6 +31,11 @@ const qrFormSchema = z.object({
 
 export type QrFormData = z.infer<typeof qrFormSchema>;
 
+// Simple unique ID generator
+const generateUniqueId = () => {
+  return `emp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+};
+
 interface QRGeneratorProps {
     onAddEmployee: (data: QrFormData) => void;
 }
@@ -50,7 +55,9 @@ export function QRGenerator({ onAddEmployee }: QRGeneratorProps) {
   });
 
   const handleGenerate = (data: QrFormData) => {
-    onAddEmployee(data);
+    // Generate a unique ID here and add it to the employee data
+    const employeeWithId = { ...data, id: generateUniqueId() };
+    onAddEmployee(employeeWithId);
     form.reset();
     setIsOpen(false);
   };
