@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Car, PlusCircle } from 'lucide-react';
 import type { Vehicle } from '@/types';
 
@@ -25,10 +26,12 @@ const vehicleFormSchema = z.object({
   plate: z.string().min(7, "A placa deve ter no mínimo 7 caracteres.").max(8, "A placa deve ter no máximo 8 caracteres."),
   model: z.string().min(1, "O modelo é obrigatório."),
   driverName: z.string().min(1, "O nome do motorista é obrigatório."),
-  company: z.string().min(1, "A empresa é obrigatória."),
+  parkingLot: z.enum(['P1', 'P2'], {
+    required_error: "Você precisa selecionar o pátio.",
+  }),
 });
 
-type VehicleFormData = z.infer<typeof vehicleFormSchema>;
+type VehicleFormData = Omit<Vehicle, 'id' | 'status' | 'entryTimestamp' | 'exitTimestamp'>;
 
 interface VehicleEntryDialogProps {
   onSubmit: (data: VehicleFormData) => void;
@@ -43,7 +46,7 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
       plate: '',
       model: '',
       driverName: '',
-      company: '',
+      parkingLot: 'P1',
     },
   });
 
@@ -111,12 +114,33 @@ export function VehicleEntryDialog({ onSubmit }: VehicleEntryDialogProps) {
             />
             <FormField
               control={form.control}
-              name="company"
+              name="parkingLot"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Empresa</FormLabel>
+                <FormItem className="space-y-3">
+                  <FormLabel>Pátio</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Transportadora X" {...field} />
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-row space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="P1" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          P1
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="P2" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          P2
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

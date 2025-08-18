@@ -46,4 +46,3 @@ export const deleteVehicles = async (vehicleIds: string[]): Promise<void> => {
 
     await batch.commit();
 };
-

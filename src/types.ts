@@ -22,7 +22,7 @@ export interface AttendanceScan {
     plate: string;
     model: string;
     driverName: string;
-    company: string;
+    parkingLot: 'P1' | 'P2';
     entryTimestamp: string;
     exitTimestamp: string | null;
     status: 'entered' | 'exited';
@@ -35,6 +35,10 @@ export interface AttendanceScan {
     company: string;
     rg: string;
     cpf: string;
+    // Dados da primeira visita, salvos no cadastro inicial
+    plate?: string;
+    responsible?: string;
+    reason?: string;
   }
 
   // Registro de uma visita individual
@@ -57,7 +61,7 @@ export interface AttendanceScan {
   export interface VisitorWithStatus extends Visitor {
       status: 'entered' | 'exited';
       lastVisitId?: string;
-      // Last visit info to pre-fill forms
+      // Last visit info to pre-fill forms and display in list
       plate?: string;
       responsible?: string;
       reason?: string;

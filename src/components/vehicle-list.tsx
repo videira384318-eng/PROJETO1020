@@ -51,7 +51,7 @@ export function VehicleList({
           (vehicle.plate || '').toLowerCase().includes(lowerCaseSearchTerm) ||
           (vehicle.model || '').toLowerCase().includes(lowerCaseSearchTerm) ||
           (vehicle.driverName || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-          (vehicle.company || '').toLowerCase().includes(lowerCaseSearchTerm);
+          (vehicle.parkingLot || '').toLowerCase().includes(lowerCaseSearchTerm);
         return matchesFilter && matchesSearch;
       })
       .sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
@@ -129,7 +129,7 @@ export function VehicleList({
                 <TableHead>Placa</TableHead>
                 <TableHead>Modelo</TableHead>
                 <TableHead>Motorista</TableHead>
-                <TableHead>Empresa</TableHead>
+                <TableHead>Pátio</TableHead>
                 <TableHead>Entrada</TableHead>
                  <TableHead>Saída</TableHead>
                 <TableHead>Status</TableHead>
@@ -156,7 +156,7 @@ export function VehicleList({
                     <TableCell className="font-mono">{vehicle.plate}</TableCell>
                     <TableCell>{vehicle.model}</TableCell>
                     <TableCell>{vehicle.driverName}</TableCell>
-                    <TableCell>{vehicle.company}</TableCell>
+                    <TableCell>{vehicle.parkingLot}</TableCell>
                     <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString()}</TableCell>
                     <TableCell>
                         {vehicle.exitTimestamp ? new Date(vehicle.exitTimestamp).toLocaleString() : 'N/A'}
@@ -184,5 +184,3 @@ export function VehicleList({
     </Card>
   );
 }
-
-
