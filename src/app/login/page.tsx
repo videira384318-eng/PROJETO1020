@@ -67,12 +67,8 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
         await signInUser(data.email, data.password);
-        toast({
-            title: "Login bem-sucedido!",
-            description: "Redirecionando para o painel.",
-            className: "bg-green-600 text-white"
-        });
-        router.push('/');
+        // Redirect to the authenticating page instead of root
+        router.push('/authenticating'); 
     } catch (error: any) {
         console.error("Erro no login:", error);
         handleAuthError(error);

@@ -24,7 +24,8 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-const unprotectedRoutes = ['/login'];
+// Add 'authenticating' to the list of unprotected routes
+const unprotectedRoutes = ['/login', '/authenticating'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -51,14 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!currentUser && isProtectedRoute) {
         // If user is not logged in and tries to access a protected route, redirect to login
         router.push('/login');
-      } else if (currentUser && pathname === '/login') {
-        // If user is logged in and tries to access login page, redirect to home
-        router.push('/');
+      } else if (currentUser && (pathname === '/login' || pathname === '/authenticating')) {
+        // If user is logged in and on login or authenticating, push to home
+        // This will be handled by the authenticating page now
+        if (pathname === '/login') {
+            router.push('/');
+        }
       }
     }
   }, [currentUser, loading, router, pathname]);
 
-  if (loading) {
+  if (loading && !unprotectedRoutes.includes(pathname)) {
      return (
         <div className="flex items-center justify-center min-h-screen">
             <div className="w-full max-w-md space-y-4 p-4">
