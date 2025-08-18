@@ -23,12 +23,16 @@ import type { Visitor } from '@/types';
 
 const visitorFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
-  document: z.string().min(1, "O documento é obrigatório."),
   company: z.string().min(1, "A empresa é obrigatória."),
+  rg: z.string().min(1, "O RG é obrigatório."),
+  cpf: z.string().min(1, "O CPF é obrigatório."),
+  plate: z.string().optional(),
+  responsible: z.string().min(1, "O responsável é obrigatório."),
   reason: z.string().min(1, "O motivo da visita é obrigatório."),
 });
 
-type VisitorFormData = z.infer<typeof visitorFormSchema>;
+type VisitorFormData = Omit<Visitor, 'id' | 'status' | 'entryTimestamp' | 'exitTimestamp'>;
+
 
 interface VisitorEntryDialogProps {
   onSubmit: (data: VisitorFormData) => void;
@@ -37,17 +41,20 @@ interface VisitorEntryDialogProps {
 export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<VisitorFormData>({
+  const form = useForm<z.infer<typeof visitorFormSchema>>({
     resolver: zodResolver(visitorFormSchema),
     defaultValues: {
       name: '',
-      document: '',
       company: '',
+      rg: '',
+      cpf: '',
+      plate: '',
+      responsible: '',
       reason: '',
     },
   });
 
-  const handleSubmit = (data: VisitorFormData) => {
+  const handleSubmit = (data: z.infer<typeof visitorFormSchema>) => {
     onSubmit(data);
     form.reset();
     setIsOpen(false);
@@ -85,12 +92,12 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
             />
             <FormField
               control={form.control}
-              name="document"
+              name="company"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Documento (RG ou CPF)</FormLabel>
+                  <FormLabel>Empresa</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: 12.345.678-9" {...field} />
+                    <Input placeholder="Ex: Empresa Y" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,12 +105,51 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
             />
             <FormField
               control={form.control}
-              name="company"
+              name="rg"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Empresa</FormLabel>
+                  <FormLabel>RG</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Empresa Y" {...field} />
+                    <Input placeholder="Ex: 12.345.678-9" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="cpf"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: 123.456.789-00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="plate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Placa (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: BRA2E19" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="responsible"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Responsável</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: João da Silva (TI)" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

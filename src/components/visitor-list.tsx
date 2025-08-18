@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, User, Search, LogIn, LogOut } from 'lucide-react';
+import { Trash2, User, Search, LogOut } from 'lucide-react';
 import type { Visitor } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +48,10 @@ export function VisitorList({
         const matchesFilter = filter === 'all' || visitor.status === 'entered';
         const matchesSearch = !searchTerm ||
           visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          visitor.document.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (visitor.rg && visitor.rg.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (visitor.cpf && visitor.cpf.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (visitor.plate && visitor.plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (visitor.responsible && visitor.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
           visitor.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
           visitor.reason.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesFilter && matchesSearch;
@@ -126,8 +129,11 @@ export function VisitorList({
                     />
                 </TableHead>
                 <TableHead>Nome</TableHead>
-                <TableHead>Documento</TableHead>
                 <TableHead>Empresa</TableHead>
+                <TableHead>RG</TableHead>
+                <TableHead>CPF</TableHead>
+                <TableHead>Placa</TableHead>
+                <TableHead>Responsável</TableHead>
                 <TableHead>Motivo</TableHead>
                 <TableHead>Entrada</TableHead>
                 <TableHead>Saída</TableHead>
@@ -138,7 +144,7 @@ export function VisitorList({
             <TableBody>
               {filteredVisitors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={12} className="h-24 text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante registrado.'}
                   </TableCell>
                 </TableRow>
@@ -153,8 +159,11 @@ export function VisitorList({
                         />
                     </TableCell>
                     <TableCell>{visitor.name}</TableCell>
-                    <TableCell>{visitor.document}</TableCell>
                     <TableCell>{visitor.company}</TableCell>
+                    <TableCell>{visitor.rg}</TableCell>
+                    <TableCell>{visitor.cpf}</TableCell>
+                    <TableCell>{visitor.plate || 'N/A'}</TableCell>
+                    <TableCell>{visitor.responsible}</TableCell>
                     <TableCell>{visitor.reason}</TableCell>
                     <TableCell>{new Date(visitor.entryTimestamp).toLocaleString()}</TableCell>
                     <TableCell>

@@ -30,10 +30,14 @@ export interface AttendanceScan {
   export interface Visitor {
     id: string;
     name: string;
-    document: string;
     company: string;
+    rg: string;
+    cpf: string;
+    plate: string;
+    responsible: string;
     reason: string;
     entryTimestamp: string;
     exitTimestamp: string | null;
     status: 'entered' | 'exited';
   }
+
