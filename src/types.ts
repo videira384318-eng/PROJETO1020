@@ -33,11 +33,13 @@ export interface AttendanceScan {
     company: string;
     rg: string;
     cpf: string;
-    plate: string;
+    plate?: string;
     responsible: string;
     reason: string;
+    parkingLot: 'P1' | 'P2';
     entryTimestamp: string;
     exitTimestamp: string | null;
     status: 'entered' | 'exited';
   }
+
 

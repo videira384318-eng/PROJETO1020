@@ -135,6 +135,7 @@ export function VisitorList({
                 <TableHead>Placa</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead>Motivo</TableHead>
+                <TableHead>Pátio</TableHead>
                 <TableHead>Entrada</TableHead>
                 <TableHead>Saída</TableHead>
                 <TableHead>Status</TableHead>
@@ -144,7 +145,7 @@ export function VisitorList({
             <TableBody>
               {filteredVisitors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={13} className="h-24 text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante registrado.'}
                   </TableCell>
                 </TableRow>
@@ -165,6 +166,7 @@ export function VisitorList({
                     <TableCell>{visitor.plate || 'N/A'}</TableCell>
                     <TableCell>{visitor.responsible}</TableCell>
                     <TableCell>{visitor.reason}</TableCell>
+                    <TableCell>{visitor.parkingLot}</TableCell>
                     <TableCell>{new Date(visitor.entryTimestamp).toLocaleString()}</TableCell>
                     <TableCell>
                         {visitor.exitTimestamp ? new Date(visitor.exitTimestamp).toLocaleString() : 'N/A'}
