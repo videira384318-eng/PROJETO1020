@@ -2,25 +2,40 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Visitor } from '@/types';
+import type { Visitor, VisitLog, VisitorWithStatus } from '@/types';
 import { AppHeader } from '@/components/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VisitorList } from '@/components/visitor-list';
 import { VisitorEntryDialog } from '@/components/visitor-entry-dialog';
-import { addVisitor, getVisitors, updateVisitor, deleteVisitors } from '@/services/visitorService';
+import { addVisitor, getVisitors, deleteVisitors, getVisitor, updateVisitor } from '@/services/visitorService';
+import { addVisitLog, getVisits, updateVisitLog, getLastVisitForVisitor } from '@/services/visitLogService';
 import { useToast } from "@/hooks/use-toast";
+import { RevisitDialog, type RevisitFormData } from '@/components/revisit-dialog';
 
 export default function VisitantesPage() {
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [visitors, setVisitors] = useState<VisitorWithStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
+  const [revisitingVisitor, setRevisitingVisitor] = useState<Visitor | null>(null);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const visitorsData = await getVisitors();
-      setVisitors(visitorsData);
+      
+      const visitorsWithStatus = await Promise.all(
+          visitorsData.map(async (visitor) => {
+              const lastVisit = await getLastVisitForVisitor(visitor.id);
+              return {
+                  ...visitor,
+                  status: lastVisit?.status ?? 'exited',
+                  lastVisitId: lastVisit?.id
+              };
+          })
+      );
+
+      setVisitors(visitorsWithStatus);
     } catch (error) {
       console.error("Failed to fetch visitors:", error);
       toast({
@@ -37,12 +52,12 @@ export default function VisitantesPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleAddVisitor = async (visitorData: Omit<Visitor, 'id' | 'status' | 'entryTimestamp' | 'exitTimestamp'>) => {
+  const handleAddVisitor = async (visitorData: Omit<Visitor, 'id'>) => {
     try {
       await addVisitor(visitorData);
       toast({
-        title: "Visitante Registrado!",
-        description: `A entrada de ${visitorData.name} foi registrada.`,
+        title: "Visitante Cadastrado!",
+        description: `${visitorData.name} foi adicionado(a) com sucesso.`,
         className: 'bg-green-600 text-white'
       });
       fetchData();
@@ -50,29 +65,58 @@ export default function VisitantesPage() {
       console.error("Error adding visitor:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao registrar visitante",
+        title: "Erro ao cadastrar visitante",
       });
+    }
+  };
+
+  const handleRegisterVisit = async (formData: RevisitFormData) => {
+    if (!revisitingVisitor) return;
+
+    try {
+        await addVisitLog({
+            visitorId: revisitingVisitor.id,
+            visitorName: revisitingVisitor.name,
+            visitorCompany: revisitingVisitor.company,
+            ...formData,
+        });
+
+        toast({
+            title: "Entrada Registrada!",
+            description: `A nova visita de ${revisitingVisitor.name} foi registrada.`,
+            className: 'bg-green-600 text-white'
+        });
+        setRevisitingVisitor(null);
+        fetchData();
+
+    } catch (error) {
+        console.error("Error adding visit log:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao registrar visita",
+        });
     }
   };
 
   const handleExitVisitor = async (visitorId: string) => {
      try {
-      const visitor = visitors.find(v => v.id === visitorId);
-      if (visitor) {
-        await updateVisitor(visitorId, { 
-            ...visitor,
-            status: 'exited',
-            exitTimestamp: new Date().toISOString()
-        });
-        toast({
-          title: "Saída Registrada!",
-          description: `A saída de ${visitor.name} foi registrada.`,
-           className: 'bg-red-600 text-white',
-        });
-        fetchData();
-      }
+        const visitor = visitors.find(v => v.id === visitorId);
+        if (visitor && visitor.lastVisitId) {
+            await updateVisitLog(visitor.lastVisitId, {
+                status: 'exited',
+                exitTimestamp: new Date().toISOString()
+            });
+            toast({
+              title: "Saída Registrada!",
+              description: `A saída de ${visitor.name} foi registrada.`,
+              className: 'bg-red-600 text-white',
+            });
+            fetchData();
+        } else {
+             throw new Error("Última visita não encontrada para registrar a saída.");
+        }
     } catch (error) {
-       console.error("Error updating visitor:", error);
+       console.error("Error updating visitor exit:", error);
        toast({
         variant: "destructive",
         title: "Erro ao registrar saída",
@@ -87,7 +131,7 @@ export default function VisitantesPage() {
         setSelectedVisitors([]);
         toast({
             title: "Visitantes Removidos",
-            description: `Os ${count} visitante(s) selecionado(s) foram removidos.`,
+            description: `Os ${count} visitante(s) selecionado(s) e seus históricos foram removidos.`,
         });
         fetchData();
     } catch (error) {
@@ -98,6 +142,13 @@ export default function VisitantesPage() {
         });
     }
   };
+
+  const handleRevisitClick = async (visitorId: string) => {
+      const visitorData = await getVisitor(visitorId);
+      if (visitorData) {
+          setRevisitingVisitor(visitorData);
+      }
+  }
 
   const handleToggleVisitorSelection = (visitorId: string) => {
     setSelectedVisitors(prev => 
@@ -133,15 +184,17 @@ export default function VisitantesPage() {
   }
 
   return (
+    <>
     <main className="container mx-auto p-4 md:p-8">
       <AppHeader
         title="Controle de Visitantes"
-        description="Gerencie a entrada e saída de visitantes."
+        description="Gerencie o cadastro e o fluxo de visitantes."
       >
         <VisitorEntryDialog onSubmit={handleAddVisitor}/>
       </AppHeader>
       <VisitorList
         visitors={visitors}
+        onRevisit={handleRevisitClick}
         onExit={handleExitVisitor}
         selectedVisitors={selectedVisitors}
         onToggleSelection={handleToggleVisitorSelection}
@@ -149,5 +202,12 @@ export default function VisitantesPage() {
         onDeleteSelected={handleDeleteSelectedVisitors}
       />
     </main>
+    <RevisitDialog
+        isOpen={!!revisitingVisitor}
+        onClose={() => setRevisitingVisitor(null)}
+        visitor={revisitingVisitor}
+        onSubmit={handleRegisterVisit}
+    />
+    </>
   );
 }

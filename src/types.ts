@@ -27,19 +27,33 @@ export interface AttendanceScan {
     status: 'entered' | 'exited';
   }
 
+  // Cadastro permanente do visitante
   export interface Visitor {
     id: string;
     name: string;
     company: string;
     rg: string;
     cpf: string;
-    plate?: string;
-    responsible: string;
-    reason: string;
-    parkingLot: 'P1' | 'P2';
-    entryTimestamp: string;
-    exitTimestamp: string | null;
-    status: 'entered' | 'exited';
   }
 
+  // Registro de uma visita individual
+  export interface VisitLog {
+      id: string;
+      visitorId: string; // link to Visitor.id
+      plate?: string;
+      responsible: string;
+      reason: string;
+      parkingLot: 'P1' | 'P2';
+      entryTimestamp: string;
+      exitTimestamp: string | null;
+      status: 'entered' | 'exited';
+      // Include visitor info for easier display
+      visitorName: string;
+      visitorCompany: string;
+  }
 
+  // Type for combining visitor with their latest visit status
+  export interface VisitorWithStatus extends Visitor {
+      status: 'entered' | 'exited';
+      lastVisitId?: string;
+  }

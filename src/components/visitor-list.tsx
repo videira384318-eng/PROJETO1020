@@ -5,8 +5,8 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, User, Search, LogOut } from 'lucide-react';
-import type { Visitor } from '@/types';
+import { Trash2, Search, LogOut, LogIn } from 'lucide-react';
+import type { VisitorWithStatus } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from './ui/checkbox';
@@ -21,48 +21,45 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface VisitorListProps {
-  visitors: Visitor[];
+  visitors: VisitorWithStatus[];
   onExit: (visitorId: string) => void;
+  onRevisit: (visitorId: string) => void;
   selectedVisitors: string[];
   onToggleSelection: (visitorId: string) => void;
-  onToggleSelectAll: (filteredVisitors: Visitor[]) => void;
+  onToggleSelectAll: (filteredVisitors: VisitorWithStatus[]) => void;
   onDeleteSelected: () => void;
 }
 
 export function VisitorList({ 
     visitors, 
     onExit,
+    onRevisit,
     selectedVisitors,
     onToggleSelection,
     onToggleSelectAll,
     onDeleteSelected
 }: VisitorListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState<'inside' | 'all'>('inside');
 
   const filteredVisitors = useMemo(() => {
     return visitors
       .filter(visitor => {
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        const matchesFilter = filter === 'all' || visitor.status === 'entered';
-        
-        if (!searchTerm) return matchesFilter;
+        if (!searchTerm) return true;
 
         const matchesSearch = 
           (visitor.name && visitor.name.toLowerCase().includes(lowerCaseSearchTerm)) ||
           (visitor.rg && visitor.rg.toLowerCase().includes(lowerCaseSearchTerm)) ||
           (visitor.cpf && visitor.cpf.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (visitor.plate && visitor.plate.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (visitor.responsible && visitor.responsible.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (visitor.company && visitor.company.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          (visitor.reason && visitor.reason.toLowerCase().includes(lowerCaseSearchTerm));
+          (visitor.company && visitor.company.toLowerCase().includes(lowerCaseSearchTerm));
           
-        return matchesFilter && matchesSearch;
+        return matchesSearch;
       })
-      .sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
-  }, [visitors, searchTerm, filter]);
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [visitors, searchTerm]);
 
    const numSelected = selectedVisitors.length;
 
@@ -71,8 +68,8 @@ export function VisitorList({
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <CardTitle className="font-headline">Visitantes Presentes</CardTitle>
-            <CardDescription>Visualize e gerencie os visitantes na empresa.</CardDescription>
+            <CardTitle className="font-headline">Cadastro de Visitantes</CardTitle>
+            <CardDescription>Gerencie visitantes e registre novas visitas.</CardDescription>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
             {numSelected > 0 && (
@@ -87,7 +84,7 @@ export function VisitorList({
                         <AlertDialogHeader>
                         <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} registro(s) de visitante(s) selecionado(s).
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente os {numSelected} visitante(s) selecionado(s) e todo o seu histórico de visitas.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -100,29 +97,18 @@ export function VisitorList({
             <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Pesquisar visitante..."
+                placeholder="Pesquisar por nome, RG, CPF..."
                 className="pl-9"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-             <Button 
-                variant={filter === 'inside' ? 'secondary' : 'outline'}
-                onClick={() => setFilter('inside')}
-            >
-                Presentes
-            </Button>
-            <Button 
-                variant={filter === 'all' ? 'secondary' : 'outline'}
-                onClick={() => setFilter('all')}
-            >
-                Histórico
-            </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="border rounded-md">
+          <TooltipProvider>
           <Table>
             <TableHeader>
               <TableRow>
@@ -137,21 +123,15 @@ export function VisitorList({
                 <TableHead>Empresa</TableHead>
                 <TableHead>RG</TableHead>
                 <TableHead>CPF</TableHead>
-                <TableHead>Placa</TableHead>
-                <TableHead>Responsável</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead>Pátio</TableHead>
-                <TableHead>Entrada</TableHead>
-                <TableHead>Saída</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredVisitors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="h-24 text-center text-muted-foreground">
-                    {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante registrado.'}
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    {searchTerm ? 'Nenhum visitante encontrado.' : 'Nenhum visitante cadastrado.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -164,29 +144,41 @@ export function VisitorList({
                             aria-label={`Selecionar ${visitor.name}`}
                         />
                     </TableCell>
-                    <TableCell>{visitor.name}</TableCell>
+                    <TableCell className="font-medium">{visitor.name}</TableCell>
                     <TableCell>{visitor.company}</TableCell>
                     <TableCell>{visitor.rg}</TableCell>
                     <TableCell>{visitor.cpf}</TableCell>
-                    <TableCell>{visitor.plate || 'N/A'}</TableCell>
-                    <TableCell>{visitor.responsible}</TableCell>
-                    <TableCell>{visitor.reason}</TableCell>
-                    <TableCell>{visitor.parkingLot}</TableCell>
-                    <TableCell>{new Date(visitor.entryTimestamp).toLocaleString()}</TableCell>
-                    <TableCell>
-                        {visitor.exitTimestamp ? new Date(visitor.exitTimestamp).toLocaleString() : 'N/A'}
-                    </TableCell>
                     <TableCell>
                       <Badge variant={visitor.status === 'entered' ? 'success' : 'destructive'} className="capitalize">
-                        {visitor.status === 'entered' ? 'Presente' : 'Saiu'}
+                        {visitor.status === 'entered' ? 'Presente' : 'Ausente'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {visitor.status === 'entered' && (
-                        <Button variant="destructive" size="sm" onClick={() => onExit(visitor.id)}>
-                           <LogOut className="mr-2 h-4 w-4"/>
-                          Registrar Saída
-                        </Button>
+                       {visitor.status === 'exited' ? (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => onRevisit(visitor.id)}>
+                                    <LogIn className="mr-2 h-4 w-4"/>
+                                    Registrar Visita
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Registrar uma nova entrada para este visitante.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        
+                      ) : (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="destructive" size="sm" onClick={() => onExit(visitor.id)}>
+                                    <LogOut className="mr-2 h-4 w-4"/>
+                                    Registrar Saída
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Registrar a saída para a visita atual.</p>
+                            </TooltipContent>
+                        </Tooltip>
                       )}
                     </TableCell>
                   </TableRow>
@@ -194,9 +186,9 @@ export function VisitorList({
               )}
             </TableBody>
           </Table>
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>
   );
 }
-

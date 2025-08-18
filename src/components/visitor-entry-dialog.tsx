@@ -18,25 +18,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { User, PlusCircle } from 'lucide-react';
-import type { Visitor } from '@/types';
 
 const visitorFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   company: z.string().min(1, "A empresa é obrigatória."),
   rg: z.string().min(1, "O RG é obrigatório."),
   cpf: z.string().min(1, "O CPF é obrigatório."),
-  plate: z.string().optional(),
-  responsible: z.string().min(1, "O responsável é obrigatório."),
-  reason: z.string().min(1, "O motivo da visita é obrigatório."),
-  parkingLot: z.enum(['P1', 'P2'], {
-    required_error: "Você precisa selecionar o pátio.",
-  }),
 });
 
-type VisitorFormData = Omit<Visitor, 'id' | 'status' | 'entryTimestamp' | 'exitTimestamp'>;
-
+type VisitorFormData = z.infer<typeof visitorFormSchema>;
 
 interface VisitorEntryDialogProps {
   onSubmit: (data: VisitorFormData) => void;
@@ -46,20 +37,17 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const form = useForm<z.infer<typeof visitorFormSchema>>({
+  const form = useForm<VisitorFormData>({
     resolver: zodResolver(visitorFormSchema),
     defaultValues: {
       name: '',
       company: '',
       rg: '',
       cpf: '',
-      plate: '',
-      responsible: '',
-      reason: '',
     },
   });
 
-  const handleSubmit = (data: z.infer<typeof visitorFormSchema>) => {
+  const handleSubmit = (data: VisitorFormData) => {
     onSubmit(data);
     form.reset();
     setIsOpen(false);
@@ -86,14 +74,14 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Registrar Visitante
+          Novo Visitante
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">Registrar Entrada de Visitante</DialogTitle>
+          <DialogTitle className="font-headline">Cadastrar Novo Visitante</DialogTitle>
           <DialogDescription>
-            Preencha os dados do visitante. Pressione Enter para ir ao próximo campo.
+            Preencha os dados permanentes do visitante. Pressione Enter para ir ao próximo campo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -151,84 +139,11 @@ export function VisitorEntryDialog({ onSubmit }: VisitorEntryDialogProps) {
                     </FormItem>
                 )}
                 />
-                <FormField
-                control={form.control}
-                name="plate"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Placa (Opcional)</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ex: BRA2E19" {...field} onKeyDown={handleKeyDown}/>
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="responsible"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Responsável</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ex: João da Silva (TI)" {...field} onKeyDown={handleKeyDown}/>
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
             </div>
-            <FormField
-              control={form.control}
-              name="reason"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Motivo da Visita</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Reunião com o setor de compras" {...field} onKeyDown={handleKeyDown} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="parkingLot"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Pátio</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-row space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="P1" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          P1
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="P2" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          P2
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter className="pt-4 sm:justify-start">
               <Button type="submit">
                 <User className="mr-2 h-4 w-4" />
-                Confirmar Entrada
+                Salvar Visitante
               </Button>
               <DialogClose asChild>
                 <Button type="button" variant="ghost">
