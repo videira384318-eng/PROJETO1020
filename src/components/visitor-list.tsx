@@ -123,8 +123,8 @@ export function VisitorList({
                 </TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Empresa</TableHead>
-                <TableHead>RG</TableHead>
-                <TableHead>CPF</TableHead>
+                <TableHead>Responsável</TableHead>
+                <TableHead>Motivo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -148,8 +148,8 @@ export function VisitorList({
                     </TableCell>
                     <TableCell className="font-medium">{visitor.name || 'N/A'}</TableCell>
                     <TableCell>{visitor.company || 'N/A'}</TableCell>
-                    <TableCell>{visitor.rg || 'N/A'}</TableCell>
-                    <TableCell>{visitor.cpf || 'N/A'}</TableCell>
+                    <TableCell>{visitor.status === 'entered' ? visitor.responsible : 'N/A'}</TableCell>
+                    <TableCell>{visitor.status === 'entered' ? visitor.reason : 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={visitor.status === 'entered' ? 'success' : 'destructive'} className="capitalize">
                         {visitor.status === 'entered' ? 'Presente' : 'Ausente'}
