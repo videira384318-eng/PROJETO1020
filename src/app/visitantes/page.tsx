@@ -11,9 +11,12 @@ import { addVisitor, getVisitors, deleteVisitors, getVisitor, updateVisitor } fr
 import { addVisitLog, getVisits, updateVisitLog, getLastVisitForVisitor } from '@/services/visitLogService';
 import { useToast } from "@/hooks/use-toast";
 import { RevisitDialog } from '@/components/revisit-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VisitLogHistory } from '@/components/visit-log-history';
 
 export default function VisitantesPage() {
   const [visitors, setVisitors] = useState<VisitorWithStatus[]>([]);
+  const [visitLogs, setVisitLogs] = useState<VisitLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVisitors, setSelectedVisitors] = useState<string[]>([]);
   const [revisitingVisitor, setRevisitingVisitor] = useState<Visitor | null>(null);
@@ -22,7 +25,10 @@ export default function VisitantesPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const visitorsData = await getVisitors();
+      const [visitorsData, visitsData] = await Promise.all([
+          getVisitors(),
+          getVisits()
+      ]);
       
       const visitorsWithStatus = await Promise.all(
           visitorsData.map(async (visitor) => {
@@ -40,12 +46,13 @@ export default function VisitantesPage() {
       );
 
       setVisitors(visitorsWithStatus.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+      setVisitLogs(visitsData);
     } catch (error) {
-      console.error("Failed to fetch visitors:", error);
+      console.error("Failed to fetch data:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao carregar visitantes",
-        description: "Não foi possível buscar os dados de visitantes.",
+        title: "Erro ao carregar dados",
+        description: "Não foi possível buscar os dados de visitantes ou de histórico.",
       });
     } finally {
       setIsLoading(false);
@@ -227,16 +234,29 @@ export default function VisitantesPage() {
       >
         <VisitorEntryDialog onSubmit={handleAddVisitor}/>
       </AppHeader>
-      <VisitorList
-        visitors={visitors}
-        onRevisit={handleRevisitClick}
-        onExit={handleExitVisitor}
-        selectedVisitors={selectedVisitors}
-        onToggleSelection={handleToggleVisitorSelection}
-        onToggleSelectAll={handleToggleSelectAll}
-        onDeleteSelected={handleDeleteSelectedVisitors}
-      />
+
+       <Tabs defaultValue="visitors" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="visitors">Visitantes</TabsTrigger>
+                <TabsTrigger value="history">Histórico de Visitas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="visitors">
+                <VisitorList
+                    visitors={visitors}
+                    onRevisit={handleRevisitClick}
+                    onExit={handleExitVisitor}
+                    selectedVisitors={selectedVisitors}
+                    onToggleSelection={handleToggleVisitorSelection}
+                    onToggleSelectAll={handleToggleSelectAll}
+                    onDeleteSelected={handleDeleteSelectedVisitors}
+                />
+            </TabsContent>
+            <TabsContent value="history">
+                <VisitLogHistory visits={visitLogs} />
+            </TabsContent>
+        </Tabs>
     </main>
+
     <RevisitDialog
         isOpen={!!revisitingVisitor}
         onClose={() => setRevisitingVisitor(null)}
